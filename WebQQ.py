@@ -108,6 +108,8 @@ class WebQQ(HttpClient):
 
     logging.info('Login success')
     thread.start_new_thread(self.__keepAlive, (int(random.uniform(20000, 50000)),))
+    while True:
+      time.sleep(88888)
 
   def __keepAlive(self, msgId):
     E = 0
@@ -165,5 +167,4 @@ class WebQQ(HttpClient):
 
 if __name__ == "__main__":
   WebQQ()
-  raw_input()
 # vim: tabstop=2 softtabstop=2 shiftwidth=2 expandtab

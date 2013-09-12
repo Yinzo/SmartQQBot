@@ -116,12 +116,14 @@ class WebQQ(HttpClient):
         'r' : '{{"key":"","psessionid":"{0}","ptwebqq":"{1}","clientid":"{2}"}}'.format(self.PSessionID, self.PTWebQQ, self.ClientID)
       }, self.Referer)
 
+      if html.find('504') > -1:
+        continue
+
       try:
-        if html.find('504') > 0:
-          continue
         ret = json.loads(html)
       except ValueError:
         logging.debug(html)
+        E += 1
       except Exception as e:
         logging.debug(e)
         E += 1

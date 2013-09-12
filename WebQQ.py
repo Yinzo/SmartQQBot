@@ -10,43 +10,11 @@ class WebQQ(HttpClient):
   Referer = 'http://w.qq.com/index.html?webqq_type=10'
   SmartQQUrl = 'http://w.qq.com/login.html'
 
-  def __init__(self):
+  def __init__(self, vpath):
+    self.VPath = vpath#QRCode保存路径
     logging.basicConfig(filename='qq.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
     self.initUrl = self.getReValue(self.Get(self.SmartQQUrl), r'src="(.+?)"', 'Get Login Url Error.', 1)
-    self.Login()
 
-  def runCommand(self, fuin, cmd, msgId):
-    ret = 'Run Command: [{0}]\n'.format(cmd)
-    try:
-      popen_obj = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
-      (stdout, stderr) = popen_obj.communicate()
-
-      ret += stdout.strip()
-      ret += '\n' + stderr.strip()
-    except Exception, e:
-      ret += e
-
-    ret = ret.replace('\\', '\\\\\\\\').replace('\t', '\\\\t').replace('\r', '\\\\r').replace('\n', '\\\\n')
-    ret = ret.replace('"', '\\\\\\"')
-    self.Post("http://w.qq.com/d/channel/send_buddy_msg2", (
-      ('r', '{{"to":{0},"face":567,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","msg_id":{1},"clientid":"{2}","psessionid":"{3}"}}'.format(fuin, msgId, self.ClientID, self.PSessionID, ret)),
-      ('clientid', self.ClientID),
-      ('psessionid', self.PSessionID)
-    ), self.Referer)
-
-  def getReValue(self, html, rex, er, ex):
-    v = re.search(rex, html)
-    if v is None:#如果匹配失败
-      logging.error(er)#记录错误
-      if ex:#如果条件成立,则退出程序
-        quit()
-      return ''#返回空
-    return v.group(1)#返回匹配到的内容
-
-  def date_to_millis(self, d):
-    return int(time.mktime(d.timetuple())) * 1000
-
-  def Login(self):
     html = self.Get(self.initUrl)
 
     self.APPID = self.getReValue(html, r'var g_appid =encodeURIComponent\("(\d+)"\);', 'Get AppId Error', 1)
@@ -65,20 +33,23 @@ class WebQQ(HttpClient):
     T = 0
     while True:
       T = T + 1
-      self.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(self.APPID), "v.jpg")
+      self.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(self.APPID), self.VPath)
       logging.info('[{0}] Get QRCode Picture Success.'.format(T))
       while True:
         html = self.Get('https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid={0}&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-{1}&mibao_css={2}&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'.format(self.APPID, self.date_to_millis(datetime.datetime.utcnow()) - StarTime, MiBaoCss, JsVer, sign), self.initUrl)
         logging.info(html)
         ret = html.split("'")
-        if ret[1] == '65' or ret[1] == '0':#65: QRCode 失效, 0: 验证成功
+        if ret[1] == '65' or ret[1] == '0':#65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
           break
         time.sleep(2)
       if ret[1] == '0' or T > self.MaxTryTime:
         break
 
     if ret[1] != '0':
-      quit()
+      return
+
+    if os.path.exists(self.VPath):#删除QRCode文件
+      os.remove(self.VPath)
 
     html = self.Get(ret[5])
 
@@ -102,16 +73,13 @@ class WebQQ(HttpClient):
     if ret['retcode'] != 0:
       return
 
-
     self.VFWebQQ = ret['result']['vfwebqq']
     self.PSessionID = ret['result']['psessionid']
 
     logging.info('Login success')
-    thread.start_new_thread(self.__keepAlive, (int(random.uniform(20000, 50000)),))
-    while True:
-      time.sleep(88888)
 
-  def __keepAlive(self, msgId):
+    msgId = int(random.uniform(20000, 50000))
+
     E = 0
     while 1:
       html = self.Post('http://w.qq.com/d/channel/poll2', {
@@ -138,7 +106,7 @@ class WebQQ(HttpClient):
 
       if E > 0:
         logging.debug('error max')
-        return
+        break
 
       E = 0
 
@@ -156,17 +124,54 @@ class WebQQ(HttpClient):
                     thread.start_new_thread(self.runCommand, (msg['value']['from_uin'], txt[1:].strip(), msgId))
                     msgId += 1
                 if txt[0:4] == 'exit':
-                  logging.info('exit')
-                  quit()
-                  return
+                  logging.info(self.Get('http://w.qq.com/d/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), self.Referer))
+                  exit(0)
               elif msgType == 'kick_message':
                 logging.error(msg['value']['reason'])
-                return
+                break
               elif msgType != 'input_notify':
                 logging.debug(msg)
           else:
             logging.debug(ret)
 
+  def runCommand(self, fuin, cmd, msgId):
+    ret = 'Run Command: [{0}]\n'.format(cmd)
+    try:
+      popen_obj = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
+      (stdout, stderr) = popen_obj.communicate()
+
+      ret += stdout.strip()
+      ret += '\n' + stderr.strip()
+    except Exception, e:
+      ret += e
+
+    ret = ret.replace('\\', '\\\\\\\\').replace('\t', '\\\\t').replace('\r', '\\\\r').replace('\n', '\\\\n')
+    ret = ret.replace('"', '\\\\\\"')
+    self.Post("http://w.qq.com/d/channel/send_buddy_msg2", (
+      ('r', '{{"to":{0},"face":567,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","msg_id":{1},"clientid":"{2}","psessionid":"{3}"}}'.format(fuin, msgId, self.ClientID, self.PSessionID, ret)),
+      ('clientid', self.ClientID),
+      ('psessionid', self.PSessionID)
+    ), self.Referer)
+
+  def getReValue(self, html, rex, er, ex):
+    v = re.search(rex, html)
+    if v is None:#如果匹配失败
+      logging.error(er)#记录错误
+      if ex:#如果条件成立,则抛异常
+        raise Exception, er
+    return v.group(1)#返回匹配到的内容
+
+  def date_to_millis(self, d):
+    return int(time.mktime(d.timetuple())) * 1000
+
+
 if __name__ == "__main__":
-  WebQQ()
+  vpath = './v.jpg'
+  if len(sys.argv) > 1:
+    vpath = sys.argv[1]
+  while True:
+    try:
+      WebQQ(vpath)
+    except Exception, e:
+      print e
 # vim: tabstop=2 softtabstop=2 shiftwidth=2 expandtab

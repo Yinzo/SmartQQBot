@@ -16,7 +16,6 @@ class HttpClient:
         req.add_header('Referer', refer)
       return urllib2.urlopen(req).read()
     except urllib2.HTTPError, e:
-      print e.read()
       return e.read()
 
   def Post(self, url, data, refer=None):
@@ -26,7 +25,6 @@ class HttpClient:
         req.add_header('Referer', refer)
       return urllib2.urlopen(req).read()
     except urllib2.HTTPError, e:
-      print e.read()
       return e.read()
 
   def Download(self, url, file):

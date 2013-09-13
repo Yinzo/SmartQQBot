@@ -39,7 +39,7 @@ class WebQQ(HttpClient):
       logging.info('[{0}] Get QRCode Picture Success.'.format(T))
       while True:
         html = self.Get('https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid={0}&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-{1}&mibao_css={2}&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'.format(self.APPID, self.date_to_millis(datetime.datetime.utcnow()) - StarTime, MiBaoCss, JsVer, sign), self.initUrl)
-        logging.info(html)
+        #logging.info(html)
         ret = html.split("'")
         if ret[1] == '65' or ret[1] == '0':#65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
           break
@@ -47,6 +47,7 @@ class WebQQ(HttpClient):
       if ret[1] == '0' or T > self.MaxTryTime:
         break
 
+    logging.debug(ret)
     if ret[1] != '0':
       return
 
@@ -88,7 +89,7 @@ class WebQQ(HttpClient):
         'r' : '{{"key":"","psessionid":"{0}","ptwebqq":"{1}","clientid":"{2}"}}'.format(self.PSessionID, self.PTWebQQ, self.ClientID)
       }, self.Referer)
 
-      if html.find('504') != -1:
+      if html.find('504 ') != -1:
         continue
 
       logging.info(html)
@@ -160,6 +161,8 @@ class WebQQ(HttpClient):
       ret += '\n' + stderr.strip()
     except Exception, e:
       ret += e
+
+    logging.info(ret)
 
     ret = ret.replace('\\', '\\\\\\\\').replace('\t', '\\\\t').replace('\r', '\\\\r').replace('\n', '\\\\n')
     ret = ret.replace('"', '\\\\\\"')

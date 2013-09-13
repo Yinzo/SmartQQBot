@@ -1,4 +1,4 @@
-PiWebQQV2
+SmartQQ-for-Raspberry-Pi
 =========
 
 基于 [SmartQQ](http://w.qq.com/) 编写, 登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码.

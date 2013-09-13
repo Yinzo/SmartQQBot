@@ -6,12 +6,14 @@ import re, random, md5, json, os, sys, datetime, time, thread, subprocess, loggi
 class WebQQ(HttpClient):
   ClientID = int(random.uniform(111111, 888888))
   APPID = 0
+  FriendList = {}
   MaxTryTime = 5
   Referer = 'http://w.qq.com/index.html?webqq_type=10'
   SmartQQUrl = 'http://w.qq.com/login.html'
 
-  def __init__(self, vpath):
+  def __init__(self, vpath, qq=0):
     self.VPath = vpath#QRCode保存路径
+    self.AdminQQ = int(qq)
     logging.basicConfig(filename='qq.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
     self.initUrl = self.getReValue(self.Get(self.SmartQQUrl), r'src="(.+?)"', 'Get Login Url Error.', 1)
 
@@ -120,8 +122,22 @@ class WebQQ(HttpClient):
               if msgType == 'message':
                 txt = msg['value']['content'][1]
                 logging.debug(txt)
+                tuin = msg['value']['from_uin']
+                if not tuin in self.FriendList:#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
+                  try:
+                    info = json.loads(self.Get('http://w.qq.com/s/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, self.VFWebQQ), self.Referer))
+                    logging.info(info)
+                    if info['retcode'] != 0:
+                      raise ValueError, info
+                    info = info['result']
+                    self.FriendList[tuin] = info['account']
+                  except Exception as e:
+                    logging.debug(e)
+                    continue
+                if self.FriendList.get(tuin, 0) != self.AdminQQ:#如果消息的发送者与AdminQQ不相同,则忽略本条消息不往下继续执行
+                  continue
                 if txt[0] == '#':
-                    thread.start_new_thread(self.runCommand, (msg['value']['from_uin'], txt[1:].strip(), msgId))
+                    thread.start_new_thread(self.runCommand, (tuin, txt[1:].strip(), msgId))
                     msgId += 1
                 if txt[0:4] == 'exit':
                   logging.info(self.Get('http://w.qq.com/d/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), self.Referer))
@@ -167,11 +183,14 @@ class WebQQ(HttpClient):
 
 if __name__ == "__main__":
   vpath = './v.jpg'
+  qq = 0
   if len(sys.argv) > 1:
     vpath = sys.argv[1]
+  if len(sys.argv) > 2:
+    qq = sys.argv[2]
   while True:
     try:
-      WebQQ(vpath)
+      WebQQ(vpath, qq)
     except Exception, e:
       print e
 # vim: tabstop=2 softtabstop=2 shiftwidth=2 expandtab

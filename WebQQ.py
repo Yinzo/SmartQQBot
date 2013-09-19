@@ -8,7 +8,8 @@ class WebQQ(HttpClient):
   APPID = 0
   FriendList = {}
   MaxTryTime = 5
-  Referer = 'http://w.qq.com/index.html?webqq_type=10'
+  PSessionID = ''
+  Referer = 'http://d.web2.qq.com/proxy.html?v=20130916001&callback=1&id=2'
   SmartQQUrl = 'http://w.qq.com/login.html'
 
   def __init__(self, vpath, qq=0):
@@ -57,120 +58,110 @@ class WebQQ(HttpClient):
     html = self.Get(ret[5])
 
     self.PTWebQQ = self.getCookie('ptwebqq')
-    skey = self.getCookie('p_skey')
-    uin = self.getCookie('p_uin')
 
     logging.info('PTWebQQ: {0}'.format(self.PTWebQQ))
-    logging.info('p_skey: {0}    p_uin: {1}'.format(skey, uin))
 
-    self.setCookie('p_skey', skey, 'qq.com')
-    self.setCookie('p_uin', uin, 'qq.com')
-
-    html = self.Post('http://w.qq.com/d/channel/login2', {
-      'r' : '{{"status":"online","ptwebqq":"{0}","clientid":"{1}","psessionid":""}}'.format(self.PTWebQQ, self.ClientID)
-    }, self.Referer)
-
-    logging.debug(html)
-    ret = json.loads(html)
-
-    if ret['retcode'] != 0:
-      return
-
-    self.VFWebQQ = ret['result']['vfwebqq']
-    self.PSessionID = ret['result']['psessionid']
-
-    logging.info('Login success')
-
-    msgId = int(random.uniform(20000, 50000))
-
-    E = 0
     while 1:
-      html = self.Post('http://w.qq.com/d/channel/poll2', {
-        'r' : '{{"key":"","psessionid":"{0}","ptwebqq":"{1}","clientid":"{2}"}}'.format(self.PSessionID, self.PTWebQQ, self.ClientID)
+      html = self.Post('http://d.web2.qq.com/channel/login2', {
+        'r' : '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(self.PTWebQQ, self.ClientID, self.PSessionID)
       }, self.Referer)
 
-      if html.find('504 ') != -1:
-        continue
+      logging.debug(html)
+      ret = json.loads(html)
 
-      logging.info(html)
-
-      try:
-        ret = json.loads(html)
-      except ValueError as e:
-        logging.debug(e)
-        E += 1
-      except Exception as e:
-        logging.debug(e)
-        E += 1
-
-      if E > 0 and E < 5:
-        time.sleep(5)
-        continue
-
-      if E > 0:
-        logging.debug('error max')
+      if ret['retcode'] != 0:
         break
 
+      self.VFWebQQ = ret['result']['vfwebqq']
+      self.PSessionID = ret['result']['psessionid']
+
+      logging.info('Login success')
+
+      msgId = int(random.uniform(20000, 50000))
+
       E = 0
+      while 1:
+        html = self.Post('http://d.web2.qq.com/channel/poll2', {
+          'r' : '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.PSessionID, self.PTWebQQ, self.ClientID)
+        }, self.Referer)
 
-      if ret['retcode'] != 102:
-        if ret['retcode'] == 116:
+        logging.info(html)
+
+        try:
+          ret = json.loads(html)
+        except ValueError as e:
+          logging.debug(e)
+          E += 1
+        except Exception as e:
+          logging.debug(e)
+          E += 1
+
+        if E > 0 and E < 3:
+          time.sleep(2)
+          continue
+
+        if E > 0:
+          logging.debug('try auto login ...')
+          break
+
+        E = 0
+
+        if ret['retcode'] == 102:#无消息
+          continue
+        if ret['retcode'] == 116:#更新PTWebQQ值
           self.PTWebQQ = ret['p']
-        else:
-          if ret['retcode'] == 0:
-            for msg in ret['result']:
-              msgType = msg['poll_type']
-              if msgType == 'message':
-                txt = msg['value']['content'][1]
-                logging.debug(txt)
-                tuin = msg['value']['from_uin']
-                if not tuin in self.FriendList:#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
-                  try:
-                    info = json.loads(self.Get('http://w.qq.com/s/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, self.VFWebQQ), self.Referer))
-                    logging.info(info)
-                    if info['retcode'] != 0:
-                      raise ValueError, info
-                    info = info['result']
-                    self.FriendList[tuin] = info['account']
-                  except Exception as e:
-                    logging.debug(e)
-                    continue
-                if self.FriendList.get(tuin, 0) != self.AdminQQ:#如果消息的发送者与AdminQQ不相同,则忽略本条消息不往下继续执行
+          continue
+        if ret['retcode'] == 0:
+          for msg in ret['result']:
+            msgType = msg['poll_type']
+            if msgType == 'message':#QQ消息
+              txt = msg['value']['content'][1]
+              logging.debug(txt)
+              tuin = msg['value']['from_uin']
+              if not tuin in self.FriendList:#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
+                try:
+                  info = json.loads(self.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, self.VFWebQQ), self.Referer))
+                  logging.info(info)
+                  if info['retcode'] != 0:
+                    raise ValueError, info
+                  info = info['result']
+                  self.FriendList[tuin] = info['account']
+                except Exception as e:
+                  logging.debug(e)
                   continue
-                if txt[0] == '#':
-                    thread.start_new_thread(self.runCommand, (tuin, txt[1:].strip(), msgId))
-                    msgId += 1
-                if txt[0:4] == 'exit':
-                  logging.info(self.Get('http://w.qq.com/d/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), self.Referer))
-                  exit(0)
-              elif msgType == 'kick_message':
-                logging.error(msg['value']['reason'])
-                break
-              elif msgType != 'input_notify':
-                logging.debug(msg)
-          else:
-            logging.debug(ret)
+              if self.FriendList.get(tuin, 0) != self.AdminQQ:#如果消息的发送者与AdminQQ不相同,则忽略本条消息不往下继续执行
+                continue
+              if txt[0] == '#':
+                  thread.start_new_thread(self.runCommand, (tuin, txt[1:].strip(), msgId))
+                  msgId += 1
+              if txt[0:4] == 'exit':
+                logging.info(self.Get('http://d.web2.qq.com/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), self.Referer))
+                exit(0)
+            elif msgType == 'kick_message':#QQ号在另一个地方登陆,被挤下线
+              logging.error(msg['value']['reason'])
+              raise Exception, msg['value']['reason']#抛出异常,重新启动WebQQ,需重新扫描QRCode来完成登陆
+              break
 
-  def runCommand(self, fuin, cmd, msgId):
-    ret = 'Run Command: [{0}]\n'.format(cmd)
-    try:
-      popen_obj = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
-      (stdout, stderr) = popen_obj.communicate()
+    def runCommand(self, fuin, cmd, msgId):
+      ret = 'Run Command: [{0}]\n'.format(cmd)
+      try:
+        popen_obj = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
+        (stdout, stderr) = popen_obj.communicate()
 
-      ret += stdout.strip()
-      ret += '\n' + stderr.strip()
-    except Exception, e:
-      ret += e
+        ret += stdout.strip()
+        ret += '\n' + stderr.strip()
+      except Exception, e:
+        ret += e
 
-    logging.info(ret)
+      logging.info(ret)
 
-    ret = ret.replace('\\', '\\\\\\\\').replace('\t', '\\\\t').replace('\r', '\\\\r').replace('\n', '\\\\n')
-    ret = ret.replace('"', '\\\\\\"')
-    self.Post("http://w.qq.com/d/channel/send_buddy_msg2", (
-      ('r', '{{"to":{0},"face":567,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","msg_id":{1},"clientid":"{2}","psessionid":"{3}"}}'.format(fuin, msgId, self.ClientID, self.PSessionID, ret)),
-      ('clientid', self.ClientID),
-      ('psessionid', self.PSessionID)
-    ), self.Referer)
+      ret = ret.replace('\\', '\\\\\\\\').replace('\t', '\\\\t').replace('\r', '\\\\r').replace('\n', '\\\\n')
+      ret = ret.replace('"', '\\\\\\"')
+      self.Post("http://d.web2.qq.com/channel/send_buddy_msg2", (
+        ('r', '{{"to":{0},"face":567,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","msg_id":{1},"clientid":"{2}","psessionid":"{3}"}}'.format(fuin, msgId, self.ClientID, self.PSessionID, ret)),
+        ('clientid', self.ClientID),
+        ('psessionid', self.PSessionID)
+      ), self.Referer)
 
   def getReValue(self, html, rex, er, ex):
     v = re.search(rex, html)

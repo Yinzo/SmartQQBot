@@ -142,26 +142,26 @@ class WebQQ(HttpClient):
               raise Exception, msg['value']['reason']#抛出异常,重新启动WebQQ,需重新扫描QRCode来完成登陆
               break
 
-    def runCommand(self, fuin, cmd, msgId):
-      ret = 'Run Command: [{0}]\n'.format(cmd)
-      try:
-        popen_obj = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
-        (stdout, stderr) = popen_obj.communicate()
+  def runCommand(self, fuin, cmd, msgId):
+    ret = 'Run Command: [{0}]\n'.format(cmd)
+    try:
+      popen_obj = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
+      (stdout, stderr) = popen_obj.communicate()
 
-        ret += stdout.strip()
-        ret += '\n' + stderr.strip()
-      except Exception, e:
-        ret += e
+      ret += stdout.strip()
+      ret += '\n' + stderr.strip()
+    except Exception, e:
+      ret += e
 
-      logging.info(ret)
+    logging.info(ret)
 
-      ret = ret.replace('\\', '\\\\\\\\').replace('\t', '\\\\t').replace('\r', '\\\\r').replace('\n', '\\\\n')
-      ret = ret.replace('"', '\\\\\\"')
-      self.Post("http://d.web2.qq.com/channel/send_buddy_msg2", (
-        ('r', '{{"to":{0},"face":567,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","msg_id":{1},"clientid":"{2}","psessionid":"{3}"}}'.format(fuin, msgId, self.ClientID, self.PSessionID, ret)),
-        ('clientid', self.ClientID),
-        ('psessionid', self.PSessionID)
-      ), self.Referer)
+    ret = ret.replace('\\', '\\\\\\\\').replace('\t', '\\\\t').replace('\r', '\\\\r').replace('\n', '\\\\n')
+    ret = ret.replace('"', '\\\\\\"')
+    self.Post("http://d.web2.qq.com/channel/send_buddy_msg2", (
+      ('r', '{{"to":{0},"face":567,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","msg_id":{1},"clientid":"{2}","psessionid":"{3}"}}'.format(fuin, msgId, self.ClientID, self.PSessionID, ret)),
+      ('clientid', self.ClientID),
+      ('psessionid', self.PSessionID)
+    ), self.Referer)
 
   def getReValue(self, html, rex, er, ex):
     v = re.search(rex, html)

@@ -1,4 +1,4 @@
-SmartQQ-for-Raspberry-Pi
+SmartQQ-for-Raspberry-Pi(PiWebQQV2)
 =========
 
 基于 [SmartQQ](http://w.qq.com/) 编写, 登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码.
@@ -22,3 +22,7 @@ sudo nohup python WebQQ.py /data/http/v.jpg 48080163 &
 
 V2版的好处在于不需要在程序里设置QQ号码和密码,在Pi所登陆的账号及密码由[QQ安全中心](http://aq.qq.com/cn2/manage/mbtoken/app_index)中指定,而且登陆时也不再需要验证码了.
 `QRCode` 文件在登陆成功之后会被自动删除掉,以确保安全.
+
+
+如需使用QQ号码和密码的方式登陆可以尝试V1版本.
+地址: [PiWebQQ](https://github.com/xqin/PiWebQQ)

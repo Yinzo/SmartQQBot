@@ -106,6 +106,8 @@ class WebQQ(HttpClient):
 
         E = 0
 
+        if ret['retcode'] == 100006:
+          break
         if ret['retcode'] == 102:#无消息
           continue
         if ret['retcode'] == 116:#更新PTWebQQ值

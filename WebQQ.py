@@ -16,7 +16,7 @@ class WebQQ(HttpClient):
     self.VPath = vpath#QRCode保存路径
     self.AdminQQ = int(qq)
     logging.basicConfig(filename='qq.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
-    self.initUrl = self.getReValue(self.Get(self.SmartQQUrl), r'src="(.+?)"', 'Get Login Url Error.', 1)
+    self.initUrl = self.getReValue(self.Get(self.SmartQQUrl), r'" src="(.+?)"', 'Get Login Url Error.', 1)
 
     html = self.Get(self.initUrl)
 

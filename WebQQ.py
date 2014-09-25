@@ -16,9 +16,9 @@ class WebQQ(HttpClient):
     self.VPath = vpath#QRCode保存路径
     self.AdminQQ = int(qq)
     logging.basicConfig(filename='qq.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
-    self.initUrl = self.getReValue(self.Get(self.SmartQQUrl), r'" src="(.+?)"', 'Get Login Url Error.', 1)
+    self.initUrl = self.getReValue(self.Get(self.SmartQQUrl), r'\.src = "(.+?)"', 'Get Login Url Error.', 1)
 
-    html = self.Get(self.initUrl)
+    html = self.Get(self.initUrl + '0')
 
     self.APPID = self.getReValue(html, r'var g_appid =encodeURIComponent\("(\d+)"\);', 'Get AppId Error', 1)
 
@@ -56,6 +56,13 @@ class WebQQ(HttpClient):
       os.remove(self.VPath)
 
     html = self.Get(ret[5])
+
+    url = self.getReValue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
+
+    if url != '':
+        html = self.Get(url.replace('&amp;', '&'))
+        url = self.getReValue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
+        html = self.Get(url)
 
     self.PTWebQQ = self.getCookie('ptwebqq')
 
@@ -171,6 +178,7 @@ class WebQQ(HttpClient):
       logging.error(er)#记录错误
       if ex:#如果条件成立,则抛异常
         raise Exception, er
+      return ''
     return v.group(1)#返回匹配到的内容
 
   def date_to_millis(self, d):

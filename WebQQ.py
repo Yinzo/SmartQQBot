@@ -3,6 +3,10 @@
 from HttpClient import HttpClient
 import re, random, md5, json, os, sys, datetime, time, thread, subprocess, logging
 
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
+
 class WebQQ(HttpClient):
   ClientID = int(random.uniform(111111, 888888))
   APPID = 0
@@ -16,27 +20,29 @@ class WebQQ(HttpClient):
     self.VPath = vpath#QRCode保存路径
     self.AdminQQ = int(qq)
     logging.basicConfig(filename='qq.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
+    print "正在获取登陆页面"
     self.initUrl = self.getReValue(self.Get(self.SmartQQUrl), r'\.src = "(.+?)"', 'Get Login Url Error.', 1)
-
+    print "正在获取登陆二维码参数"
     html = self.Get(self.initUrl + '0')
-
+    print "正在获取appid"
     self.APPID = self.getReValue(html, r'var g_appid =encodeURIComponent\("(\d+)"\);', 'Get AppId Error', 1)
-
+    print "正在获取login_sib"
     sign = self.getReValue(html, r'var g_login_sig=encodeURIComponent\("(.+?)"\);', 'Get Login Sign Error', 1)
     logging.info('get sign : %s', sign)
-
+    print "正在获取pt_version"
     JsVer = self.getReValue(html, r'var g_pt_version=encodeURIComponent\("(\d+)"\);', 'Get g_pt_version Error', 1)
     logging.info('get g_pt_version : %s', JsVer)
-
+    print "正在获取mibao_css"
     MiBaoCss = self.getReValue(html, r'var g_mibao_css=encodeURIComponent\("(.+?)"\);', 'Get g_mibao_css Error', 1)
     logging.info('get g_mibao_css : %s', sign)
-
+    print "参数获取完毕\n"
     StarTime = self.date_to_millis(datetime.datetime.utcnow())
 
     T = 0
     while True:
       T = T + 1
       self.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(self.APPID), self.VPath)
+      print "登陆二维码下载成功，请扫描"
       logging.info('[{0}] Get QRCode Picture Success.'.format(T))
       while True:
         html = self.Get('https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid={0}&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-{1}&mibao_css={2}&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'.format(self.APPID, self.date_to_millis(datetime.datetime.utcnow()) - StarTime, MiBaoCss, JsVer, sign), self.initUrl)
@@ -51,11 +57,13 @@ class WebQQ(HttpClient):
     logging.debug(ret)
     if ret[1] != '0':
       return
-
+    print "二维码已扫描，正在登陆"
     if os.path.exists(self.VPath):#删除QRCode文件
       os.remove(self.VPath)
 
     html = self.Get(ret[5])
+
+    tmpUserName = ret[11]
 
     url = self.getReValue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
 
@@ -82,6 +90,7 @@ class WebQQ(HttpClient):
       self.VFWebQQ = ret['result']['vfwebqq']
       self.PSessionID = ret['result']['psessionid']
 
+      print "QQ号：{0} 登陆成功,用户名：{1}".format(ret['result']['uin'],tmpUserName)
       logging.info('Login success')
 
       msgId = int(random.uniform(20000, 50000))
@@ -123,9 +132,28 @@ class WebQQ(HttpClient):
         if ret['retcode'] == 0:
           for msg in ret['result']:
             msgType = msg['poll_type']
+
+
             if msgType == 'message':#QQ消息
-              txt = msg['value']['content'][1]
+              txt = self.combine_msg(msg['value']['content'])
               logging.debug(txt)
+              tuin = msg['value']['from_uin']
+              from_account = self.uin_to_account(tuin)
+
+              print "{0}:{1}".format(from_account,txt)
+              # print "{0}:{1}".format(self.FriendList.get(tuin, 0),txt)
+
+
+              if self.FriendList.get(tuin, 0) == self.AdminQQ:#如果消息的发送者与AdminQQ不相同,则忽略本条消息不往下继续执行
+                if txt[0] == '#':
+                    thread.start_new_thread(self.runCommand, (tuin, txt[1:].strip(), msgId))
+                    msgId += 1
+                if txt[0:4] == 'exit':
+                  logging.info(self.Get('http://d.web2.qq.com/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), self.Referer))
+                  exit(0)
+
+            elif msgType == 'group_message': #群消息
+              txt = msg['value']['content'][3]
               tuin = msg['value']['from_uin']
               if not tuin in self.FriendList:#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
                 try:
@@ -138,14 +166,7 @@ class WebQQ(HttpClient):
                 except Exception as e:
                   logging.debug(e)
                   continue
-              if self.FriendList.get(tuin, 0) != self.AdminQQ:#如果消息的发送者与AdminQQ不相同,则忽略本条消息不往下继续执行
-                continue
-              if txt[0] == '#':
-                  thread.start_new_thread(self.runCommand, (tuin, txt[1:].strip(), msgId))
-                  msgId += 1
-              if txt[0:4] == 'exit':
-                logging.info(self.Get('http://d.web2.qq.com/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), self.Referer))
-                exit(0)
+
             elif msgType == 'kick_message':#QQ号在另一个地方登陆,被挤下线
               logging.error(msg['value']['reason'])
               raise Exception, msg['value']['reason']#抛出异常,重新启动WebQQ,需重新扫描QRCode来完成登陆
@@ -184,6 +205,32 @@ class WebQQ(HttpClient):
   def date_to_millis(self, d):
     return int(time.mktime(d.timetuple())) * 1000
 
+  def uin_to_account(self,tuin):
+    if not tuin in self.FriendList:#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
+      try:
+        info = json.loads(self.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, self.VFWebQQ), self.Referer))
+        # print info
+        logging.info(info)
+        if info['retcode'] != 0:
+          raise ValueError, info
+        info = info['result']
+        self.FriendList[tuin] = info['account']
+      except Exception as e:
+        logging.debug(e)
+    logging.info(self.FriendList)
+    return self.FriendList[tuin]
+
+  def combine_msg(self,content):
+    msgTXT = ""
+    for part in content:
+      # print type(part)
+      if type(part) == type(u'\u0000'):
+        msgTXT += part
+      elif len(part) > 1:
+        if part[0] == "offpic":
+          msgTXT += "[图片]"
+
+    return msgTXT
 
 if __name__ == "__main__":
   vpath = './v.jpg'

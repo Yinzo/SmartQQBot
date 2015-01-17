@@ -1,4 +1,4 @@
-SmartQQ-for-Raspberry-Pi(PiWebQQV2)
+SmartQQ-Bot (原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)）
 =========
 
 基于 [SmartQQ](http://w.qq.com/) 编写, 登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码.
@@ -26,3 +26,6 @@ V2版的好处在于不需要在程序里设置QQ号码和密码,在Pi所登陆�
 
 如需使用QQ号码和密码的方式登陆可以尝试V1版本.
 地址: [PiWebQQ](https://github.com/xqin/PiWebQQ)
+
+
+该分支使用原代码的SmartQQ登陆代码，用于制作基于SmartQQ的自动机器人。

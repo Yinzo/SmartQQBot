@@ -10,6 +10,7 @@ sys.setdefaultencoding("utf-8")
 class WebQQ(HttpClient):
   ClientID = int(random.uniform(111111, 888888))
   APPID = 0
+  msgId = 0
   FriendList = {}
   MaxTryTime = 5
   PSessionID = ''
@@ -141,6 +142,8 @@ class WebQQ(HttpClient):
               from_account = self.uin_to_account(tuin)
 
               print "{0}:{1}".format(from_account,txt)
+
+              self.send_msg(tuin,"huehuehue")
               # print "{0}:{1}".format(self.FriendList.get(tuin, 0),txt)
 
 
@@ -232,6 +235,15 @@ class WebQQ(HttpClient):
 
     return msgTXT
 
+  def send_msg(self,tuin,content):
+    reqURL = "http://d.web2.qq.com/channel/send_buddy_msg2"
+    data = (
+      ('r', '{{"to":{0},"face":594,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(tuin, self.ClientID, self.msgId, self.PSessionID, content)),
+      ('clientid', self.ClientID),
+      ('psessionid', self.PSessionID)
+    )
+    rsp = self.Post(reqURL,data,self.Referer)
+    return rsp
 if __name__ == "__main__":
   vpath = './v.jpg'
   qq = 0

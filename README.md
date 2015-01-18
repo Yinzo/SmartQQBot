@@ -1,14 +1,14 @@
 SmartQQ-Bot 
 =========
 ##该分支使用原代码的SmartQQ登陆代码，用于制作基于SmartQQ的自动机器人。
-(原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)）
+[原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)](https://github.com/xqin/SmartQQ-for-Raspberry-Pi)
 基于 [SmartQQ](http://w.qq.com/) 编写, 登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码.
 
 关于自动获取 QRCode 图片的方法: 我采用方法是让程序将图片保存到自己的Web站点下,然后自己通过Web方式访问得到QRCode, 然后用手机扫描.
 
 
 
-_______
+##原README
 在Pi上通过SSH后台运行的例子:
 ```
 sudo nohup python WebQQ.py /data/http/v.jpg &

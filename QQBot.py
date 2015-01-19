@@ -6,7 +6,7 @@ import re, random, md5, json, os, sys, datetime, time, threading, subprocess, lo
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
-HttpClientx = HttpClient()
+HttpClient_Ist = HttpClient()
 
 ClientID = int(random.uniform(111111, 888888))
 PTWebQQ = ''
@@ -49,7 +49,7 @@ def uin_to_account(tuin):
 	#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
 	if not tuin in FriendList:
 		try:
-			info = json.loads(HttpClientx.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, VFWebQQ), Referer))
+			info = json.loads(HttpClient_Ist.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, VFWebQQ), Referer))
 			logging.info(info)
 			if info['retcode'] != 0:
 				raise ValueError, info
@@ -124,7 +124,7 @@ def send_msg(tuin,content):
 		('clientid', ClientID),
 		('psessionid', PSessionID)
 	)
-	rsp = HttpClientx.Post(reqURL,data,Referer)
+	rsp = HttpClient_Ist.Post(reqURL,data,Referer)
 
 	return rsp
 
@@ -277,7 +277,7 @@ class check_msg(threading.Thread):
 				continue
 
 	def check(self):
-		html = HttpClientx.Post('http://d.web2.qq.com/channel/poll2', {
+		html = HttpClient_Ist.Post('http://d.web2.qq.com/channel/poll2', {
 			'r' : '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(PSessionID, PTWebQQ, ClientID)
 		}, Referer)
 
@@ -305,11 +305,16 @@ if __name__ == "__main__":
 	try:
 		qqLogin = Login(vpath, qq)
 	except Exception, e:
-		print e
+		print e,Exception
 
 	t_check = check_msg()
+	t_check.setDaemon(True)
 	t_check.start()
 
+	while 1:
+		if not t_check.isAlive():
+			exit(0)
+		time.sleep(1)
 
 
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from HttpClient import HttpClient
-import re, random, md5, json, os, sys, datetime, time, thread, subprocess, logging
+import re, random, md5, json, os, sys, datetime, time, threading, subprocess, logging
 
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -9,6 +9,7 @@ sys.setdefaultencoding("utf-8")
 
 class WebQQ(HttpClient):
   ClientID = int(random.uniform(111111, 888888))
+  PTWebQQ = ''
   APPID = 0
   msgId = 0
   FriendList = {}
@@ -22,14 +23,6 @@ class WebQQ(HttpClient):
     self.AdminQQ = int(qq)
     logging.basicConfig(filename='qq.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
     
-
-
-      
-
-      
-
-
-
 
   def runCommand(self, fuin, cmd, msgId):
     ret = 'Run Command: [{0}]\n'.format(cmd)
@@ -155,9 +148,9 @@ class WebQQ(HttpClient):
     html = self.Get(ret[5])
     url = self.getReValue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
     if url != '':
-        html = self.Get(url.replace('&amp;', '&'))
-        url = self.getReValue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
-        html = self.Get(url)
+      html = self.Get(url.replace('&amp;', '&'))
+      url = self.getReValue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
+      html = self.Get(url)
 
     self.PTWebQQ = self.getCookie('ptwebqq')
 

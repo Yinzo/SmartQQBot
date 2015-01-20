@@ -13,37 +13,44 @@ PTWebQQ = ''
 APPID = 0
 msgId = 0
 FriendList = {}
+ThreadList = []
 PSessionID = ''
 Referer = 'http://d.web2.qq.com/proxy.html?v=20130916001&callback=1&id=2'
 SmartQQUrl = 'http://w.qq.com/login.html'
 VFWebQQ = ''
 AdminQQ = '0'
 
+initTime = time.time()
+
 # -----------------
 # 方法声明
 # -----------------
+def passTime():
+	global initTime
+	rs = (time.time() - initTime)
+	initTime = time.time()
+	return str(round(rs,3))
 
 def getReValue(html, rex, er, ex):
 	v = re.search(rex, html)
-	#如果匹配失败
+
+
 	if v is None:
 
-		#记录错误
+
 		logging.error(er)
 
-		#如果条件成立,则抛异常
+
 		if ex:
 			raise Exception, er
 
 		return ''
 
 
-	return v.group(1)#返回匹配到的内容
-
+	return v.group(1)
 
 def date_to_millis(d):
     return int(time.mktime(d.timetuple())) * 1000
-
 
 def uin_to_account(tuin):
 	#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
@@ -66,44 +73,51 @@ def msg_handler(msgObj):
 	for msg in msgObj:
 		msgType = msg['poll_type']
 
-	#QQ私聊消息
-	if msgType == 'message':
-		txt = combine_msg(msg['value']['content'])
-		logging.debug(txt)
-		tuin = msg['value']['from_uin']
-		from_account = uin_to_account(tuin)
+		#QQ私聊消息
+		if msgType == 'message':
+			txt = combine_msg(msg['value']['content'])
+			logging.debug(txt)
+			tuin = msg['value']['from_uin']
+			from_account = uin_to_account(tuin)
 
-		print "{0}:{1}".format(from_account,txt)
+			# print "{0}:{1}".format(from_account,txt)
+			targetThread = thread_exist(from_account)
+			passTime()
+			if targetThread:
+				targetThread.push(txt)
+			else:
+				tmpThread = pmchat_thread(tuin)
+				tmpThread.start()
+				ThreadList.append(tmpThread)
+				tmpThread.push(txt)
 
-		send_msg(tuin,"huehuehue")
-		# print "{0}:{1}".format(self.FriendList.get(tuin, 0),txt)
+			# print "{0}:{1}".format(self.FriendList.get(tuin, 0),txt)
 
 
-		# if FriendList.get(tuin, 0) == AdminQQ:#如果消息的发送者与AdminQQ不相同,则忽略本条消息不往下继续执行
-		# 	if txt[0] == '#':
-		# 		thread.start_new_thread(self.runCommand, (tuin, txt[1:].strip(), msgId))
-		# 		msgId += 1
+			# if FriendList.get(tuin, 0) == AdminQQ:#如果消息的发送者与AdminQQ不相同,则忽略本条消息不往下继续执行
+			# 	if txt[0] == '#':
+			# 		thread.start_new_thread(self.runCommand, (tuin, txt[1:].strip(), msgId))
+			# 		msgId += 1
 
-		# if txt[0:4] == 'exit':
-		# 	logging.info(self.Get('http://d.web2.qq.com/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), Referer))
-		# 	exit(0)
+			# if txt[0:4] == 'exit':
+			# 	logging.info(self.Get('http://d.web2.qq.com/channel/logout2?ids=&clientid={0}&psessionid={1}'.format(self.ClientID, self.PSessionID), Referer))
+			# 	exit(0)
 
-	#群消息
-	elif msgType == 'group_message': 
-		txt = combine_msg(msg['value']['content'])
-		logging.debug(txt)
+		#群消息
+		if msgType == 'group_message': 
+			txt = combine_msg(msg['value']['content'])
+			logging.debug(txt)
 
-		tuin = msg['value']['from_uin']
-		from_account = uin_to_account(tuin)
+			tuin = msg['value']['from_uin']
+			from_account = uin_to_account(tuin)
 
-		print "{0}:{1}".format(from_account,txt)
-		
+			# print "{0}:{1}".format(from_account,txt)
+			
 
-	#QQ号在另一个地方登陆,被挤下线
-	elif msgType == 'kick_message':
-		logging.error(msg['value']['reason'])
-		raise Exception, msg['value']['reason']#抛出异常,重新启动WebQQ,需重新扫描QRCode来完成登陆
-
+		#QQ号在另一个地方登陆,被挤下线
+		if msgType == 'kick_message':
+			logging.error(msg['value']['reason'])
+			raise Exception, msg['value']['reason']#抛出异常,重新启动WebQQ,需重新扫描QRCode来完成登陆
 
 def combine_msg(content):
 	msgTXT = ""
@@ -112,6 +126,7 @@ def combine_msg(content):
 		if type(part) == type(u'\u0000'):
 			msgTXT += part
 		elif len(part) > 1:
+			# 如果是图片
 			if part[0] == "offpic":
 				msgTXT += "[图片]"
 
@@ -128,6 +143,12 @@ def send_msg(tuin,content):
 
 	return rsp
 
+def thread_exist(tqq):
+	for t in ThreadList:
+		if t.tqq == tqq:
+			return t
+	return False
+
 # -----------------
 # 类声明
 # -----------------
@@ -135,12 +156,13 @@ def send_msg(tuin,content):
 class Login(HttpClient):
 	MaxTryTime = 5
 
+	logging.basicConfig(filename='Login.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
+
 
 	def __init__(self,vpath, qq=0):
 		global APPID,AdminQQ,PTWebQQ,VFWebQQ,PSessionID,msgId
 		self.VPath = vpath#QRCode保存路径
 		AdminQQ = int(qq)
-		logging.basicConfig(filename='qq.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
 		print "正在获取登陆页面"
 		self.initUrl = getReValue(self.Get(SmartQQUrl), r'\.src = "(.+?)"', 'Get Login Url Error.', 1)
 		html = self.Get(self.initUrl + '0')
@@ -164,6 +186,7 @@ class Login(HttpClient):
 			self.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(APPID), self.VPath)
 			print "登陆二维码下载成功，请扫描"
 			logging.info('[{0}] Get QRCode Picture Success.'.format(T))
+			print "下载二维码用时"+passTime()+"秒"
 
 
 			while True:
@@ -180,7 +203,7 @@ class Login(HttpClient):
 		if ret[1] != '0':
 			return
 		print "二维码已扫描，正在登陆"
-
+		passTime()
 		#删除QRCode文件
 		if os.path.exists(self.VPath):
 			os.remove(self.VPath)
@@ -214,6 +237,7 @@ class Login(HttpClient):
 
 		print "QQ号：{0} 登陆成功,用户名：{1}".format(ret['result']['uin'],tmpUserName)
 		logging.info('Login success')
+		print "登陆二维码用时"+passTime()+"秒"
 
 		msgId = int(random.uniform(20000, 50000))
 
@@ -276,12 +300,13 @@ class check_msg(threading.Thread):
 				msg_handler(ret['result'])
 				continue
 
+	#向服务器查询新消息
 	def check(self):
+		logging.basicConfig(filename='check.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
+
 		html = HttpClient_Ist.Post('http://d.web2.qq.com/channel/poll2', {
 			'r' : '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(PSessionID, PTWebQQ, ClientID)
 		}, Referer)
-
-		logging.info(html)
 
 		try:
 			ret = json.loads(html)
@@ -290,11 +315,55 @@ class check_msg(threading.Thread):
 			return ""
 		return ret
 
+class pmchat_thread(threading.Thread):
+
+
+	replys = ['对话激活，请输入第一项：',
+		'第一项输入完毕，输入2：',
+		'2输完，输3：',
+		'输完了',
+	]
+	inputs = []
+	# con = threading.Condition()
+	stage = 0
+	# newIp = ''
+
+	def __init__(self,tuin):
+		threading.Thread.__init__(self)
+		self.tuin = tuin
+		self.tqq = uin_to_account(tuin)
+		self.inputs = []
+		stage = 0
+		logging.basicConfig(filename=str(self.tqq)+'.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
+
+	def run(self):
+		while 1:
+			self.stage = 0
+			time.sleep(1800)
+
+	def reply(self,content):
+		send_msg(self.tuin,str(content))
+		logging.info("[Reply]:"+str(content))
+		print passTime()
+
+
+	def push(self,ipContent):
+		self.reply(self.replys[self.stage])
+		self.inputs.append(ipContent)
+		logging.info(str(self.tqq)+" :"+str(ipContent))
+		self.stage += 1
+		if self.stage == len(self.replys) :
+			self.reply(self.inputs)
+			self.stage = 0
+			self.inputs = []
+
 # -----------------
 # 主程序
 # -----------------
 
 if __name__ == "__main__":
+
+
 	vpath = './v.jpg'
 	qq = 0
 	if len(sys.argv) > 1:
@@ -303,6 +372,7 @@ if __name__ == "__main__":
 		qq = sys.argv[2]
 
 	try:
+		passTime()
 		qqLogin = Login(vpath, qq)
 	except Exception, e:
 		print e,Exception
@@ -312,9 +382,9 @@ if __name__ == "__main__":
 	t_check.start()
 
 	while 1:
-		if not t_check.isAlive():
-			exit(0)
-		time.sleep(1)
+		# if not t_check.isAlive():
+		# 	exit(0)
+		time.sleep(60)
 
 
 

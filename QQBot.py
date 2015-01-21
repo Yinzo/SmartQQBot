@@ -13,7 +13,10 @@ PTWebQQ = ''
 APPID = 0
 msgId = 0
 FriendList = {}
+GroupList = {}
 ThreadList = []
+GroupThreadList = []
+GroupWatchList = []
 PSessionID = ''
 Referer = 'http://d.web2.qq.com/proxy.html?v=20130916001&callback=1&id=2'
 SmartQQUrl = 'http://w.qq.com/login.html'
@@ -25,6 +28,8 @@ initTime = time.time()
 # -----------------
 # 方法声明
 # -----------------
+
+
 def passTime():
 	global initTime
 	rs = (time.time() - initTime)
@@ -52,8 +57,10 @@ def getReValue(html, rex, er, ex):
 def date_to_millis(d):
     return int(time.mktime(d.timetuple())) * 1000
 
+#查询QQ号，通常首次用时0.2s，以后基本不耗时
 def uin_to_account(tuin):
 	#如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
+	global FriendList
 	if not tuin in FriendList:
 		try:
 			info = json.loads(HttpClient_Ist.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, VFWebQQ), Referer))
@@ -69,12 +76,22 @@ def uin_to_account(tuin):
 	logging.info(FriendList)
 	return FriendList[tuin]
 
+def command_handler(inputText):
+	pattern = re.compile(r'^(group|) (\d+)$')
+	match = pattern.match(inputText)
+
+	if match.group(1) == 'group':
+		global GroupWatchList
+		GroupWatchList.append(str(match.group(2)))
+		print "calling func group :"+str(match.group(2))
+		print GroupWatchList
+
 def msg_handler(msgObj):
 	for msg in msgObj:
 		msgType = msg['poll_type']
 
 		#QQ私聊消息
-		if msgType == 'message':
+		if msgType == 'message' or msgType == 'sess_message':#私聊 or 临时对话
 			txt = combine_msg(msg['value']['content'])
 			logging.debug(txt)
 			tuin = msg['value']['from_uin']
@@ -82,7 +99,6 @@ def msg_handler(msgObj):
 
 			# print "{0}:{1}".format(from_account,txt)
 			targetThread = thread_exist(from_account)
-			passTime()
 			if targetThread:
 				targetThread.push(txt)
 			else:
@@ -105,11 +121,30 @@ def msg_handler(msgObj):
 
 		#群消息
 		if msgType == 'group_message': 
+			global GroupList,GroupWatchList
+			logging.info(msg)
 			txt = combine_msg(msg['value']['content'])
 			logging.debug(txt)
 
-			tuin = msg['value']['from_uin']
-			from_account = uin_to_account(tuin)
+			guin = msg['value']['from_uin']
+			gid = msg['value']['info_seq']
+			tuin = msg['value']['send_uin']
+			GroupList[guin] = gid
+			if str(gid) in GroupWatchList:
+				g_exist = group_thread_exist(gid)
+				if g_exist:
+					g_exist.handle(tuin,txt)
+				else:
+					tmpThread = group_thread(guin)
+					tmpThread.start()
+					GroupThreadList.append(tmpThread)
+					tmpThread.handle(tuin,txt)
+					print "群线程已生成"
+			else:
+				print str(gid)+"群没有被监控"
+				print GroupWatchList
+
+			# from_account = uin_to_account(tuin)
 
 			# print "{0}:{1}".format(from_account,txt)
 			
@@ -146,6 +181,12 @@ def send_msg(tuin,content):
 def thread_exist(tqq):
 	for t in ThreadList:
 		if t.tqq == tqq:
+			return t
+	return False
+
+def group_thread_exist(gid):
+	for t in GroupThreadList:
+		if t.gid == gid:
 			return t
 	return False
 
@@ -275,7 +316,7 @@ class check_msg(threading.Thread):
 				break
 			ret = self.check()
 			
-
+			logging.info(ret)
 			#POST数据有误
 			if ret['retcode'] == 100006:
 				break
@@ -334,7 +375,7 @@ class pmchat_thread(threading.Thread):
 		self.tqq = uin_to_account(tuin)
 		self.inputs = []
 		stage = 0
-		logging.basicConfig(filename=str(self.tqq)+'.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
+
 
 	def run(self):
 		while 1:
@@ -344,7 +385,6 @@ class pmchat_thread(threading.Thread):
 	def reply(self,content):
 		send_msg(self.tuin,str(content))
 		logging.info("[Reply]:"+str(content))
-		print passTime()
 
 
 	def push(self,ipContent):
@@ -356,6 +396,64 @@ class pmchat_thread(threading.Thread):
 			self.reply(self.inputs)
 			self.stage = 0
 			self.inputs = []
+
+class group_thread(threading.Thread):
+
+	replyList = {}
+
+	def __init__(self,guin):
+		threading.Thread.__init__(self)
+		self.guin = guin
+		self.gid = GroupList[guin]
+
+	def learn(self,key,value):
+		if str(key) in self.replyList:
+			self.replyList[key].append(value)
+		else:
+			self.replyList[key] = [value]
+
+		self.reply("学习成功！快对我说"+str(key)+"试试吧！")
+
+	def delete(self,key,value):
+		if str(key) in self.replyList and self.replyList[key].count(value):
+			self.replyList[key].remove(value)
+			self.reply("呜呜呜我再也不说"+str(value)+"了")
+		else:
+			self.reply("没找到你说的那句话哦")
+
+	def reply(self,content):
+
+
+		reqURL = "http://d.web2.qq.com/channel/send_qun_msg2"
+		data = (
+			('r', '{{"group_uin":{0},"face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, ClientID, msgId, PSessionID, content)),
+			('clientid', ClientID),
+			('psessionid', PSessionID)
+		)
+		rsp = HttpClient_Ist.Post(reqURL,data,Referer)
+		if rsp:
+			logging.info("[Reply]:"+str(content))
+		return rsp
+
+
+	def handle(self,send_uin,content):
+		pattern = re.compile(r'^(?:!|！)(learn|delete) {(.+)}{(.+)}')
+		match = pattern.match(content)
+		if match:
+			if match.group(1) == 'learn':
+				self.learn(str(match.group(2)),str(match.group(3)))
+				print self.replyList
+			if match.group(1) == 'delete':
+				self.delete(str(match.group(2)),str(match.group(3)))
+				print self.replyList
+
+		else:
+			for key in self.replyList:
+				if str(key) in content:
+					rd = random.randint(0, len(self.replyList[key])-1)
+					self.reply(self.replyList[key][rd])
+					print str(self.replyList[key][rd])
+					break
 
 # -----------------
 # 主程序
@@ -384,7 +482,8 @@ if __name__ == "__main__":
 	while 1:
 		# if not t_check.isAlive():
 		# 	exit(0)
-		time.sleep(60)
+		console_input = raw_input(">>")
+		command_handler(console_input)
 
 
 

@@ -77,14 +77,26 @@ def uin_to_account(tuin):
 	return FriendList[tuin]
 
 def command_handler(inputText):
+	global GroupWatchList
+
 	pattern = re.compile(r'^(group|) (\d+)$')
 	match = pattern.match(inputText)
 
-	if match.group(1) == 'group':
-		global GroupWatchList
+	if match and match.group(1) == 'group':
 		GroupWatchList.append(str(match.group(2)))
 		print "calling func group :"+str(match.group(2))
 		print GroupWatchList
+	else:
+		pattern = re.compile(r'^(g)(\d+) (learn|delete) (.+) (.+)')
+		match = pattern.match(inputText)
+
+		if match and str(match.group(3)) == 'learn' and group_thread_exist(match.group(2)):
+			group_thread_exist(match.group(2)).learn(str(match.group(4)),str(match.group(5)),False)
+
+		elif match and match.group(3) == 'delete' and group_thread_exist(match.group(2)):
+			group_thread_exist(match.group(2)).delete(str(match.group(4)),str(match.group(5)),False)
+
+
 
 def msg_handler(msgObj):
 	for msg in msgObj:
@@ -186,7 +198,7 @@ def thread_exist(tqq):
 
 def group_thread_exist(gid):
 	for t in GroupThreadList:
-		if t.gid == gid:
+		if str(t.gid) == str(gid):
 			return t
 	return False
 
@@ -398,28 +410,37 @@ class pmchat_thread(threading.Thread):
 			self.inputs = []
 
 class group_thread(threading.Thread):
-
+	last1 = ''
 	replyList = {}
 
 	def __init__(self,guin):
 		threading.Thread.__init__(self)
 		self.guin = guin
 		self.gid = GroupList[guin]
+		self.load()
+		if not os.path.isdir("./groupReplys"):
+			os.makedirs("./groupReplys")
 
-	def learn(self,key,value):
+	def learn(self,key,value,needreply=True):
 		if str(key) in self.replyList:
 			self.replyList[key].append(value)
 		else:
 			self.replyList[key] = [value]
 
-		self.reply("学习成功！快对我说"+str(key)+"试试吧！")
+		if needreply:
+			self.reply("学习成功！快对我说"+str(key)+"试试吧！")
+			self.save()
 
-	def delete(self,key,value):
+	def delete(self,key,value,needreply=True):
 		if str(key) in self.replyList and self.replyList[key].count(value):
 			self.replyList[key].remove(value)
-			self.reply("呜呜呜我再也不说"+str(value)+"了")
+			if needreply:
+				self.reply("呜呜呜我再也不说"+str(value)+"了")
+				self.save()
+
 		else:
-			self.reply("没找到你说的那句话哦")
+			if needreply:
+				self.reply("没找到你说的那句话哦")
 
 	def reply(self,content):
 
@@ -437,6 +458,7 @@ class group_thread(threading.Thread):
 
 
 	def handle(self,send_uin,content):
+
 		pattern = re.compile(r'^(?:!|！)(learn|delete) {(.+)}{(.+)}')
 		match = pattern.match(content)
 		if match:
@@ -448,12 +470,32 @@ class group_thread(threading.Thread):
 				print self.replyList
 
 		else:
-			for key in self.replyList:
-				if str(key) in content:
-					rd = random.randint(0, len(self.replyList[key])-1)
-					self.reply(self.replyList[key][rd])
-					print str(self.replyList[key][rd])
-					break
+			if self.last1 == str(content) and content !='' and content !=' ':
+					self.reply(content)
+					print "已复读：{"+str(content)+"}"
+			else:
+				for key in self.replyList:
+					if str(key) in content and self.replyList[key]:
+						rd = random.randint(0, len(self.replyList[key])-1)
+						self.reply(self.replyList[key][rd])
+						print str(self.replyList[key][rd])
+						break
+				
+		self.last1 = content
+
+	def save(self):
+		with open("groupReplys/"+str(self.gid)+".save","w+") as savefile:
+			savefile.write(json.dumps(self.replyList))
+	def load(self):
+		try:
+			with open("groupReplys/"+str(self.gid)+".save","r") as savefile:
+				saves = savefile.read()
+				if saves:
+					self.replyList = json.loads(saves)
+		except Exception, e:
+			print "读取存档出错",e,Exception
+
+
 
 # -----------------
 # 主程序
@@ -483,7 +525,11 @@ if __name__ == "__main__":
 		# if not t_check.isAlive():
 		# 	exit(0)
 		console_input = raw_input(">>")
-		command_handler(console_input)
+		try:
+			command_handler(console_input)
+		except e:
+			print "指令有误重新来",e
+
 
 
 

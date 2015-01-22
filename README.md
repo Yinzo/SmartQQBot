@@ -1,11 +1,15 @@
 SmartQQ-Bot 
 =========
-##该分支使用原代码的SmartQQ登陆代码，用于制作基于SmartQQ的自动机器人。
-[原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)](https://github.com/xqin/SmartQQ-for-Raspberry-Pi)
-基于 [SmartQQ](http://w.qq.com/) 编写, 登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码.
+***该分支使用登陆部分逻辑与代码参考了[原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)](https://github.com/xqin/SmartQQ-for-Raspberry-Pi)这一项目***，以此为基础制作了基于SmartQQ的自动机器人。
 
-关于自动获取 QRCode 图片的方法: 我采用方法是让程序将图片保存到自己的Web站点下,然后自己通过Web方式访问得到QRCode, 然后用手机扫描.
+登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码。
 
+##功能
++ 群聊学习功能，类似于小黄鸡，在群中通过发送```!learn {ha}{哈哈}```语句，则机器人检测到发言中包含“ha”时将自动回复“哈哈”。```!delete {ha}{哈哈}```可以删除该内容。学习内容会自动储存在
+
++ 群聊复读功能，检测到群聊中***连续两个***回复内容相同，将自动复读该内容1次。
+
++ 私聊问答功能，可以自定义机器人私聊时提出问题，并可储存对方的回复，一般用于自动问卷调查。
 
 
 ##原README

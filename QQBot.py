@@ -174,7 +174,7 @@ def combine_msg(content):
 			msgTXT += part
 		elif len(part) > 1:
 			# 如果是图片
-			if part[0] == "offpic":
+			if str(part[0]) == "offpic" or str(part[0]) == "cface":
 				msgTXT += "[图片]"
 
 	return msgTXT
@@ -412,6 +412,7 @@ class pmchat_thread(threading.Thread):
 class group_thread(threading.Thread):
 	last1 = ''
 	replyList = {}
+	followList = []
 
 	def __init__(self,guin):
 		threading.Thread.__init__(self)
@@ -453,6 +454,7 @@ class group_thread(threading.Thread):
 		)
 		rsp = HttpClient_Ist.Post(reqURL,data,Referer)
 		if rsp:
+			print rsp
 			logging.info("[Reply]:"+str(content))
 		return rsp
 
@@ -470,18 +472,48 @@ class group_thread(threading.Thread):
 				print self.replyList
 
 		else:
-			if self.last1 == str(content) and content !='' and content !=' ':
-					self.reply(content)
-					print "已复读：{"+str(content)+"}"
-			else:
-				for key in self.replyList:
-					if str(key) in content and self.replyList[key]:
-						rd = random.randint(0, len(self.replyList[key])-1)
-						self.reply(self.replyList[key][rd])
-						print str(self.replyList[key][rd])
-						break
-				
+			if not self.follow(send_uin,content):
+				if not self.tucao(content):
+					if not self.repeat(content):
+						pass
+
 		self.last1 = content
+
+	def tucao(self,content):
+		for key in self.replyList:
+			if str(key) in content and self.replyList[key]:
+				rd = random.randint(0, len(self.replyList[key])-1)
+				self.reply(self.replyList[key][rd])
+				print str(self.replyList[key][rd])
+				return True
+		return False
+
+	def repeat(self,content):
+		if self.last1 == str(content) and content !='' and content !=' ':
+			self.reply(content)
+			print "已复读：{"+str(content)+"}"
+			return True
+		return False
+
+	def follow(self,send_uin,content):
+		pattern = re.compile(r'^(?:!|！)(follow|unfollow) (\d+)')
+		match = pattern.match(content)
+		if match:
+			if match.group(1) == 'follow' and str(match.group(2)) not in self.followList:
+				self.followList.append(str(match.group(2)))
+				self.reply("正在关注"+str(match.group(2)))
+				return True
+			if match.group(1) == 'unfollow' and str(match.group(2)) in self.followList:
+				self.followList.remove(str(match.group(2)))
+				self.reply("我不关注"+str(match.group(2))+"了！")
+				return True
+		else:
+			if str(uin_to_account(send_uin)) in self.followList:
+				self.reply(content)
+				return True
+		return False
+
+
 
 	def save(self):
 		with open("groupReplys/"+str(self.gid)+".save","w+") as savefile:

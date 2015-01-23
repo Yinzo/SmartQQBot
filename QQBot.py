@@ -414,6 +414,9 @@ class group_thread(threading.Thread):
 	replyList = {}
 	followList = []
 
+	#属性
+	repeatPicture = False
+
 	def __init__(self,guin):
 		threading.Thread.__init__(self)
 		self.guin = guin
@@ -472,12 +475,23 @@ class group_thread(threading.Thread):
 				print self.replyList
 
 		else:
-			if not self.follow(send_uin,content):
-				if not self.tucao(content):
-					if not self.repeat(content):
-						pass
+			# if not self.follow(send_uin,content):
+			# 	if not self.tucao(content):
+			# 		if not self.repeat(content):
+			# 			if not self.callout(content):
+			# 				pass
 
-		self.last1 = content
+
+			if self.follow(send_uin,content):
+				return
+			if self.tucao(content):
+				return
+			if self.repeat(content):
+				return
+			if self.callout(content):
+				return
+			
+
 
 	def tucao(self,content):
 		for key in self.replyList:
@@ -490,9 +504,11 @@ class group_thread(threading.Thread):
 
 	def repeat(self,content):
 		if self.last1 == str(content) and content !='' and content !=' ':
-			self.reply(content)
-			print "已复读：{"+str(content)+"}"
-			return True
+			if self.repeatPicture or "[图片]" not in content :
+				self.reply(content)
+				print "已复读：{"+str(content)+"}"
+				return True
+		self.last1 = content
 		return False
 
 	def follow(self,send_uin,content):
@@ -527,6 +543,12 @@ class group_thread(threading.Thread):
 		except Exception, e:
 			print "读取存档出错",e,Exception
 
+	def callout(self,content):
+		if "智障机器人" in content:
+			self.reply("干嘛（；д）")
+			print str(self.gid) + "有人叫我"
+			return True
+		return False
 
 
 # -----------------

@@ -86,13 +86,15 @@ def uin_to_account(tuin):
 def command_handler(inputText):
     global GroupWatchList
 
-    pattern = re.compile(r'^(group|) (\d+)$')
+    pattern = re.compile(r'^(group|ungroup) (\d+)$')
     match = pattern.match(inputText)
 
     if match and match.group(1) == 'group':
         GroupWatchList.append(str(match.group(2)))
-        print "calling func group :" + str(match.group(2))
-        print GroupWatchList
+        print "当前群关注列表:",GroupWatchList
+    elif match and match.group(1) == 'ungroup':
+        GroupWatchList.remove(str(match.group(2)))
+        print "当前群关注列表:",GroupWatchList
     else:
         pattern = re.compile(r'^(g)(\d+) (learn|delete) (.+) (.+)')
         match = pattern.match(inputText)
@@ -158,8 +160,7 @@ def msg_handler(msgObj):
                     tmpThread.handle(tuin, txt)
                     print "群线程已生成"
             else:
-                print str(gid) + "群没有被监控"
-                print GroupWatchList
+                print str(gid) + "群有动态，但是没有被监控"
 
             # from_account = uin_to_account(tuin)
             # print "{0}:{1}".format(from_account, txt)
@@ -459,7 +460,7 @@ class group_thread(threading.Thread):
         )
         rsp = HttpClient_Ist.Post(reqURL, data, Referer)
         if rsp:
-            print rsp
+            print "[reply content]:",content,"[rsp]:",rsp
             logging.info("[Reply]:" + str(content))
         return rsp
 
@@ -509,16 +510,23 @@ class group_thread(threading.Thread):
         return False
 
     def follow(self, send_uin, content):
-        pattern = re.compile(r'^(?:!|！)(follow|unfollow) (\d+)')
+        pattern = re.compile(r'^(?:!|！)(follow|unfollow) (\d+|me)')
         match = pattern.match(content)
+
+        
+
         if match:
-            if match.group(1) == 'follow' and str(match.group(2)) not in self.followList:
-                self.followList.append(str(match.group(2)))
-                self.reply("正在关注" + str(match.group(2)))
+            target = str(match.group(2))
+            if target == 'me':
+                target = str(uin_to_account(send_uin))
+
+            if match.group(1) == 'follow' and target not in self.followList:
+                self.followList.append(target)
+                self.reply("正在关注" + target)
                 return True
-            if match.group(1) == 'unfollow' and str(match.group(2)) in self.followList:
-                self.followList.remove(str(match.group(2)))
-                self.reply("我不关注" + str(match.group(2)) + "了！")
+            if match.group(1) == 'unfollow' and target in self.followList:
+                self.followList.remove(target)
+                self.reply("我不关注" + target + "了！")
                 return True
         else:
             if str(uin_to_account(send_uin)) in self.followList:

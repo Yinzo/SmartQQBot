@@ -52,8 +52,8 @@ def getReValue(html, rex, er, ex):
     if v is None:
         logging.error(er)
 
-    if ex:
-        raise Exception, er
+        if ex:
+            raise Exception, er
         return ''
 
     return v.group(1)
@@ -287,7 +287,7 @@ class Login(HttpClient):
         ret = json.loads(html)
 
         if ret['retcode'] != 0:
-            return
+            returnx
 
         VFWebQQ = ret['result']['vfwebqq']
         PSessionID = ret['result']['psessionid']
@@ -541,7 +541,7 @@ class group_thread(threading.Thread):
 
     def callout(self, content):
         if "智障机器人" in content:
-            self.reply("干嘛（；д）")
+            self.reply("干嘛（‘·д·）")
             print str(self.gid) + "有人叫我"
             return True
         return False

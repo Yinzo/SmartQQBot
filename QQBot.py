@@ -188,7 +188,7 @@ def combine_msg(content):
 def send_msg(tuin, content):
     reqURL = "http://d.web2.qq.com/channel/send_buddy_msg2"
     data = (
-        ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(tuin, ClientID, msgId, PSessionID, content)),
+        ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(tuin, ClientID, msgId, PSessionID, str(content))),
         ('clientid', ClientID),
         ('psessionid', PSessionID)
     )
@@ -431,7 +431,7 @@ class group_thread(threading.Thread):
             os.makedirs("./groupReplys")
 
     def learn(self, key, value, needreply=True):
-        if str(key) in self.replyList:
+        if key in self.replyList:
             self.replyList[key].append(value)
         else:
             self.replyList[key] = [value]
@@ -441,7 +441,7 @@ class group_thread(threading.Thread):
             self.save()
 
     def delete(self, key, value, needreply=True):
-        if str(key) in self.replyList and self.replyList[key].count(value):
+        if key in self.replyList and self.replyList[key].count(value):
             self.replyList[key].remove(value)
             if needreply:
                 self.reply("呜呜呜我再也不说" + str(value) + "了")
@@ -454,10 +454,11 @@ class group_thread(threading.Thread):
     def reply(self, content):
         reqURL = "http://d.web2.qq.com/channel/send_qun_msg2"
         data = (
-            ('r', '{{"group_uin":{0},"face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, ClientID, msgId, PSessionID, content)),
+            ('r', '{{"group_uin":{0},"face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, ClientID, msgId, PSessionID, content.replace("\\","\\\\\\\\"))),
             ('clientid', ClientID),
             ('psessionid', PSessionID)
         )
+        logging.debug(data)
         rsp = HttpClient_Ist.Post(reqURL, data, Referer)
         if rsp:
             print "[reply content]:",content,"[rsp]:",rsp
@@ -469,10 +470,10 @@ class group_thread(threading.Thread):
         match = pattern.match(content)
         if match:
             if match.group(1) == 'learn':
-                self.learn(str(match.group(2)), str(match.group(3)))
+                self.learn(str(match.group(2)).decode('UTF-8'), str(match.group(3)).decode('UTF-8'))
                 print self.replyList
             if match.group(1) == 'delete':
-                self.delete(str(match.group(2)), str(match.group(3)))
+                self.delete(str(match.group(2)).decode('UTF-8'), str(match.group(3)).decode('UTF-8'))
                 print self.replyList
 
         else:

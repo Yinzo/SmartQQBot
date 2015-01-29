@@ -70,16 +70,16 @@ def uin_to_account(tuin):
     if tuin not in FriendList:
         try:
             info = json.loads(HttpClient_Ist.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, VFWebQQ), Referer))
-            logging.info(info)
+            logging.info("Get uin to account info:",info)
             if info['retcode'] != 0:
                 raise ValueError, info
             info = info['result']
             FriendList[tuin] = info['account']
 
         except Exception as e:
-            logging.debug(e)
+            logging.error(e)
 
-    logging.info(FriendList)
+    logging.info("Now Friend List:",FriendList)
     return FriendList[tuin]
 
 
@@ -113,7 +113,6 @@ def msg_handler(msgObj):
         # QQ私聊消息
         if msgType == 'message' or msgType == 'sess_message':  # 私聊 or 临时对话
             txt = combine_msg(msg['value']['content'])
-            logging.debug(txt)
             tuin = msg['value']['from_uin']
             from_account = uin_to_account(tuin)
 
@@ -141,9 +140,7 @@ def msg_handler(msgObj):
         # 群消息
         if msgType == 'group_message':
             global GroupList, GroupWatchList
-            logging.info(msg)
             txt = combine_msg(msg['value']['content'])
-            logging.debug(txt)
 
             guin = msg['value']['from_uin']
             gid = msg['value']['info_seq']
@@ -258,7 +255,7 @@ class Login(HttpClient):
             if ret[1] == '0' or T > self.MaxTryTime:
                 break
 
-        logging.debug(ret)
+        logging.info("Login message:",ret)
         if ret[1] != '0':
             return
         print "二维码已扫描，正在登陆"
@@ -284,7 +281,6 @@ class Login(HttpClient):
             'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(PTWebQQ, ClientID, PSessionID)
         }, Referer)
 
-        logging.debug(html)
         ret = json.loads(html)
 
         if ret['retcode'] != 0:
@@ -333,7 +329,7 @@ class check_msg(threading.Thread):
                 break
             ret = self.check()
 
-            logging.info(ret)
+            logging.info("Message pack :",ret)
             # POST数据有误
             if ret['retcode'] == 100006:
                 break
@@ -369,7 +365,7 @@ class check_msg(threading.Thread):
         try:
             ret = json.loads(html)
         except Exception as e:
-            logging.debug(e)
+            logging.error(e)
             return ""
         return ret
 
@@ -401,7 +397,7 @@ class pmchat_thread(threading.Thread):
 
     def reply(self, content):
         send_msg(self.tuin, str(content))
-        logging.info("[Reply]:" + str(content))
+        logging.info("Reply to ",str(self.tqq),":" + str(content))
 
     def push(self, ipContent):
         self.reply(self.replys[self.stage])
@@ -458,11 +454,11 @@ class group_thread(threading.Thread):
             ('clientid', ClientID),
             ('psessionid', PSessionID)
         )
-        logging.debug(data)
+        logging.info("Reply data:",data)
         rsp = HttpClient_Ist.Post(reqURL, data, Referer)
         if rsp:
             print "[reply content]:",content,"[rsp]:",rsp
-            logging.info("[Reply]:" + str(content))
+            logging.info("[Reply to group",str(self.gid),"]:" + str(content))
         return rsp
 
     def handle(self, send_uin, content):

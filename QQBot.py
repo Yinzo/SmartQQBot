@@ -284,7 +284,7 @@ class Login(HttpClient):
         ret = json.loads(html)
 
         if ret['retcode'] != 0:
-            returnx
+            return
 
         VFWebQQ = ret['result']['vfwebqq']
         PSessionID = ret['result']['psessionid']
@@ -367,7 +367,13 @@ class check_msg(threading.Thread):
         except Exception as e:
             logging.error(e)
             return ""
-        return ret
+
+        testDict = {'':''}
+        if type(ret) == type(testDict):
+            return ret
+        else:
+            print "Check error occured, retrying."
+            check(self)
 
 
 class pmchat_thread(threading.Thread):

@@ -34,6 +34,9 @@ AdminQQ = '0'
 
 initTime = time.time()
 
+
+logging.basicConfig(filename='Login.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
+
 # -----------------
 # 方法声明
 # -----------------
@@ -70,7 +73,7 @@ def uin_to_account(tuin):
     if tuin not in FriendList:
         try:
             info = json.loads(HttpClient_Ist.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, VFWebQQ), Referer))
-            logging.info("Get uin to account info:",info)
+            logging.info("Get uin to account info:" + info)
             if info['retcode'] != 0:
                 raise ValueError, info
             info = info['result']
@@ -79,7 +82,7 @@ def uin_to_account(tuin):
         except Exception as e:
             logging.error(e)
 
-    logging.info("Now Friend List:",FriendList)
+    logging.info("Now FriendList:" + str(FriendList))
     return FriendList[tuin]
 
 
@@ -91,10 +94,10 @@ def command_handler(inputText):
 
     if match and match.group(1) == 'group':
         GroupWatchList.append(str(match.group(2)))
-        print "当前群关注列表:",GroupWatchList
+        print "当前群关注列表:", GroupWatchList
     elif match and match.group(1) == 'ungroup':
         GroupWatchList.remove(str(match.group(2)))
-        print "当前群关注列表:",GroupWatchList
+        print "当前群关注列表:", GroupWatchList
     else:
         pattern = re.compile(r'^(g)(\d+) (learn|delete) (.+) (.+)')
         match = pattern.match(inputText)
@@ -214,7 +217,6 @@ def group_thread_exist(gid):
 
 class Login(HttpClient):
     MaxTryTime = 5
-    logging.basicConfig(filename='Login.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
 
     def __init__(self, vpath, qq=0):
         global APPID, AdminQQ, PTWebQQ, VFWebQQ, PSessionID, msgId
@@ -255,7 +257,7 @@ class Login(HttpClient):
             if ret[1] == '0' or T > self.MaxTryTime:
                 break
 
-        logging.info("Login message:",ret)
+        logging.info(ret)
         if ret[1] != '0':
             return
         print "二维码已扫描，正在登陆"
@@ -280,7 +282,6 @@ class Login(HttpClient):
         html = self.Post('http://d.web2.qq.com/channel/login2', {
             'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(PTWebQQ, ClientID, PSessionID)
         }, Referer)
-
         ret = json.loads(html)
 
         if ret['retcode'] != 0:
@@ -329,15 +330,16 @@ class check_msg(threading.Thread):
                 break
             ret = self.check()
 
-            logging.info("Message pack :",ret)
-            # POST数据有误
-            if ret['retcode'] == 100006:
-                break
+            # logging.info(ret)
 
             # 返回数据有误
             if ret == "":
                 E += 1
                 continue
+
+            # POST数据有误
+            if ret['retcode'] == 100006:
+                break
 
             # 无消息
             if ret['retcode'] == 102:
@@ -354,26 +356,23 @@ class check_msg(threading.Thread):
                 msg_handler(ret['result'])
                 continue
 
+        print "轮询错误超过五次"
+
     # 向服务器查询新消息
     def check(self):
-        logging.basicConfig(filename='check.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
 
         html = HttpClient_Ist.Post('http://d.web2.qq.com/channel/poll2', {
             'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(PSessionID, PTWebQQ, ClientID)
         }, Referer)
-
+        logging.info(html)
         try:
             ret = json.loads(html)
         except Exception as e:
             logging.error(e)
-            return ""
-
-        testDict = {'':''}
-        if type(ret) == type(testDict):
-            return ret
-        else:
             print "Check error occured, retrying."
-            check(self)
+            return self.check()
+
+        return ret
 
 
 class pmchat_thread(threading.Thread):
@@ -403,7 +402,7 @@ class pmchat_thread(threading.Thread):
 
     def reply(self, content):
         send_msg(self.tuin, str(content))
-        logging.info("Reply to ",str(self.tqq),":" + str(content))
+        logging.info("Reply to " + str(self.tqq) + ":" + str(content))
 
     def push(self, ipContent):
         self.reply(self.replys[self.stage])
@@ -456,15 +455,15 @@ class group_thread(threading.Thread):
     def reply(self, content):
         reqURL = "http://d.web2.qq.com/channel/send_qun_msg2"
         data = (
-            ('r', '{{"group_uin":{0},"face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, ClientID, msgId, PSessionID, content.replace("\\","\\\\\\\\"))),
+            ('r', '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, ClientID, msgId, PSessionID, content.replace("\\", "\\\\\\\\"))),
             ('clientid', ClientID),
             ('psessionid', PSessionID)
         )
-        logging.info("Reply data:",data)
+        logging.info(data)
         rsp = HttpClient_Ist.Post(reqURL, data, Referer)
         if rsp:
-            print "[reply content]:",content,"[rsp]:",rsp
-            logging.info("[Reply to group",str(self.gid),"]:" + str(content))
+            print "[reply content]:", content, "[rsp]:", rsp
+            logging.info("[Reply to group" + str(self.gid) + "]:" + str(content))
         return rsp
 
     def handle(self, send_uin, content):
@@ -516,8 +515,6 @@ class group_thread(threading.Thread):
         pattern = re.compile(r'^(?:!|！)(follow|unfollow) (\d+|me)')
         match = pattern.match(content)
 
-        
-
         if match:
             target = str(match.group(2))
             if target == 'me':
@@ -563,7 +560,6 @@ class group_thread(threading.Thread):
 # -----------------
 
 if __name__ == "__main__":
-
     vpath = './v.jpg'
     qq = 0
     if len(sys.argv) > 1:
@@ -575,7 +571,7 @@ if __name__ == "__main__":
         pass_time()
         qqLogin = Login(vpath, qq)
     except Exception, e:
-        print e, Exception
+        print e
 
     t_check = check_msg()
     t_check.setDaemon(True)

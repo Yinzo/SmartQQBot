@@ -144,20 +144,20 @@ def msg_handler(msgObj):
         if msgType == 'group_message':
             global GroupList, GroupWatchList
             txt = combine_msg(msg['value']['content'])
-
             guin = msg['value']['from_uin']
             gid = msg['value']['info_seq']
             tuin = msg['value']['send_uin']
+            seq = msg['value']['seq']
             GroupList[guin] = gid
             if str(gid) in GroupWatchList:
                 g_exist = group_thread_exist(gid)
                 if g_exist:
-                    g_exist.handle(tuin, txt)
+                    g_exist.handle(tuin, txt, seq)
                 else:
                     tmpThread = group_thread(guin)
                     tmpThread.start()
                     GroupThreadList.append(tmpThread)
-                    tmpThread.handle(tuin, txt)
+                    tmpThread.handle(tuin, txt, seq)
                     print "群线程已生成"
             else:
                 print str(gid) + "群有动态，但是没有被监控"
@@ -279,10 +279,18 @@ class Login(HttpClient):
         PTWebQQ = self.getCookie('ptwebqq')
 
         logging.info('PTWebQQ: {0}'.format(PTWebQQ))
-        html = self.Post('http://d.web2.qq.com/channel/login2', {
-            'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(PTWebQQ, ClientID, PSessionID)
-        }, Referer)
-        ret = json.loads(html)
+
+        LoginError = 1
+        while LoginError > 0:
+            try:
+                html = self.Post('http://d.web2.qq.com/channel/login2', {
+                    'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(PTWebQQ, ClientID, PSessionID)
+                }, Referer)
+                ret = json.loads(html)
+                LoginError = 0
+            except:
+                LoginError += 1
+                print "登录失败，正在重试"
 
         if ret['retcode'] != 0:
             return
@@ -370,7 +378,7 @@ class check_msg(threading.Thread):
         html = HttpClient_Ist.Post('http://d.web2.qq.com/channel/poll2', {
             'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(PSessionID, PTWebQQ, ClientID)
         }, Referer)
-        logging.info(html)
+        logging.info("Check html: " + str(html))
         try:
             ret = json.loads(html)
         except Exception as e:
@@ -423,6 +431,7 @@ class pmchat_thread(threading.Thread):
 
 class group_thread(threading.Thread):
     last1 = ''
+    lastseq = 0
     replyList = {}
     followList = []
 
@@ -465,39 +474,44 @@ class group_thread(threading.Thread):
             ('clientid', ClientID),
             ('psessionid', PSessionID)
         )
-        logging.info(data)
+        logging.info("Reply package: " + str(data))
         rsp = HttpClient_Ist.Post(reqURL, data, Referer)
         if rsp:
             print "[reply content]:", content, "[rsp]:", rsp
-            logging.info("[Reply to group" + str(self.gid) + "]:" + str(content))
+            logging.info("[Reply to group " + str(self.gid) + "]:" + str(content))
         return rsp
 
-    def handle(self, send_uin, content):
-        pattern = re.compile(r'^(?:!|！)(learn|delete) {(.+)}{(.+)}')
-        match = pattern.match(content)
-        if match:
-            if match.group(1) == 'learn':
-                self.learn(str(match.group(2)).decode('UTF-8'), str(match.group(3)).decode('UTF-8'))
-                print self.replyList
-            if match.group(1) == 'delete':
-                self.delete(str(match.group(2)).decode('UTF-8'), str(match.group(3)).decode('UTF-8'))
-                print self.replyList
+    def handle(self, send_uin, content, seq):
+        # 避免重复处理相同信息
+        if seq != self.lastseq:
+            pattern = re.compile(r'^(?:!|！)(learn|delete) {(.+)}{(.+)}')
+            match = pattern.match(content)
+            if match:
+                if match.group(1) == 'learn':
+                    self.learn(str(match.group(2)).decode('UTF-8'), str(match.group(3)).decode('UTF-8'))
+                    print self.replyList
+                if match.group(1) == 'delete':
+                    self.delete(str(match.group(2)).decode('UTF-8'), str(match.group(3)).decode('UTF-8'))
+                    print self.replyList
 
+            else:
+                # if not self.follow(send_uin, content):
+                #     if not self.tucao(content):
+                #         if not self.repeat(content):
+                #             if not self.callout(content):
+                #                 pass
+
+                if self.follow(send_uin, content):
+                    return
+                if self.tucao(content):
+                    return
+                if self.repeat(content):
+                    return
+                if self.callout(content):
+                    return
         else:
-            # if not self.follow(send_uin, content):
-            #     if not self.tucao(content):
-            #         if not self.repeat(content):
-            #             if not self.callout(content):
-            #                 pass
-
-            if self.follow(send_uin, content):
-                return
-            if self.tucao(content):
-                return
-            if self.repeat(content):
-                return
-            if self.callout(content):
-                return
+            print "message seq repeat detected."
+        self.lastseq = seq
 
     def tucao(self, content):
         for key in self.replyList:
@@ -515,6 +529,7 @@ class group_thread(threading.Thread):
                 print "已复读：{" + str(content) + "}"
                 return True
         self.last1 = content
+        
         return False
 
     def follow(self, send_uin, content):

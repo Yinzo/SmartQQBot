@@ -328,8 +328,11 @@ class check_msg(threading.Thread):
         while 1:
             if E > 5:
                 break
-            ret = self.check()
-
+            try:
+                ret = self.check()
+            except:
+                E += 1
+                continue
             # logging.info(ret)
 
             # 返回数据有误
@@ -343,17 +346,20 @@ class check_msg(threading.Thread):
 
             # 无消息
             if ret['retcode'] == 102:
+                E = 0
                 continue
 
             # 更新PTWebQQ值
             if ret['retcode'] == 116:
                 PTWebQQ = ret['p']
+                E = 0
                 continue
 
             # 收到消息
             if ret['retcode'] == 0:
                 # 信息分发
                 msg_handler(ret['result'])
+                E = 0
                 continue
 
         print "轮询错误超过五次"

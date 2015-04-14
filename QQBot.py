@@ -73,7 +73,7 @@ def uin_to_account(tuin):
     if tuin not in FriendList:
         try:
             info = json.loads(HttpClient_Ist.Get('http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(tuin, VFWebQQ), Referer))
-            logging.info("Get uin to account info:" + info)
+            logging.info("Get uin to account info:" + str(info))
             if info['retcode'] != 0:
                 raise ValueError, info
             info = info['result']

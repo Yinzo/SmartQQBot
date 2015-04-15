@@ -57,6 +57,8 @@ def getReValue(html, rex, er, ex):
 
         if ex:
             raise Exception, er
+        else:
+            print er
         return ''
 
     return v.group(1)
@@ -380,7 +382,7 @@ class check_msg(threading.Thread):
         }, Referer)
         logging.info("Check html: " + str(html))
         try:
-            ret = json.loads(html)
+            ret = json.loads(html) 
         except Exception as e:
             logging.error(e)
             print "Check error occured, retrying."

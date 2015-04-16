@@ -120,13 +120,30 @@ def msg_handler(msgObj):
             txt = combine_msg(msg['value']['content'])
             tuin = msg['value']['from_uin']
             from_account = uin_to_account(tuin)
-
+            isSess = 0
+            group_sig = ''
+            service_type = ''
             # print "{0}:{1}".format(from_account, txt)
             targetThread = thread_exist(from_account)
             if targetThread:
                 targetThread.push(txt)
             else:
-                tmpThread = pmchat_thread(tuin)
+                if msgType == 'sess_message':
+                    isSess = 1
+                    service_type = msg['value']['service_type']
+                    myid = msg['value']['id']
+                    ts = time.time()
+                    while ts < 1000000000000:
+                        ts = ts * 10
+                    ts = int(ts)
+                    info = json.loads(HttpClient_Ist.Get('http://d.web2.qq.com/channel/get_c2cmsg_sig2?id={0}&to_uin={1}&clientid={2}&psessionid={3}&service_type={4}&t={5}'.format(myid, tuin, ClientID, PSessionID, service_type, ts), Referer))
+                    logging.info("Getting group sig :" + str(info))
+                    if info['retcode'] != 0:
+                        raise ValueError, info
+                    info = info['result']
+                    group_sig = info['value']
+                    logging.info("Group sig: " + str(group_sig))
+                tmpThread = pmchat_thread(tuin, service_type, group_sig, isSess)
                 tmpThread.start()
                 ThreadList.append(tmpThread)
                 tmpThread.push(txt)
@@ -187,16 +204,42 @@ def combine_msg(content):
     return msgTXT
 
 
-def send_msg(tuin, content):
-    reqURL = "http://d.web2.qq.com/channel/send_buddy_msg2"
-    data = (
-        ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(tuin, ClientID, msgId, PSessionID, str(content))),
-        ('clientid', ClientID),
-        ('psessionid', PSessionID)
-    )
-    rsp = HttpClient_Ist.Post(reqURL, data, Referer)
+def send_msg(tuin, content, service_type, group_sig, isSess, failTimes=0):
+    lastFailTimes = failTimes
+    try:
+        if isSess:
+            reqURL = "http://d.web2.qq.com/channel/send_sess_msg2"
+            data = (
+                ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(tuin, ClientID, msgId, PSessionID, str(content), group_sig, service_type)),
+                ('clientid', ClientID),
+                ('psessionid', PSessionID),
+                ('group_sig', group_sig),
+                ('service_type', service_type)
+            )
 
-    return rsp
+        else:
+            reqURL = "http://d.web2.qq.com/channel/send_buddy_msg2"
+            data = (
+                ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(tuin, ClientID, msgId, PSessionID, str(content))),
+                ('clientid', ClientID),
+                ('psessionid', PSessionID)
+            )
+
+        rsp = HttpClient_Ist.Post(reqURL, data, Referer)
+        rspp = json.loads(rsp)
+        if rspp['retcode'] != 0:
+            logging.error("reply pmchat error"+str(rspp['retcode']))
+        return rspp
+    except:
+        if lastFailTimes < 5:
+            logging.error("Response Error.Wait for 2s and Retrying."+str(lastFailTimes))
+            logging.info(rsp)
+            lastFailTimes += 1
+            time.sleep(2)
+            send_msg(tuin, content, service_type, group_sig, isSess, lastFailTimes)
+        else:
+            logging.error("Response Error over 5 times.Exit.")
+            raise ValueError, rsp
 
 
 def thread_exist(tqq):
@@ -382,7 +425,7 @@ class check_msg(threading.Thread):
         }, Referer)
         logging.info("Check html: " + str(html))
         try:
-            ret = json.loads(html) 
+            ret = json.loads(html)
         except Exception as e:
             logging.error(e)
             print "Check error occured, retrying."
@@ -404,12 +447,15 @@ class pmchat_thread(threading.Thread):
     stage = 0
     # newIp = ''
 
-    def __init__(self, tuin):
+    def __init__(self, tuin, service_type, group_sig, isSess):
         threading.Thread.__init__(self)
         self.tuin = tuin
         self.tqq = uin_to_account(tuin)
         self.inputs = []
-        stage = 0
+        self.stage = 0
+        self.isSess = isSess
+        self.service_type = service_type
+        self.group_sig = group_sig
 
     def run(self):
         while 1:
@@ -417,7 +463,7 @@ class pmchat_thread(threading.Thread):
             time.sleep(1800)
 
     def reply(self, content):
-        send_msg(self.tuin, str(content))
+        send_msg(self.tuin, str(content), self.service_type, self.group_sig, self.isSess)
         logging.info("Reply to " + str(self.tqq) + ":" + str(content))
 
     def push(self, ipContent):

@@ -119,6 +119,7 @@ def msg_handler(msgObj):
         if msgType == 'message' or msgType == 'sess_message':  # 私聊 or 临时对话
             txt = combine_msg(msg['value']['content'])
             tuin = msg['value']['from_uin']
+            msgid = msg['value']['msg_id2']
             from_account = uin_to_account(tuin)
             isSess = 0
             group_sig = ''
@@ -126,7 +127,7 @@ def msg_handler(msgObj):
             # print "{0}:{1}".format(from_account, txt)
             targetThread = thread_exist(from_account)
             if targetThread:
-                targetThread.push(txt)
+                targetThread.push(txt, msgid)
             else:
                 if msgType == 'sess_message':
                     isSess = 1
@@ -146,7 +147,7 @@ def msg_handler(msgObj):
                 tmpThread = pmchat_thread(tuin, service_type, group_sig, isSess)
                 tmpThread.start()
                 ThreadList.append(tmpThread)
-                tmpThread.push(txt)
+                tmpThread.push(txt, msgid)
 
             # print "{0}:{1}".format(self.FriendList.get(tuin, 0), txt)
 
@@ -456,6 +457,7 @@ class pmchat_thread(threading.Thread):
         self.isSess = isSess
         self.service_type = service_type
         self.group_sig = group_sig
+        self.lastMsgId = 0
 
     def run(self):
         while 1:
@@ -466,15 +468,19 @@ class pmchat_thread(threading.Thread):
         send_msg(self.tuin, str(content), self.service_type, self.group_sig, self.isSess)
         logging.info("Reply to " + str(self.tqq) + ":" + str(content))
 
-    def push(self, ipContent):
-        self.reply(self.replys[self.stage])
-        self.inputs.append(ipContent)
-        logging.info(str(self.tqq) + " :" + str(ipContent))
-        self.stage += 1
-        if self.stage == len(self.replys):
-            self.reply(self.inputs)
-            self.stage = 0
-            self.inputs = []
+    def push(self, ipContent, msgid):
+        if msgid != self.lastMsgId:
+            self.reply(self.replys[self.stage])
+            self.inputs.append(ipContent)
+            logging.info(str(self.tqq) + " :" + str(ipContent))
+            self.stage += 1
+            if self.stage == len(self.replys):
+                self.reply(self.inputs)
+                self.stage = 0
+                self.inputs = []
+        else:
+            logging.info("pm message repeat detected.")
+        self.lastMsgId = msgid
 
 
 class group_thread(threading.Thread):

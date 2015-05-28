@@ -34,20 +34,17 @@ AdminQQ = '0'
 
 initTime = time.time()
 
-
 logging.basicConfig(filename='Login.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
 
 # -----------------
 # 方法声明
 # -----------------
 
-
 def pass_time():
     global initTime
     rs = (time.time() - initTime)
     initTime = time.time()
     return str(round(rs, 3))
-
 
 def getReValue(html, rex, er, ex):
     v = re.search(rex, html)
@@ -63,10 +60,8 @@ def getReValue(html, rex, er, ex):
 
     return v.group(1)
 
-
 def date_to_millis(d):
     return int(time.mktime(d.timetuple())) * 1000
-
 
 # 查询QQ号，通常首次用时0.2s，以后基本不耗时
 def uin_to_account(tuin):
@@ -86,7 +81,6 @@ def uin_to_account(tuin):
 
     logging.info("Now FriendList:" + str(FriendList))
     return FriendList[tuin]
-
 
 def command_handler(inputText):
     global GroupWatchList
@@ -109,7 +103,6 @@ def command_handler(inputText):
 
         elif match and match.group(3) == 'delete' and group_thread_exist(match.group(2)):
             group_thread_exist(match.group(2)).delete(str(match.group(4)), str(match.group(5)), False)
-
 
 def msg_handler(msgObj):
     for msg in msgObj:
@@ -172,6 +165,7 @@ def msg_handler(msgObj):
             if str(gid) in GroupWatchList:
                 g_exist = group_thread_exist(gid)
                 if g_exist:
+                    print "群(%s)的消息: %s" %(str(gid), txt)
                     g_exist.handle(tuin, txt, seq)
                 else:
                     tmpThread = group_thread(guin)
@@ -180,7 +174,8 @@ def msg_handler(msgObj):
                     tmpThread.handle(tuin, txt, seq)
                     print "群线程已生成"
             else:
-                print str(gid) + "群有动态，但是没有被监控"
+                    #print str(gid) + "群有动态，但是没有被监控"
+                    pass
 
             # from_account = uin_to_account(tuin)
             # print "{0}:{1}".format(from_account, txt)
@@ -189,7 +184,6 @@ def msg_handler(msgObj):
         if msgType == 'kick_message':
             logging.error(msg['value']['reason'])
             raise Exception, msg['value']['reason']  # 抛出异常, 重新启动WebQQ, 需重新扫描QRCode来完成登陆
-
 
 def combine_msg(content):
     msgTXT = ""
@@ -203,7 +197,6 @@ def combine_msg(content):
                 msgTXT += "[图片]"
 
     return msgTXT
-
 
 def send_msg(tuin, content, service_type, group_sig, isSess, failTimes=0):
     lastFailTimes = failTimes
@@ -242,13 +235,11 @@ def send_msg(tuin, content, service_type, group_sig, isSess, failTimes=0):
             logging.error("Response Error over 5 times.Exit.")
             raise ValueError, rsp
 
-
 def thread_exist(tqq):
     for t in ThreadList:
         if t.tqq == tqq:
             return t
     return False
-
 
 def group_thread_exist(gid):
     for t in GroupThreadList:
@@ -259,7 +250,6 @@ def group_thread_exist(gid):
 # -----------------
 # 类声明
 # -----------------
-
 
 class Login(HttpClient):
     MaxTryTime = 5
@@ -610,12 +600,12 @@ class group_thread(threading.Thread):
         return False
 
     def save(self):
-        with open("groupReplys/" + str(self.gid) + ".save", "w+") as savefile:
+        with open("./groupReplys/" + str(self.gid) + ".save", "w+") as savefile:
             savefile.write(json.dumps(self.replyList))
 
     def load(self):
         try:
-            with open("groupReplys/" + str(self.gid) + ".save", "r") as savefile:
+            with open("./groupReplys/" + str(self.gid) + ".save", "r") as savefile:
                 saves = savefile.read()
                 if saves:
                     self.replyList = json.loads(saves)

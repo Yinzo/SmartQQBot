@@ -643,10 +643,18 @@ if __name__ == "__main__":
     t_check.start()
 
     while 1:
-        # if not t_check.isAlive():
-        #     exit(0)
-        console_input = raw_input(">>")
-        try:
-            command_handler(console_input)
-        except e:
-            print "指令有误重新来", e
+        tmpList = []
+        if not os.path.isdir("./config"):
+            os.mkdir("./config")
+            print "已建立config文件夹"
+        if not os.path.exists("./config/groupCheckList"):
+            open("./config/groupCheckList", "w")
+            print "已建立群关注列表文件groupCheckList"
+
+        with open("./config/groupCheckList") as groupListFile:
+            for group in groupListFile:
+                tmpList.append(str(int(group)))
+            if GroupWatchList != tmpList:
+                GroupWatchList = tmpList
+                print "当前群关注列表:", GroupWatchList
+        time.sleep(5)

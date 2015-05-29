@@ -9,7 +9,7 @@ import datetime
 import time
 import threading
 import logging
-
+import ConfigParser
 from HttpClient import HttpClient
 
 reload(sys)
@@ -36,6 +36,29 @@ initTime = time.time()
 
 logging.basicConfig(filename='Login.log', level=logging.DEBUG, format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', datefmt='%a, %d %b %Y %H:%M:%S')
 
+conf = ConfigParser.ConfigParser()
+
+if not os.path.isdir("./config"):
+    os.mkdir("./config")
+    print "已建立config文件夹"
+if not os.path.exists("./config/QQBot_default.conf"):
+    open("./config/groupCheckList", "w")
+    print "已建立配置文件QQBot_default.conf"
+else:
+    conf.read('./config/QQBot_default.conf')
+    print "读取QQBot_default.conf配置"
+
+
+# pm config set
+QA_activated = bool(conf.getint("pm", "QA_module_activated"))
+
+# group config set
+tucao_activated = bool(conf.getint("group", "tucao_module_activated"))
+repeat_activated = bool(conf.getint("group", "repeat_module_activated"))
+follow_activated = bool(conf.getint("group", "follow_module_activated"))
+callout_activated = bool(conf.getint("group", "callout_module_activated"))
+
+
 # -----------------
 # 方法声明
 # -----------------
@@ -45,6 +68,7 @@ def pass_time():
     rs = (time.time() - initTime)
     initTime = time.time()
     return str(round(rs, 3))
+
 
 def getReValue(html, rex, er, ex):
     v = re.search(rex, html)
@@ -60,8 +84,10 @@ def getReValue(html, rex, er, ex):
 
     return v.group(1)
 
+
 def date_to_millis(d):
     return int(time.mktime(d.timetuple())) * 1000
+
 
 # 查询QQ号，通常首次用时0.2s，以后基本不耗时
 def uin_to_account(tuin):
@@ -165,7 +191,7 @@ def msg_handler(msgObj):
             if str(gid) in GroupWatchList:
                 g_exist = group_thread_exist(gid)
                 if g_exist:
-                    print "群(%s)的消息: %s" %(str(gid), txt)
+                    print "群(%s)的消息: %s" % (str(gid), txt)
                     g_exist.handle(tuin, txt, seq)
                 else:
                     tmpThread = group_thread(guin)
@@ -185,6 +211,7 @@ def msg_handler(msgObj):
             logging.error(msg['value']['reason'])
             raise Exception, msg['value']['reason']  # 抛出异常, 重新启动WebQQ, 需重新扫描QRCode来完成登陆
 
+
 def combine_msg(content):
     msgTXT = ""
     for part in content:
@@ -197,6 +224,7 @@ def combine_msg(content):
                 msgTXT += "[图片]"
 
     return msgTXT
+
 
 def send_msg(tuin, content, service_type, group_sig, isSess, failTimes=0):
     lastFailTimes = failTimes
@@ -235,11 +263,13 @@ def send_msg(tuin, content, service_type, group_sig, isSess, failTimes=0):
             logging.error("Response Error over 5 times.Exit.")
             raise ValueError, rsp
 
+
 def thread_exist(tqq):
     for t in ThreadList:
         if t.tqq == tqq:
             return t
     return False
+
 
 def group_thread_exist(gid):
     for t in GroupThreadList:
@@ -250,6 +280,7 @@ def group_thread_exist(gid):
 # -----------------
 # 类声明
 # -----------------
+
 
 class Login(HttpClient):
     MaxTryTime = 5
@@ -459,6 +490,9 @@ class pmchat_thread(threading.Thread):
         logging.info("Reply to " + str(self.tqq) + ":" + str(content))
 
     def push(self, ipContent, msgid):
+        if not QA_activated:
+            return False
+
         if msgid != self.lastMsgId:
             self.reply(self.replys[self.stage])
             self.inputs.append(ipContent)
@@ -491,6 +525,9 @@ class group_thread(threading.Thread):
             os.makedirs("./groupReplys")
 
     def learn(self, key, value, needreply=True):
+        if not tucao_activated:
+            return False
+
         if key in self.replyList:
             self.replyList[key].append(value)
         else:
@@ -501,6 +538,9 @@ class group_thread(threading.Thread):
             self.save()
 
     def delete(self, key, value, needreply=True):
+        if not tucao_activated:
+            return False
+
         if key in self.replyList and self.replyList[key].count(value):
             self.replyList[key].remove(value)
             if needreply:
@@ -512,12 +552,15 @@ class group_thread(threading.Thread):
                 self.reply("没找到你说的那句话哦")
 
     def reply(self, content):
+        fix_content = str(content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
+
         reqURL = "http://d.web2.qq.com/channel/send_qun_msg2"
         data = (
-            ('r', '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, ClientID, msgId, PSessionID, content.replace("\\", "\\\\\\\\"))),
+            ('r', '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, ClientID, msgId, PSessionID, fix_content)),
             ('clientid', ClientID),
             ('psessionid', PSessionID)
         )
+        # print data
         logging.info("Reply package: " + str(data))
         rsp = HttpClient_Ist.Post(reqURL, data, Referer)
         if rsp:
@@ -558,6 +601,9 @@ class group_thread(threading.Thread):
         self.lastseq = seq
 
     def tucao(self, content):
+        if not tucao_activated:
+            return False
+
         for key in self.replyList:
             if str(key) in content and self.replyList[key]:
                 rd = random.randint(0, len(self.replyList[key]) - 1)
@@ -567,16 +613,21 @@ class group_thread(threading.Thread):
         return False
 
     def repeat(self, content):
+        if not repeat_activated:
+            return False
+
         if self.last1 == str(content) and content != '' and content != ' ':
             if self.repeatPicture or "[图片]" not in content:
                 self.reply(content)
                 print "已复读：{" + str(content) + "}"
                 return True
         self.last1 = content
-        
         return False
 
     def follow(self, send_uin, content):
+        if not follow_activated:
+            return False
+
         pattern = re.compile(r'^(?:!|！)(follow|unfollow) (\d+|me)')
         match = pattern.match(content)
 
@@ -613,7 +664,7 @@ class group_thread(threading.Thread):
             print "读取存档出错", e, Exception
 
     def callout(self, content):
-        if "智障机器人" in content:
+        if "智障机器人" in content and callout_activated:
             self.reply("干嘛（‘·д·）")
             print str(self.gid) + "有人叫我"
             return True
@@ -657,4 +708,17 @@ if __name__ == "__main__":
             if GroupWatchList != tmpList:
                 GroupWatchList = tmpList
                 print "当前群关注列表:", GroupWatchList
+
+        # 更新config
+        conf.read('./config/QQBot_default.conf')
+
+        # pm config set
+        QA_activated = conf.getint("pm", "QA_module_activated")
+
+        # group config set
+        tucao_activated = conf.getint("group", "tucao_module_activated")
+        repeat_activated = conf.getint("group", "repeat_module_activated")
+        follow_activated = conf.getint("group", "follow_module_activated")
+        callout_activated = conf.getint("group", "callout_module_activated")
+        # print callout_activated
         time.sleep(5)

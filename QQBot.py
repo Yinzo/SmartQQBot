@@ -121,7 +121,7 @@ def command_handler(inputText):
         GroupWatchList.remove(str(match.group(2)))
         print "当前群关注列表:", GroupWatchList
     else:
-        pattern = re.compile(r'^(g)(\d+)(\s+)(learn|delete)(\s+)(.+)(\s+)(.+)')
+        pattern = re.compile(r'^(g)(\d+)\s+(learn|delete)\s+(.+)\s+(.+)')
         match = pattern.match(inputText)
 
         if match and str(match.group(3)) == 'learn' and group_thread_exist(match.group(2)):

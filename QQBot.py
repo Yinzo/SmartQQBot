@@ -112,7 +112,7 @@ def uin_to_account(tuin):
 def command_handler(inputText):
     global GroupWatchList
 
-    pattern = re.compile(r'^(group|ungroup) (\d+)$')
+    pattern = re.compile(r'^(group|ungroup)\s+(\d+)\s*$')
     match = pattern.match(inputText)
 
     if match and match.group(1) == 'group':
@@ -122,7 +122,7 @@ def command_handler(inputText):
         GroupWatchList.remove(str(match.group(2)))
         print "当前群关注列表:", GroupWatchList
     else:
-        pattern = re.compile(r'^(g)(\d+) (learn|delete) (.+) (.+)')
+        pattern = re.compile(r'^(g)(\d+)\s+(learn|delete)\s+(.+)\s+(.+)')
         match = pattern.match(inputText)
 
         if match and str(match.group(3)) == 'learn' and group_thread_exist(match.group(2)):
@@ -706,7 +706,7 @@ if __name__ == "__main__":
         if not os.path.exists("./config/groupCheckList"):
             open("./config/groupCheckList", "w")
             print "已建立群关注列表文件groupCheckList"
-
+        
         with open("./config/groupCheckList") as groupListFile:
             for group in groupListFile:
                 tmpList.append(str(int(group)))

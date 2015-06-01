@@ -108,6 +108,7 @@ def uin_to_account(tuin):
     logging.info("Now FriendList:" + str(FriendList))
     return FriendList[tuin]
 
+
 def command_handler(inputText):
     global GroupWatchList
 
@@ -129,6 +130,7 @@ def command_handler(inputText):
 
         elif match and match.group(3) == 'delete' and group_thread_exist(match.group(2)):
             group_thread_exist(match.group(2)).delete(str(match.group(4)), str(match.group(5)), False)
+
 
 def msg_handler(msgObj):
     for msg in msgObj:

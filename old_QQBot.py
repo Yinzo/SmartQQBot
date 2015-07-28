@@ -208,7 +208,7 @@ def msg_handler(msgObj):
                     #print str(gid) + "群有动态，但是没有被监控"
                     pass
 
-            # from_account = uin_to_account(tuin)
+            # from_account = get_account(tuin)
             # print "{0}:{1}".format(from_account, txt)
 
         # QQ号在另一个地方登陆, 被挤下线

@@ -1,18 +1,56 @@
-SmartQQ-Bot 
+SmartQQ-Bot Ver-0.1
 =========
-***该分支使用登陆部分逻辑与代码参考了[原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)](https://github.com/xqin/SmartQQ-for-Raspberry-Pi)这一项目***，以此为基础制作了基于SmartQQ的自动机器人。
+**注意:**此框架仍处于开发中，许多模块仍可能出现较大改动，如果仍想继续升级该框架，推荐各位暂时不要进行较大规模的自定义。
+
+***该分支使用登陆部分逻辑与代码参考了[原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)](https://github.com/xqin/SmartQQ-for-Raspberry-Pi)这一项目***，以此为基础制作了基于SmartQQ的自动机器人*框架*。
 
 登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码。
 
 ##如何使用
-+ ```python QQBot.py```
++ ```python main.py```
 + 等待提示“登陆二维码下载成功，请扫描”，打开脚本所在目录的v.jpg图片扫描二维码。
 + 等待登陆成功的提示
-<!--+ 登陆成功后出现">>"表示可输入命令，此时私聊问答功能自动激活，群聊各功能需要手动关注该群才会激活，关注群的命令为```group 群号```，此命令为控制台命令，不是在qq中发送。-->
 + 修改config文件夹中的QQBot_default.conf配置文件
-+ 群聊各功能需要在groupCheckList中添加群号，每行一个，来关注群以激活群功能。
++ 群聊各功能需要修改config文件夹下对应群号的conf文件中的设置以激活。（开发中）
 
+##如何添加自定义功能
++ 根据功能类型修改对应文件：
+	+ 群聊功能：Group.py
+	+ 私聊功能：Pm.py
 
++ 在对应类(class)中编写方法，方法的参数固定为self与msg，即
+```def [Function Name](self, msg):```
++ 需要注意方法的返回值，执行成功请返回```True```,没有执行或执行失败请返回```False```
++ 机器人启动后，打开要激活的群设置文件（如：config/123456789.conf），在handle_func_list一项中，选择适当的位置加入你添加的功能的名称（Function Name），你添加的位置决定了功能的执行顺序	（现在执行顺序只能临时在Group.py中修改，通过配置文件修改正在开发中）
+
+##程序模块：
+1. 登陆与消息获取：QQLogin.py
+2. 消息处理模块：MsgHandler.py
+3. 配置参数控制模块：Config.py
+
+##类定义
+1. 消息类：Msg.py
+2. 通知类：Notify.py
+3. 群类：Group.py
+
+##程序运行逻辑：
+1. 使用QQ类登陆
+2. 使用登陆后的QQ类初始化消息处理模块
+3. 进入轮询
+4. 使用消息处理模块处理消息
+
+**文档仍待完善**
+
+##TODO
++ 把旧版本原有功能逐步添加回来
++ 恢复多线程处理模式，或使用协程
++ 优化配置参数模块，对于功能开关的控制
++ 优化稳定性，补充类定义
++ 尽可能地简化二次开发的复杂性
++ 编写文档
+
+======
+#以下为旧版README
 ##功能
 <small>注：以下命令皆是在qq中发送，群聊命令发送到所在群中</small>
 
@@ -31,28 +69,5 @@ SmartQQ-Bot
 + tucao内容储存优化，使用cPickle库	
 + 工程模块化重构
 + 群成员外号表
-
-##原README
-在Pi上通过SSH后台运行的例子:
-```
-sudo nohup python WebQQ.py /data/http/v.jpg &
-```
-上面的命令在启动WebQQ之后会将`QRCode`保存到 `/data/http/v.jpg` 这个位置,然后用[QQ安全中心](http://aq.qq.com/cn2/manage/mbtoken/app_index) 扫描这个`QRCode`完成登陆.
-
-例子2:
-```
-sudo nohup python WebQQ.py /data/http/v.jpg 48080163 &
-```
-上面的命令执行后的效果与第一个例子中的不同之处在于, 启动后的WebQQ只对`48080163`这个QQ号发送过来的消息做响应,其他的会忽略掉.
-这样做的好处在于, 如果你的QRCode被别人扫描了,那么WebQQ就会登陆别人的QQ,然后别人就可以控制你的Pi了, 但如果加了第二个参数`48080163`,
-则就算登陆了别人的QQ, 但消息的发送者并不是`48080163`, 所以发送的指令并不会被Pi所执行,从而保证安全性.
-如果省略掉第2个参数,则所有人给登陆到Pi上的这个QQ发送的消息都会被解析并执行.
-
-V2版的好处在于不需要在程序里设置QQ号码和密码,在Pi所登陆的账号及密码由[QQ安全中心](http://aq.qq.com/cn2/manage/mbtoken/app_index)中指定,而且登陆时也不再需要验证码了.
-`QRCode` 文件在登陆成功之后会被自动删除掉,以确保安全.
-
-
-如需使用QQ号码和密码的方式登陆可以尝试V1版本.
-地址: [PiWebQQ](https://github.com/xqin/PiWebQQ)
 
 

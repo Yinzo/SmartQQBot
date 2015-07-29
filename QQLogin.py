@@ -32,7 +32,7 @@ def date_to_millis(d):
 
 class QQ:
     def __init__(self):
-        self.nowConfig = Configs()
+        self.nowConfig = DefaultConfigs()
         self.req = HttpClient()
 
         self.FriendList = {}
@@ -43,11 +43,11 @@ class QQ:
         self.APPID = 0
         self.VFWebQQ = 0
         self.msgId = 0
-        self.VPath = self.nowConfig.QRcode_path  # QRCode保存路径
+        self.VPath = self.nowConfig.conf.get("global", "qrcode_path")  # QRCode保存路径
 
     def login_by_qrcode(self):
         print "正在获取登陆页面"
-        initurl = get_revalue(self.req.Get(self.nowConfig.smartQQ_url), r'\.src = "(.+?)"', "Get Login Url Error.", 1)
+        initurl = get_revalue(self.req.Get(self.nowConfig.conf.get("global", "smartqq_url")), r'\.src = "(.+?)"', "Get Login Url Error.", 1)
         html = self.req.Get(initurl + '0')
 
         print "正在获取appid"
@@ -111,7 +111,7 @@ class QQ:
                     'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(self.PTWebQQ,
                                                                                                           self.ClientID,
                                                                                                           self.PSessionID)
-                }, self.nowConfig.connect_referer)
+                }, self.nowConfig.conf.get("global", "connect_referer"))
                 ret = json.loads(html)
                 login_error = 0
             except:
@@ -133,7 +133,7 @@ class QQ:
         html = self.req.Post('http://d.web2.qq.com/channel/poll2', {
             'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.PSessionID, self.PTWebQQ,
                                                                                          self.ClientID)
-        }, self.nowConfig.connect_referer)
+        }, self.nowConfig.conf.get("global", "connect_referer"))
         try:
             if html == "":
                 return self.check_msg()
@@ -209,7 +209,7 @@ class QQ:
             try:
                 info = json.loads(HttpClient().Get(
                     'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(uin_str, self.VFWebQQ),
-                    self.nowConfig.connect_referer))
+                    self.nowConfig.conf.get("global", "connect_referer")))
                 # logging.info("Get uin to account info:" + str(info))
                 if info['retcode'] != 0:
                     print info

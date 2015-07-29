@@ -11,11 +11,7 @@ from HttpClient import *
 
 class Group:
 
-<<<<<<< HEAD
     def __init__(self, operator, ip, use_global_config=True):
-=======
-    def __init__(self, operator, ip):
->>>>>>> origin/master
         if isinstance(ip, (int, long, str)):
             # 使用uin初始化
             self.guin = ip
@@ -29,9 +25,8 @@ class Group:
         self.msg_list = []
         self.follow_list = []
         self.tucao_dict = {}
-        self.global_config = Configs()
+        self.global_config = DefaultConfigs()
         self.private_config = GroupConfig(self)
-<<<<<<< HEAD
         if use_global_config:
             self.config = self.global_config
         else:
@@ -45,31 +40,16 @@ class Group:
         print self.process_order
 
     def handle(self, msg):
+        self.config.update()
         print "msg handling."
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
+            # TODO: 处理添加了方法、插入了处理队列、但是没有在设置文件添加功能开关选项的错误处理
             if bool(self.config.conf.getint("group", func)):
                 print "evaling " + func
                 if eval("self." + func)(msg):
                     return func
-=======
-        self.handle_function_list = [
-            'repeat',
-            'callout',
-        ]
-        print str(self.gid) + "群已激活"
-
-    def handle(self, msg):
-        print "handling."
-        # 仅关注消息内容进行处理 Only do the operation of handle the msg content
-        for func in self.handle_function_list:
-            # if func in dirs:
-                # 此处的eval虽然有注入风险，但是进行输入的来源是conf文件
-                # 而拥有修改conf的权限时已经没有必要进行python注入了。
-            print "evaling " + func
-            if eval("self." + func)(msg):
-                return func
->>>>>>> origin/master
+        print "finished."
 
     def reply(self, reply_content, fail_times=0):
         last_fail_times = fail_times
@@ -83,7 +63,7 @@ class Group:
                 ('clientid', self.__operator.ClientID),
                 ('psessionid', self.__operator.PSessionID)
             )
-            rsp = HttpClient().Post(req_url, data, self.__operator.nowConfig.connect_referer)
+            rsp = HttpClient().Post(req_url, data, self.__operator.nowConfig.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
             if rsp_json['retcode'] != 0:
                 raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
@@ -115,13 +95,9 @@ class Group:
         return False
 
     def repeat(self, msg):
-<<<<<<< HEAD
         if len(self.msg_list) > 0 and self.msg_list[-1].content == msg.content:
             if str(msg.content).strip() not in ("", " ", "[图片]", "[表情]"):
-=======
-        if len(self.msg_list) > 0 and self.msg_list[-1].content == msg.content and str(msg.content).strip() != '' and msg.content != ' ':
-            if "[图片]" != msg.content or "[表情]" != msg.content:
->>>>>>> origin/master
+                print "repeating, trying to reply..."
                 self.reply(msg.content)
                 print "群" + str(self.gid) + "已复读：{" + str(msg.content) + "}"
                 return True

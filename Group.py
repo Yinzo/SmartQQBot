@@ -23,6 +23,7 @@ class Group:
         self.__operator = operator
         self.member_list = []
         self.msg_list = []
+        # TODO:消息历史保存功能
         self.follow_list = []
         self.tucao_dict = {}
         self.global_config = DefaultConfigs()
@@ -44,11 +45,13 @@ class Group:
         print "msg handling."
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
-            # TODO: 处理添加了方法、插入了处理队列、但是没有在设置文件添加功能开关选项的错误处理
-            if bool(self.config.conf.getint("group", func)):
-                print "evaling " + func
-                if eval("self." + func)(msg):
-                    return func
+            try:
+                if bool(self.config.conf.getint("group", func)):
+                    print "evaling " + func
+                    if eval("self." + func)(msg):
+                        return func
+            except ConfigParser.NoOptionError as er:
+                print er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数"
         print "finished."
 
     def reply(self, reply_content, fail_times=0):

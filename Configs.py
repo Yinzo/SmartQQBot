@@ -46,8 +46,6 @@ class DefaultConfigs(Configs):
             # self.callout_activated = bool(self.conf.getint("group", "callout_module_activated"))
 
 
-
-
 class GroupConfig(Configs):
     def __init__(self, group):
         Configs.__init__(self)
@@ -57,7 +55,6 @@ class GroupConfig(Configs):
         self.global_config = DefaultConfigs()
         self.check_config_files_exists()
         self.conf.read(self.config_path)
-
 
     def check_config_files_exists(self):
         if not os.path.isdir("./config"):

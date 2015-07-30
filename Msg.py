@@ -51,7 +51,6 @@ class SessMsg(MsgWithContent):
         self.flags = json_input['value']['flag']
 
 
-
 class PmMsg(MsgWithContent):
 
     def __init__(self, json_input):

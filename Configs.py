@@ -2,6 +2,7 @@
 import ConfigParser
 import os
 
+
 class Configs:
     def __init__(self):
         self.conf = ConfigParser.ConfigParser()
@@ -20,6 +21,7 @@ class Configs:
 
     def set_default(self):
         pass
+
 
 class DefaultConfigs(Configs):
     def __init__(self):

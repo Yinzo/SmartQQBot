@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import cPickle
+
 from QQLogin import *
 from Configs import *
 from Msg import *
@@ -33,10 +35,13 @@ class Group:
         self.process_order = [
             "repeat",
             "callout",
+            "tucao",
         ]
 
         print str(self.gid) + "群已激活, 当前执行顺序："
         print self.process_order
+
+        self.tucao_load()
 
     def handle(self, msg):
         self.config.update()
@@ -100,3 +105,51 @@ class Group:
                 print "群" + str(self.gid) + "已复读：{" + str(msg.content) + "}"
                 return True
         return False
+
+    def tucao(self, msg):
+        match = re.match(r'^(?:!|！)(learn|delete) {(.+)}{(.+)}', msg.content)
+        if match:
+            command = str(match.group(1)).decode('utf8')
+            key = str(match.group(2)).decode('utf8')
+            value = str(match.group(3)).decode('utf8')
+            if command == 'learn':
+                if key in self.tucao_dict:
+                    self.tucao_dict[key].append(value)
+                else:
+                    self.tucao_dict[key] = [value]
+                self.reply("学习成功！快对我说" + str(key) + "试试吧！")
+                self.tucao_save()
+                return True
+
+            elif command == 'delete':
+                if key in self.tucao_dict and self.tucao_dict[key].count(value):
+                    self.tucao_dict[key].remove(value)
+                    self.reply("呜呜呜我再也不说" + str(value) + "了")
+                    self.tucao_save()
+                    return True
+        else:
+            for key in self.tucao_dict.keys():
+                if str(key) in msg.content and self.tucao_dict[key]:
+                    ran_idx = random.randint(0, len(self.tucao_dict[key]) - 1)
+                    self.reply(self.tucao_dict[key][ran_idx])
+                    return True
+        return False
+
+
+    def tucao_save(self):
+        tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path')) + str(self.gid) + ".tucao"
+        with open(tucao_file_path, "w+") as tucao_file:
+            cPickle.dump(self.tucao_dict, tucao_file)
+
+    def tucao_load(self):
+        try:
+            tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path'))
+            tucao_file_name = tucao_file_path + str(self.gid) + ".tucao"
+            os.makedirs(tucao_file_path, exist_ok=True)
+            if not os.path.exists(tucao_file_name):
+                with open(tucao_file_name, "w") as tmp:
+                    tmp.close()
+            with open(tucao_file_name, "r") as tucao_file:
+                self.tucao_dict = cPickle.load(tucao_file)
+        except Exception as er:
+            print "读取存档出错", er

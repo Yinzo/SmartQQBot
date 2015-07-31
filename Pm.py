@@ -6,26 +6,21 @@ from Msg import *
 from HttpClient import *
 
 
-class Group:
-
+class Pm:
     def __init__(self, operator, ip, use_global_config=True):
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
         if isinstance(ip, (int, long, str)):
             # 使用uin初始化
-            self.guin = ip
-            self.gid = ""
-        elif isinstance(ip, GroupMsg):
-            self.guin = ip.from_uin
-            self.gid = ip.info_seq
+            self.tuin = ip
+        elif isinstance(ip, PmMsg):
+            self.tuin = ip.from_uin
+        self.tid = self.__operator.uin_to_account(self.tuin)
         self.msg_id = int(random.uniform(20000, 50000))
-        self.member_list = []
         self.msg_list = []
         # TODO:消息历史保存功能
-        self.follow_list = []
-        self.tucao_dict = {}
         self.global_config = DefaultConfigs()
-        self.private_config = GroupConfig(self)
+        self.private_config = PmConfig(self)
         if use_global_config:
             self.config = self.global_config
         else:
@@ -35,7 +30,7 @@ class Group:
             "callout",
         ]
 
-        print str(self.gid) + "群已激活, 当前执行顺序："
+        print str(self.tid) + "私聊已激活, 当前执行顺序："
         print self.process_order
 
     def handle(self, msg):
@@ -44,7 +39,7 @@ class Group:
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
             try:
-                if bool(self.config.conf.getint("group", func)):
+                if bool(self.config.conf.getint("pm", func)):
                     print "evaling " + func
                     if eval("self." + func)(msg):
                         return func
@@ -56,16 +51,16 @@ class Group:
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
         rsp = ""
         try:
-            req_url = "http://d.web2.qq.com/channel/send_qun_msg2"
+            req_url = "http://d.web2.qq.com/channel/send_buddy_msg2"
             data = (
-                ('r', '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, self.__operator.client_id, self.msg_id + 1, self.__operator.psessionid, fix_content)),
+                ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(self.tuin, self.__operator.client_id, self.msg_id + 1, self.__operator.psessionid, fix_content)),
                 ('clientid', self.__operator.client_id),
                 ('psessionid', self.__operator.psessionid)
             )
             rsp = HttpClient().Post(req_url, data, self.__operator.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
             if rsp_json['retcode'] != 0:
-                raise ValueError("reply group chat error" + str(rsp_json['retcode']))
+                raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
             print "Reply response: " + str(rsp_json)
             self.msg_id += 1
             return rsp_json
@@ -88,7 +83,7 @@ class Group:
         if "智障机器人" in msg.content:
             print "calling out, trying to reply...."
             self.reply("干嘛（‘·д·）")
-            print str(self.gid) + "有人叫我"
+            print str(self.tid) + "叫我"
             return True
         return False
 
@@ -97,6 +92,6 @@ class Group:
             if str(msg.content).strip() not in ("", " ", "[图片]", "[表情]"):
                 print "repeating, trying to reply..."
                 self.reply(msg.content)
-                print "群" + str(self.gid) + "已复读：{" + str(msg.content) + "}"
+                print str(self.tid) + "已复读：{" + str(msg.content) + "}"
                 return True
         return False

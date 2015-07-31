@@ -32,34 +32,35 @@ def date_to_millis(d):
 
 class QQ:
     def __init__(self):
-        self.nowConfig = DefaultConfigs()
+        self.default_config = DefaultConfigs()
         self.req = HttpClient()
 
-        self.FriendList = {}
+        self.friend_list = {}
 
-        self.ClientID = int(random.uniform(111111, 888888))
-        self.PTWebQQ = ''
-        self.PSessionID = ''
-        self.APPID = 0
-        self.VFWebQQ = 0
-        self.msgId = 0
-        self.VPath = self.nowConfig.conf.get("global", "qrcode_path")  # QRCode保存路径
+        self.client_id = int(random.uniform(111111, 888888))
+        self.ptwebqq = ''
+        self.psessionid = ''
+        self.appid = 0
+        self.vfwebqq = 0
+        self.qrcode_path = self.default_config.conf.get("global", "qrcode_path")  # QRCode保存路径
+        self.username = ""
+        self.account = 0
 
     def login_by_qrcode(self):
-        print "正在获取登陆页面"
-        initurl = get_revalue(self.req.Get(self.nowConfig.conf.get("global", "smartqq_url")), r'\.src = "(.+?)"', "Get Login Url Error.", 1)
+        print "正在请求获取登陆页面"
+        initurl = get_revalue(self.req.Get(self.default_config.conf.get("global", "smartqq_url")), r'\.src = "(.+?)"', "Get Login Url Error.", 1)
         html = self.req.Get(initurl + '0')
 
-        print "正在获取appid"
+        print "正在请求获取appid"
         appid = get_revalue(html, r'var g_appid =encodeURIComponent\("(\d+)"\);', 'Get AppId Error', 1)
 
-        print "正在获取login_sig"
+        print "正在请求获取login_sig"
         sign = get_revalue(html, r'var g_login_sig=encodeURIComponent\("(.+?)"\);', 'Get Login Sign Error', 0)
 
-        print "正在获取pt_version"
+        print "正在请求获取pt_version"
         js_ver = get_revalue(html, r'var g_pt_version=encodeURIComponent\("(\d+)"\);', 'Get g_pt_version Error', 1)
 
-        print "正在获取mibao_css"
+        print "正在请求获取mibao_css"
         mibao_css = get_revalue(html, r'var g_mibao_css=encodeURIComponent\("(.+?)"\);', 'Get g_mibao_css Error', 1)
 
         star_time = date_to_millis(datetime.datetime.utcnow())
@@ -69,7 +70,7 @@ class QQ:
         while True:
             error_times += 1
             self.req.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
-                              self.VPath)
+                              self.qrcode_path)
             print "登陆二维码下载成功，请扫描"
 
             while True:
@@ -88,11 +89,11 @@ class QQ:
         print "二维码已扫描，正在登陆"
 
         # 删除QRCode文件
-        if os.path.exists(self.VPath):
-            os.remove(self.VPath)
+        if os.path.exists(self.qrcode_path):
+            os.remove(self.qrcode_path)
 
         # 记录登陆账号的昵称
-        tmp_username = ret[11]
+        self.username = ret[11]
 
         html = self.req.Get(ret[5])
         url = get_revalue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
@@ -101,17 +102,17 @@ class QQ:
             url = get_revalue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
             html = self.req.Get(url)
 
-        self.PTWebQQ = self.req.getCookie('ptwebqq')
+        self.ptwebqq = self.req.getCookie('ptwebqq')
 
         login_error = 1
         ret = {}
         while login_error > 0:
             try:
                 html = self.req.Post('http://d.web2.qq.com/channel/login2', {
-                    'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(self.PTWebQQ,
-                                                                                                          self.ClientID,
-                                                                                                          self.PSessionID)
-                }, self.nowConfig.conf.get("global", "connect_referer"))
+                    'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(self.ptwebqq,
+                                                                                                          self.client_id,
+                                                                                                          self.psessionid)
+                }, self.default_config.conf.get("global", "connect_referer"))
                 ret = json.loads(html)
                 login_error = 0
             except:
@@ -122,18 +123,18 @@ class QQ:
             print "return code:" + str(ret['retcode'])
             return
 
-        self.VFWebQQ = ret['result']['vfwebqq']
-        self.PSessionID = ret['result']['psessionid']
+        self.vfwebqq = ret['result']['vfwebqq']
+        self.psessionid = ret['result']['psessionid']
+        self.account = ret['result']['uin']
 
-        print "QQ号：{0} 登陆成功, 用户名：{1}".format(ret['result']['uin'], tmp_username)
-        self.msgId = int(random.uniform(20000, 50000))
+        print "QQ号：{0} 登陆成功, 用户名：{1}".format(self.account, self.username)
 
     def check_msg(self):
         # 调用后进入单次轮询，等待服务器发回状态。
         html = self.req.Post('http://d.web2.qq.com/channel/poll2', {
-            'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.PSessionID, self.PTWebQQ,
-                                                                                         self.ClientID)
-        }, self.nowConfig.conf.get("global", "connect_referer"))
+            'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.psessionid, self.ptwebqq,
+                                                                                         self.client_id)
+        }, self.default_config.conf.get("global", "connect_referer"))
         try:
             if html == "":
                 return self.check_msg()
@@ -175,7 +176,7 @@ class QQ:
                 return
 
             elif ret_code == 116:
-                self.PTWebQQ = ret['p']
+                self.ptwebqq = ret['p']
                 print "PTWebQQ has been updated."
                 return
 
@@ -205,17 +206,18 @@ class QQ:
 
     def uin_to_account(self, tuin):
         uin_str = str(tuin)
-        if uin_str not in self.FriendList:
+        if uin_str not in self.friend_list:
             try:
+                print "正在查询uin对应账号"
                 info = json.loads(HttpClient().Get(
-                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(uin_str, self.VFWebQQ),
-                    self.nowConfig.conf.get("global", "connect_referer")))
+                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(uin_str, self.vfwebqq),
+                    self.default_config.conf.get("global", "connect_referer")))
                 # logging.info("Get uin to account info:" + str(info))
                 if info['retcode'] != 0:
                     print info
                     raise TypeError('uin to account result error')
                 info = info['result']
-                self.FriendList[uin_str] = info['account']
+                self.friend_list[uin_str] = info['account']
 
             except BaseException, error:
                 # logging.error(e)
@@ -224,7 +226,7 @@ class QQ:
         assert isinstance(uin_str, str), "tuin is not string"
         try:
 
-            return self.FriendList[uin_str]
+            return self.friend_list[uin_str]
         except KeyError, e:
             print e
-            print list(self.FriendList)
+            print list(self.friend_list)

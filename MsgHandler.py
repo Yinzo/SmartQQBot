@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from QQLogin import *
-from Notify import *
 from Group import *
+from Pm import *
 
 
 class MsgHandler:
-
     def __init__(self, operator):
         if not isinstance(operator, QQ):
             raise TypeError("Operator must be a logined QQ instance")
@@ -20,6 +18,7 @@ class MsgHandler:
         assert isinstance(msg_list, list), "msg_list is NOT a LIST"
         for msg in msg_list:
             # 仅处理程序管理层面上的操作 Only do the operation of the program management
+
             if not isinstance(msg, (Msg, Notify)):
                 raise TypeError("Handler received a not a Msg or Notify instance.")
 
@@ -29,19 +28,29 @@ class MsgHandler:
             if isinstance(msg, GroupMsg):
                 if msg.info_seq not in self.__group_list:
                     self.__group_list[msg.info_seq] = Group(self.__operator, msg)
-
                 tgt_group = self.__group_list[msg.info_seq]
-
                 if len(tgt_group.msg_list) >= 1 and msg.seq == tgt_group.msg_list[-1].seq:
                     # 若如上一条seq重复则抛弃此条信息不处理
+                    print "消息重复，抛弃"
                     return
-
                 tgt_group.msg_id = msg.msg_id
                 self.__group_list[msg.info_seq].handle(msg)
                 tgt_group.msg_list.append(msg)
 
             elif isinstance(msg, PmMsg):
-                self.__pm_msg_handler(msg)
+                tid = self.__operator.get_account(msg)
+                if tid not in self.__pm_list:
+                    self.__pm_list[tid] = Pm(self.__operator, msg)
+                tgt_pm = self.__pm_list[tid]
+                if len(tgt_pm.msg_list) >= 1 and msg.time == tgt_pm.msg_list[-1].time \
+                        and msg.from_uin == tgt_pm.msg_list[-1].from_uin \
+                        and msg.content == tgt_pm.msg_list[-1].content:
+                    # 私聊没有seq可用于判断重复，只能抛弃同一个人在同一时间戳发出的内容相同的消息。
+                    print "消息重复，抛弃"
+                    return
+                tgt_pm.msg_id = msg.msg_id
+                self.__pm_list[tid].handle(msg)
+                tgt_pm.msg_list.append(msg)
 
             elif isinstance(msg, SessMsg):
                 self.__sess_msg_handler(msg)
@@ -57,10 +66,6 @@ class MsgHandler:
 
             else:
                 raise TypeError("Unsolved Msg type :" + str(msg.poll_type))
-
-    def __pm_msg_handler(self, msg):
-        print "pm msg received"
-        self.reply_msg(msg, "Received")
 
     def __sess_msg_handler(self, msg):
         print "sess msg received"
@@ -79,7 +84,8 @@ class MsgHandler:
     def reply_msg(self, received_msg, reply_content, fail_times=0):
         last_fail_times = fail_times
 
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
+        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode(
+            "utf-8")
         rsp = ""
         req_url = ""
         data = ""
@@ -91,34 +97,47 @@ class MsgHandler:
                 ts = int(ts)
                 group_sig = ""
                 try:
-                    group_sig = json.loads(HttpClient().Get('http://d.web2.qq.com/channel/get_c2cmsg_sig2?id={0}&to_uin={1}&clientid={2}&psessionid={3}&service_type={4}&t={5}'.format(received_msg.id, received_msg.from_uin, self.__operator.ClientID, self.__operator.PSessionID, received_msg.service_type, ts), self.__operator.nowConfig.connect_referer))
+                    group_sig = json.loads(HttpClient().Get(
+                        'http://d.web2.qq.com/channel/get_c2cmsg_sig2?id={0}&to_uin={1}&clientid={2}&psessionid={3}&service_type={4}&t={5}'.format(
+                            received_msg.id, received_msg.from_uin, self.__operator.client_id,
+                            self.__operator.psessionid, received_msg.service_type, ts),
+                        self.__operator.default_config.connect_referer))
                     if group_sig == "":
                         raise ValueError("Receive a None when getting group sig")
                 except BaseException, e:
                     print "Getting group sig met an error: ", e
                 req_url = "http://d.web2.qq.com/channel/send_sess_msg2"
                 data = (
-                    ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(received_msg.from_uin, self.__operator.ClientID, received_msg.msg_id + 1, self.__operator.PSessionID, fix_content, group_sig, received_msg.service_type)),
-                    ('clientid', self.__operator.ClientID),
-                    ('psessionid', self.__operator.PSessionID),
+                    ('r',
+                     '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
+                         received_msg.from_uin, self.__operator.client_id, received_msg.msg_id + 1,
+                         self.__operator.psessionid, fix_content, group_sig, received_msg.service_type)),
+                    ('clientid', self.__operator.client_id),
+                    ('psessionid', self.__operator.psessionid),
                     ('group_sig', group_sig),
                     ('service_type', received_msg.service_type)
                 )
             elif isinstance(received_msg, PmMsg):
                 req_url = "http://d.web2.qq.com/channel/send_buddy_msg2"
                 data = (
-                    ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(received_msg.from_uin, self.__operator.ClientID, received_msg.msg_id + 1, self.__operator.PSessionID, fix_content)),
-                    ('clientid', self.__operator.ClientID),
-                    ('psessionid', self.__operator.PSessionID)
+                    ('r',
+                     '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(
+                         received_msg.from_uin, self.__operator.client_id, received_msg.msg_id + 1,
+                         self.__operator.psessionid, fix_content)),
+                    ('clientid', self.__operator.client_id),
+                    ('psessionid', self.__operator.psessionid)
                 )
             elif isinstance(received_msg, GroupMsg):
                 req_url = "http://d.web2.qq.com/channel/send_qun_msg2"
                 data = (
-                    ('r', '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(received_msg.from_uin, self.__operator.ClientID, received_msg.msg_id + 1, self.__operator.PSessionID, fix_content)),
-                    ('clientid', self.__operator.ClientID),
-                    ('psessionid', self.__operator.PSessionID)
+                    ('r',
+                     '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(
+                         received_msg.from_uin, self.__operator.client_id, received_msg.msg_id + 1,
+                         self.__operator.psessionid, fix_content)),
+                    ('clientid', self.__operator.client_id),
+                    ('psessionid', self.__operator.psessionid)
                 )
-            rsp = HttpClient().Post(req_url, data, self.__operator.nowConfig.connect_referer)
+            rsp = HttpClient().Post(req_url, data, self.__operator.default_config.connect_referer)
             rsp_json = json.loads(rsp)
             if rsp_json['retcode'] != 0:
                 raise ValueError("reply pmchat error" + str(rsp_json['retcode']))

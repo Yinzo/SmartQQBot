@@ -3,6 +3,13 @@
 from Group import *
 from Pm import *
 
+logging.basicConfig(
+    filename='smartqq.log',
+    level=logging.DEBUG,
+    format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+    datefmt='%a, %d %b %Y %H:%M:%S',
+)
+
 
 class MsgHandler:
     def __init__(self, operator):
@@ -20,18 +27,22 @@ class MsgHandler:
             # 仅处理程序管理层面上的操作 Only do the operation of the program management
 
             if not isinstance(msg, (Msg, Notify)):
+                logging.error("Handler received a not a Msg or Notify instance.")
                 raise TypeError("Handler received a not a Msg or Notify instance.")
 
             elif isinstance(msg, MsgWithContent):
-                print str(self.__operator.get_account(msg)) + ":" + msg.content
+                logging.info(str(self.__operator.get_account(msg)) + ":" + msg.content)
 
             if isinstance(msg, GroupMsg):
                 if msg.info_seq not in self.__group_list:
                     self.__group_list[msg.info_seq] = Group(self.__operator, msg)
+                    self.__group_list[msg.info_seq].start()
+                    logging.debug("Now group thread list:  " + str(self.__group_list))
+
                 tgt_group = self.__group_list[msg.info_seq]
                 if len(tgt_group.msg_list) >= 1 and msg.seq == tgt_group.msg_list[-1].seq:
                     # 若如上一条seq重复则抛弃此条信息不处理
-                    print "消息重复，抛弃"
+                    logging.info("消息重复，抛弃")
                     return
                 tgt_group.msg_id = msg.msg_id
                 self.__group_list[msg.info_seq].handle(msg)
@@ -41,19 +52,22 @@ class MsgHandler:
                 tid = self.__operator.get_account(msg)
                 if tid not in self.__pm_list:
                     self.__pm_list[tid] = Pm(self.__operator, msg)
+                    self.__pm_list[tid].start()
+                    logging.debug("Now pm thread list:  " + str(self.__pm_list))
+
                 tgt_pm = self.__pm_list[tid]
                 if len(tgt_pm.msg_list) >= 1 and msg.time == tgt_pm.msg_list[-1].time \
                         and msg.from_uin == tgt_pm.msg_list[-1].from_uin \
                         and msg.content == tgt_pm.msg_list[-1].content:
                     # 私聊没有seq可用于判断重复，只能抛弃同一个人在同一时间戳发出的内容相同的消息。
-                    print "消息重复，抛弃"
+                    logging.info("消息重复，抛弃")
                     return
                 tgt_pm.msg_id = msg.msg_id
                 self.__pm_list[tid].handle(msg)
                 tgt_pm.msg_list.append(msg)
 
             elif isinstance(msg, SessMsg):
-                self.__sess_msg_handler(msg)
+                pass
 
             elif isinstance(msg, InputNotify):
                 self.__input_notify_handler(msg)
@@ -65,23 +79,26 @@ class MsgHandler:
                 self.__kick_message(msg)
 
             else:
+                logging.warning("Unsolved Msg type :" + str(msg.poll_type))
                 raise TypeError("Unsolved Msg type :" + str(msg.poll_type))
 
-    def __sess_msg_handler(self, msg):
-        print "sess msg received"
-        self.reply_msg(msg, "Received")
-
     def __input_notify_handler(self, msg):
-        print str(self.__operator.get_account(msg)) + " is typing..."
+        logging.info(str(self.__operator.get_account(msg)) + " is typing...")
 
     def __buddies_status_change_handler(self, msg):
         pass
 
     def __kick_message(self, msg):
-        print str(msg.to_uin) + " is kicked. Reason: " + str(msg.reason)
+        logging.warning(str(msg.to_uin) + " is kicked. Reason: " + str(msg.reason))
+        logging.warning("[{0}]{1} is kicked. Reason:  {2}".format(
+            str(msg.to_uin),
+            self.__operator.username,
+            str(msg.reason),
+        ))
         raise KeyboardInterrupt("Kicked")
 
     def reply_msg(self, received_msg, reply_content, fail_times=0):
+        #TODO: 此方法将被遗弃
         last_fail_times = fail_times
 
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode(

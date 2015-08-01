@@ -4,23 +4,30 @@ import time
 import datetime
 import re
 import json
+import logging
 
 from Configs import *
 from Msg import *
 from Notify import *
 from HttpClient import *
 
+logging.basicConfig(
+    filename='smartqq.log',
+    level=logging.DEBUG,
+    format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+    datefmt='%a, %d %b %Y %H:%M:%S',
+)
 
 def get_revalue(html, rex, er, ex):
     v = re.search(rex, html)
 
     if v is None:
-        # logging.error(er)
 
         if ex:
+            logging.error(er)
             raise TypeError(er)
         else:
-            print er
+            logging.warning(er)
         return ''
 
     return v.group(1)
@@ -47,20 +54,15 @@ class QQ:
         self.account = 0
 
     def login_by_qrcode(self):
-        print "正在请求获取登陆页面"
-        initurl = get_revalue(self.req.Get(self.default_config.conf.get("global", "smartqq_url")), r'\.src = "(.+?)"', "Get Login Url Error.", 1)
+        logging.info("Requesting the login pages...")
+        initurl_html = self.req.Get(self.default_config.conf.get("global", "smartqq_url"))
+        logging.debug("login page html: " + str(initurl_html))
+        initurl = get_revalue(initurl_html, r'\.src = "(.+?)"', "Get Login Url Error.", 1)
         html = self.req.Get(initurl + '0')
 
-        print "正在请求获取appid"
         appid = get_revalue(html, r'var g_appid =encodeURIComponent\("(\d+)"\);', 'Get AppId Error', 1)
-
-        print "正在请求获取login_sig"
         sign = get_revalue(html, r'var g_login_sig=encodeURIComponent\("(.+?)"\);', 'Get Login Sign Error', 0)
-
-        print "正在请求获取pt_version"
         js_ver = get_revalue(html, r'var g_pt_version=encodeURIComponent\("(\d+)"\);', 'Get g_pt_version Error', 1)
-
-        print "正在请求获取mibao_css"
         mibao_css = get_revalue(html, r'var g_mibao_css=encodeURIComponent\("(.+?)"\);', 'Get g_mibao_css Error', 1)
 
         star_time = date_to_millis(datetime.datetime.utcnow())
@@ -71,7 +73,7 @@ class QQ:
             error_times += 1
             self.req.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
                               self.qrcode_path)
-            print "登陆二维码下载成功，请扫描"
+            logging.info("Please scan the downloaded QRCode")
 
             while True:
                 html = self.req.Get(
@@ -86,7 +88,7 @@ class QQ:
 
         if ret[1] != '0':
             return
-        print "二维码已扫描，正在登陆"
+        logging.info("QRCode scaned, now logging in.")
 
         # 删除QRCode文件
         if os.path.exists(self.qrcode_path):
@@ -96,11 +98,13 @@ class QQ:
         self.username = ret[11]
 
         html = self.req.Get(ret[5])
+        logging.debug("mibao_res html:  " + str(html))
         url = get_revalue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
         if url != '':
             html = self.req.Get(url.replace('&amp;', '&'))
             url = get_revalue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
-            html = self.req.Get(url)
+            self.req.Get(url)
+
 
         self.ptwebqq = self.req.getCookie('ptwebqq')
 
@@ -113,21 +117,23 @@ class QQ:
                                                                                                           self.client_id,
                                                                                                           self.psessionid)
                 }, self.default_config.conf.get("global", "connect_referer"))
+                logging.debug("login html:  " + str(html))
                 ret = json.loads(html)
                 login_error = 0
             except:
                 login_error += 1
-                print "登录失败，正在重试"
+                logging.info("login fail, retryng...")
 
         if ret['retcode'] != 0:
-            print "return code:" + str(ret['retcode'])
+            logging.debug(str(ret))
+            logging.warning("return code:" + str(ret['retcode']))
             return
 
         self.vfwebqq = ret['result']['vfwebqq']
         self.psessionid = ret['result']['psessionid']
         self.account = ret['result']['uin']
 
-        print "QQ号：{0} 登陆成功, 用户名：{1}".format(self.account, self.username)
+        logging.info("QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
 
     def check_msg(self):
         # 调用后进入单次轮询，等待服务器发回状态。
@@ -135,6 +141,7 @@ class QQ:
             'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.psessionid, self.ptwebqq,
                                                                                          self.client_id)
         }, self.default_config.conf.get("global", "connect_referer"))
+        logging.debug("check_msg html:  " + str(html))
         try:
             if html == "":
                 return self.check_msg()
@@ -143,11 +150,11 @@ class QQ:
             ret_code = ret['retcode']
 
             if ret_code in (102, ):
-                print "received retcode: " + str(ret_code) + ": No message."
+                logging.info("received retcode: " + str(ret_code) + ": No message.")
                 return
 
             if ret_code in (121, ):
-                print "received retcode: " + str(ret_code)
+                logging.warning("received retcode: " + str(ret_code))
                 raise KeyError("Account offline.")
 
             elif ret_code == 0:
@@ -165,30 +172,28 @@ class QQ:
                     elif ret_code == 'kick_message':
                         msg_list.append(KickMessage(msg))
                     else:
-                        print "unknown message type: " + str(ret_type)
-                        print msg
+                        logging.warning("unknown message type: " + str(ret_type) + "details:    " + str(msg))
                 if not msg_list:
                     return
                 return msg_list
 
             elif ret_code == 100006:
-                print "POST data error"
+                logging.warning("POST data error")
                 return
 
             elif ret_code == 116:
                 self.ptwebqq = ret['p']
-                print "PTWebQQ has been updated."
+                logging.info("ptwebqq updated.")
                 return
 
             else:
-                print "unknown retcode " + str(ret_code)
+                logging.warning("unknown retcode " + str(ret_code))
                 return
 
         except ValueError, e:
-            print "Check error occured: " + str(e)
-            # print "received HTML: " + str(html)
+            logging.warning("Check error occured: " + str(e))
         except BaseException, e:
-            print "Check error occured, retrying. Error: " + str(e)
+            logging.warning("Unknown check error occured, retrying. Error: " + str(e))
             return self.check_msg()
 
     # 查询QQ号，通常首次用时0.2s，以后基本不耗时
@@ -208,25 +213,22 @@ class QQ:
         uin_str = str(tuin)
         if uin_str not in self.friend_list:
             try:
-                print "正在查询uin对应账号"
+                logging.info("Requesting the account by uin:    " + str(tuin))
                 info = json.loads(HttpClient().Get(
                     'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(uin_str, self.vfwebqq),
                     self.default_config.conf.get("global", "connect_referer")))
-                # logging.info("Get uin to account info:" + str(info))
+                logging.debug("uin_request html:    " + str(info))
                 if info['retcode'] != 0:
-                    print info
                     raise TypeError('uin to account result error')
                 info = info['result']
                 self.friend_list[uin_str] = info['account']
 
             except BaseException, error:
-                # logging.error(e)
-                print error
+                logging.warning(error)
 
         assert isinstance(uin_str, str), "tuin is not string"
         try:
-
             return self.friend_list[uin_str]
         except KeyError, e:
-            print e
-            print list(self.friend_list)
+            logging.warning(e)
+            logging.debug("now uin list:    " + str(self.friend_list))

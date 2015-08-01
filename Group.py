@@ -1,16 +1,25 @@
 # -*- coding: utf-8 -*-
 
 import cPickle
+import threading
 
 from QQLogin import *
 from Configs import *
 from Msg import *
 from HttpClient import *
 
+logging.basicConfig(
+    filename='smartqq.log',
+    level=logging.DEBUG,
+    format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+    datefmt='%a, %d %b %Y %H:%M:%S',
+)
 
-class Group:
+
+class Group(threading.Thread):
 
     def __init__(self, operator, ip, use_global_config=True):
+        super(Group, self).__init__()
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
         if isinstance(ip, (int, long, str)):
@@ -23,7 +32,6 @@ class Group:
         self.msg_id = int(random.uniform(20000, 50000))
         self.member_list = []
         self.msg_list = []
-        # TODO:消息历史保存功能
         self.follow_list = []
         self.tucao_dict = {}
         self.global_config = DefaultConfigs()
@@ -38,25 +46,23 @@ class Group:
             "callout",
             "tucao",
         ]
-
-        print str(self.gid) + "群已激活, 当前执行顺序："
-        print self.process_order
-
+        logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
 
     def handle(self, msg):
         self.config.update()
-        print "msg handling."
+        logging.info("msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
             try:
                 if bool(self.config.conf.getint("group", func)):
-                    print "evaling " + func
+                    logging.info("evaling " + func)
                     if eval("self." + func)(msg):
+                        logging.info("msg handle finished.")
                         return func
             except ConfigParser.NoOptionError as er:
-                print er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数"
-        print "finished."
+                logging.warning(er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
+        self.msg_list.append(msg)
 
     def reply(self, reply_content, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
@@ -72,44 +78,39 @@ class Group:
             rsp_json = json.loads(rsp)
             if rsp_json['retcode'] != 0:
                 raise ValueError("reply group chat error" + str(rsp_json['retcode']))
-            print "Reply response: " + str(rsp_json)
+            logging.info("Reply successfully.")
+            logging.debug("Reply response: " + str(rsp))
             self.msg_id += 1
             return rsp_json
         except:
             if fail_times < 5:
-                # loggin.error("Response Error.Wait for 2s and Retrying."+str(lastFailTimes))
-                # logging.info(rsp)
-                print "Response Error.Wait for 2s and Retrying." + str(fail_times)
-                print rsp
+                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.debug(rsp)
                 time.sleep(2)
                 self.reply(reply_content, fail_times + 1)
             else:
-                print "Response Error over 5 times.Exit."
-                print "Content:" + str(reply_content)
-                # logging.error("Response Error over 5 times.Exit.")
-                # raise ValueError(rsp)
+                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
     def callout(self, msg):
         if "智障机器人" in msg.content:
-            print "calling out, trying to reply...."
+            logging.info(str(self.gid) + " calling me out, trying to reply....")
             self.reply("干嘛（‘·д·）")
-            print str(self.gid) + "有人叫我"
             return True
         return False
 
     def repeat(self, msg):
         if len(self.msg_list) > 0 and self.msg_list[-1].content == msg.content:
             if str(msg.content).strip() not in ("", " ", "[图片]", "[表情]"):
-                print "repeating, trying to reply..."
+                logging.info(str(self.gid) + " repeating, trying to reply " + str(msg.content))
                 self.reply(msg.content)
-                print "群" + str(self.gid) + "已复读：{" + str(msg.content) + "}"
                 return True
         return False
 
     def tucao(self, msg):
         match = re.match(r'^(?:!|！)(learn|delete) {(.+)}(?:\s*){(.+)}', msg.content)
         if match:
+            logging.info("tucao command detected.")
             command = str(match.group(1)).decode('utf8')
             key = str(match.group(2)).decode('utf8')
             value = str(match.group(3)).decode('utf8')
@@ -131,33 +132,42 @@ class Group:
         else:
             for key in self.tucao_dict.keys():
                 if str(key) in msg.content and self.tucao_dict[key]:
+                    logging.info("tucao pattern detected, replying...")
                     self.reply(random.choice(self.tucao_dict[key]))
                     return True
         return False
 
     def tucao_save(self):
-        tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path')) + str(self.gid) + ".tucao"
-        with open(tucao_file_path, "w+") as tucao_file:
-            cPickle.dump(self.tucao_dict, tucao_file)
+        try:
+            tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path')) + str(self.gid) + ".tucao"
+            with open(tucao_file_path, "w+") as tucao_file:
+                cPickle.dump(self.tucao_dict, tucao_file)
+            logging.info("tucao saved. Now tucao list:  {0}".format(str(self.tucao_dict)))
+        except Exception:
+            logging.error("Fail to save tucao.")
+            raise IOError("Fail to save tucao.")
 
     def tucao_load(self):
-        try:
-            tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path'))
-            tucao_file_name = tucao_file_path + str(self.gid) + ".tucao"
-            if not os.path.isdir(tucao_file_path):
-                os.makedirs(tucao_file_path)
-            if not os.path.exists(tucao_file_name):
-                with open(tucao_file_name, "w") as tmp:
-                    tmp.close()
-            with open(tucao_file_name, "r") as tucao_file:
-                self.tucao_dict = cPickle.load(tucao_file)
-        except Exception as er:
-            print "读取存档出错", er
+        # try:
+        tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path'))
+        tucao_file_name = tucao_file_path + str(self.gid) + ".tucao"
+        if not os.path.isdir(tucao_file_path):
+            os.makedirs(tucao_file_path)
+        if not os.path.exists(tucao_file_name):
+            with open(tucao_file_name, "w") as tmp:
+                tmp.close()
+        with open(tucao_file_name, "r") as tucao_file:
+            self.tucao_dict = cPickle.load(tucao_file)
+            logging.info("tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
+
+        # except Exception as er:
+        #     logging.error("Fail to load tucao:  ", er)
+        #     raise IOError("Fail to load tucao:  ", er)
 
     def follow(self, msg):
         match = re.match(r'^(?:!|！)(follow|unfollow) (\d+|me)', msg.content)
         if match:
-            print "following..."
+            logging.info("following...")
             command = str(match.group(1))
             target = str(match.group(2))
             if target == 'me':

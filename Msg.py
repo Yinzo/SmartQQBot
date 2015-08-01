@@ -28,7 +28,6 @@ class MsgWithContent(Msg):
     def combine_msg(content):
         msgtxt = ""
         for part in content:
-            # print type(part)
             if type(part) == type(u'\u0000'):
                 msgtxt += part
             elif len(part) > 1:

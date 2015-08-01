@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import threading
+
 from QQLogin import *
 from Configs import *
 from Msg import *
 from HttpClient import *
 
 
-class Pm:
+class Pm(threading.Thread):
     def __init__(self, operator, ip, use_global_config=True):
+        super(Pm, self).__init__()
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
         if isinstance(ip, (int, long, str)):
@@ -18,7 +21,6 @@ class Pm:
         self.tid = self.__operator.uin_to_account(self.tuin)
         self.msg_id = int(random.uniform(20000, 50000))
         self.msg_list = []
-        # TODO:消息历史保存功能
         self.global_config = DefaultConfigs()
         self.private_config = PmConfig(self)
         if use_global_config:
@@ -29,23 +31,22 @@ class Pm:
             "repeat",
             "callout",
         ]
-
-        print str(self.tid) + "私聊已激活, 当前执行顺序："
-        print self.process_order
+        logging.info(str(self.tid) + "私聊已激活, 当前执行顺序： " + str(self.process_order))
 
     def handle(self, msg):
         self.config.update()
-        print "msg handling."
+        logging.info("msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
             try:
-                if bool(self.config.conf.getint("pm", func)):
-                    print "evaling " + func
+                if bool(self.config.conf.getint("group", func)):
+                    logging.info("evaling " + func)
                     if eval("self." + func)(msg):
+                        logging.info("msg handle finished.")
                         return func
             except ConfigParser.NoOptionError as er:
-                print er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数"
-        print "finished."
+                logging.warning(er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
+        self.msg_list.append(msg)
 
     def reply(self, reply_content, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
@@ -61,37 +62,31 @@ class Pm:
             rsp_json = json.loads(rsp)
             if rsp_json['retcode'] != 0:
                 raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
-            print "Reply response: " + str(rsp_json)
+            logging.info("Reply successfully.")
+            logging.debug("Reply response: " + str(rsp))
             self.msg_id += 1
             return rsp_json
         except:
             if fail_times < 5:
-                # loggin.error("Response Error.Wait for 2s and Retrying."+str(lastFailTimes))
-                # logging.info(rsp)
-                print "Response Error.Wait for 2s and Retrying." + str(fail_times)
-                print rsp
+                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.debug(rsp)
                 time.sleep(2)
                 self.reply(reply_content, fail_times + 1)
             else:
-                print "Response Error over 5 times.Exit."
-                print "Content:" + str(reply_content)
-                # logging.error("Response Error over 5 times.Exit.")
-                # raise ValueError(rsp)
+                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
     def callout(self, msg):
         if "智障机器人" in msg.content:
-            print "calling out, trying to reply...."
+            logging.info(str(self.tid) + " calling me out, trying to reply....")
             self.reply("干嘛（‘·д·）")
-            print str(self.tid) + "叫我"
             return True
         return False
 
     def repeat(self, msg):
         if len(self.msg_list) > 0 and self.msg_list[-1].content == msg.content:
             if str(msg.content).strip() not in ("", " ", "[图片]", "[表情]"):
-                print "repeating, trying to reply..."
+                logging.info(str(self.tid) + " repeating, trying to reply " + str(msg.content))
                 self.reply(msg.content)
-                print str(self.tid) + "已复读：{" + str(msg.content) + "}"
                 return True
         return False

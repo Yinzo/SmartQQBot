@@ -33,6 +33,7 @@ class Group:
         else:
             self.config = self.private_config
         self.process_order = [
+            "follow",
             "repeat",
             "callout",
             "tucao",
@@ -135,7 +136,6 @@ class Group:
                     return True
         return False
 
-
     def tucao_save(self):
         tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path')) + str(self.gid) + ".tucao"
         with open(tucao_file_path, "w+") as tucao_file:
@@ -145,7 +145,8 @@ class Group:
         try:
             tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path'))
             tucao_file_name = tucao_file_path + str(self.gid) + ".tucao"
-            os.makedirs(tucao_file_path, exist_ok=True)
+            if not os.path.isdir(tucao_file_path):
+                os.makedirs(tucao_file_path)
             if not os.path.exists(tucao_file_name):
                 with open(tucao_file_name, "w") as tmp:
                     tmp.close()
@@ -153,3 +154,26 @@ class Group:
                 self.tucao_dict = cPickle.load(tucao_file)
         except Exception as er:
             print "读取存档出错", er
+
+    def follow(self, msg):
+        match = re.match(r'^(?:!|！)(follow|unfollow) (\d+|me)', msg.content)
+        if match:
+            print "following..."
+            command = str(match.group(1))
+            target = str(match.group(2))
+            if target == 'me':
+                target = str(self.__operator.uin_to_account(msg.send_uin))
+
+            if command == 'follow' and target not in self.follow_list:
+                self.follow_list.append(target)
+                self.reply("我开始关注" + target + "啦")
+                return True
+            elif command == 'unfollow' and target in self.follow_list:
+                self.follow_list.remove(target)
+                self.reply("我不关注" + target + "了")
+                return True
+        else:
+            if str(self.__operator.uin_to_account(msg.send_uin)) in self.follow_list:
+                self.reply(msg.content)
+                return True
+        return False

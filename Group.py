@@ -107,7 +107,7 @@ class Group:
         return False
 
     def tucao(self, msg):
-        match = re.match(r'^(?:!|！)(learn|delete) {(.+)}{(.+)}', msg.content)
+        match = re.match(r'^(?:!|！)(learn|delete) {(.+)}(?:\s*){(.+)}', msg.content)
         if match:
             command = str(match.group(1)).decode('utf8')
             key = str(match.group(2)).decode('utf8')

@@ -131,8 +131,7 @@ class Group:
         else:
             for key in self.tucao_dict.keys():
                 if str(key) in msg.content and self.tucao_dict[key]:
-                    ran_idx = random.randint(0, len(self.tucao_dict[key]) - 1)
-                    self.reply(self.tucao_dict[key][ran_idx])
+                    self.reply(random.choice(self.tucao_dict[key]))
                     return True
         return False
 

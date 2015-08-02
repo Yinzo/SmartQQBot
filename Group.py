@@ -36,6 +36,7 @@ class Group(threading.Thread):
         self.tucao_dict = {}
         self.global_config = DefaultConfigs()
         self.private_config = GroupConfig(self)
+        # TODO: 配置热切换
         if use_global_config:
             self.config = self.global_config
         else:
@@ -108,6 +109,7 @@ class Group(threading.Thread):
         return False
 
     def tucao(self, msg):
+        # TODO:现有吐槽队列展示功能
         match = re.match(r'^(?:!|！)(learn|delete) {(.+)}(?:\s*){(.+)}', msg.content)
         if match:
             logging.info("tucao command detected.")
@@ -157,9 +159,11 @@ class Group(threading.Thread):
             with open(tucao_file_name, "w") as tmp:
                 tmp.close()
         with open(tucao_file_name, "r") as tucao_file:
-            self.tucao_dict = cPickle.load(tucao_file)
-            logging.info("tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
-
+            try:
+                self.tucao_dict = cPickle.load(tucao_file)
+                logging.info("tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
+            except EOFError:
+                logging.info("tucao file is empty.")
         # except Exception as er:
         #     logging.error("Fail to load tucao:  ", er)
         #     raise IOError("Fail to load tucao:  ", er)

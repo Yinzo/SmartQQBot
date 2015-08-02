@@ -5,7 +5,7 @@ class HttpClient:
   __req = urllib2.build_opener(urllib2.HTTPCookieProcessor(__cookie))
   __req.addheaders = [
     ('Accept', 'application/javascript, */*;q=0.8'),
-    ('User-Agent', 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)')
+    ('User-Agent', "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36")
   ]
   urllib2.install_opener(__req)
 

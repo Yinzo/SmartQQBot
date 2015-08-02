@@ -2,6 +2,7 @@
 
 from Group import *
 from Pm import *
+from Sess import *
 
 logging.basicConfig(
     filename='smartqq.log',
@@ -67,7 +68,22 @@ class MsgHandler:
                 tgt_pm.msg_list.append(msg)
 
             elif isinstance(msg, SessMsg):
-                pass
+                tid = self.__operator.get_account(msg)
+                if tid not in self.__sess_list:
+                    self.__sess_list[tid] = Sess(self.__operator, msg)
+                    self.__sess_list[tid].start()
+                    logging.debug("Now sess thread list:  " + str(self.__sess_list))
+
+                tgt_sess = self.__sess_list[tid]
+                if len(tgt_sess.msg_list) >= 1 and msg.time == tgt_sess.msg_list[-1].time \
+                        and msg.from_uin == tgt_sess.msg_list[-1].from_uin \
+                        and msg.content == tgt_sess.msg_list[-1].content:
+                    # 私聊没有seq可用于判断重复，只能抛弃同一个人在同一时间戳发出的同一内容的消息。
+                    logging.info("消息重复，抛弃")
+                    return
+                tgt_sess.msg_id = msg.msg_id
+                self.__sess_list[tid].handle(msg)
+                tgt_sess.msg_list.append(msg)
 
             elif isinstance(msg, InputNotify):
                 self.__input_notify_handler(msg)
@@ -96,80 +112,3 @@ class MsgHandler:
             str(msg.reason),
         ))
         raise KeyboardInterrupt("Kicked")
-
-    def reply_msg(self, received_msg, reply_content, fail_times=0):
-        #TODO: 此方法将被遗弃
-        last_fail_times = fail_times
-
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode(
-            "utf-8")
-        rsp = ""
-        req_url = ""
-        data = ""
-        try:
-            if isinstance(received_msg, SessMsg):
-                ts = time.time()
-                while ts < 1000000000000:
-                    ts *= 10
-                ts = int(ts)
-                group_sig = ""
-                try:
-                    group_sig = json.loads(HttpClient().Get(
-                        'http://d.web2.qq.com/channel/get_c2cmsg_sig2?id={0}&to_uin={1}&clientid={2}&psessionid={3}&service_type={4}&t={5}'.format(
-                            received_msg.id, received_msg.from_uin, self.__operator.client_id,
-                            self.__operator.psessionid, received_msg.service_type, ts),
-                        self.__operator.default_config.connect_referer))
-                    if group_sig == "":
-                        raise ValueError("Receive a None when getting group sig")
-                except BaseException, e:
-                    print "Getting group sig met an error: ", e
-                req_url = "http://d.web2.qq.com/channel/send_sess_msg2"
-                data = (
-                    ('r',
-                     '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
-                         received_msg.from_uin, self.__operator.client_id, received_msg.msg_id + 1,
-                         self.__operator.psessionid, fix_content, group_sig, received_msg.service_type)),
-                    ('clientid', self.__operator.client_id),
-                    ('psessionid', self.__operator.psessionid),
-                    ('group_sig', group_sig),
-                    ('service_type', received_msg.service_type)
-                )
-            elif isinstance(received_msg, PmMsg):
-                req_url = "http://d.web2.qq.com/channel/send_buddy_msg2"
-                data = (
-                    ('r',
-                     '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(
-                         received_msg.from_uin, self.__operator.client_id, received_msg.msg_id + 1,
-                         self.__operator.psessionid, fix_content)),
-                    ('clientid', self.__operator.client_id),
-                    ('psessionid', self.__operator.psessionid)
-                )
-            elif isinstance(received_msg, GroupMsg):
-                req_url = "http://d.web2.qq.com/channel/send_qun_msg2"
-                data = (
-                    ('r',
-                     '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(
-                         received_msg.from_uin, self.__operator.client_id, received_msg.msg_id + 1,
-                         self.__operator.psessionid, fix_content)),
-                    ('clientid', self.__operator.client_id),
-                    ('psessionid', self.__operator.psessionid)
-                )
-            rsp = HttpClient().Post(req_url, data, self.__operator.default_config.connect_referer)
-            rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
-                raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
-            print "Reply response: " + str(rsp_json)
-            return rsp_json
-        except:
-            if last_fail_times < 5:
-                # loggin.error("Response Error.Wait for 2s and Retrying."+str(lastFailTimes))
-                # logging.info(rsp)
-                print "Response Error.Wait for 2s and Retrying." + str(last_fail_times)
-                print rsp
-                last_fail_times += 1
-                time.sleep(2)
-                self.reply_msg(received_msg, reply_content, last_fail_times + 1)
-            else:
-                print "Response Error over 5 times.Exit."
-                # logging.error("Response Error over 5 times.Exit.")
-                raise ValueError(rsp)

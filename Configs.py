@@ -68,10 +68,18 @@ class GroupConfig(Configs):
         Configs.__init__(self)
         self.group = group
         self.config_file_name = str(group.gid) + ".conf"
-        self.config_path = "./config/" + self.config_file_name
+        self.config_path = "./config/group/" + self.config_file_name
         self.global_config = DefaultConfigs()
         self.check_config_files_exists()
         self.conf.read(self.config_path)
+
+    def check_config_files_exists(self):
+        if not os.path.isdir("./config/group/"):
+            os.mkdir("./config/group/")
+        if not os.path.exists(self.config_path):
+            with open(self.config_path, "w") as tmp:
+                tmp.close()
+            self.set_default()
 
     def set_default(self):
         self.conf.read(self.config_path)
@@ -86,14 +94,48 @@ class PmConfig(Configs):
         Configs.__init__(self)
         self.pm = pm
         self.config_file_name = str(pm.tid) + ".conf"
-        self.config_path = "./config/" + self.config_file_name
+        self.config_path = "./config/pm/" + self.config_file_name
         self.global_config = DefaultConfigs()
         self.check_config_files_exists()
         self.conf.read(self.config_path)
+
+    def check_config_files_exists(self):
+        if not os.path.isdir("./config/pm/"):
+            os.mkdir("./config/pm/")
+        if not os.path.exists(self.config_path):
+            with open(self.config_path, "w") as tmp:
+                tmp.close()
+            self.set_default()
+
 
     def set_default(self):
         self.conf.read(self.config_path)
         self.conf.add_section('pm')
         for option in self.global_config.conf.options('pm'):
             self.conf.set('pm', option, self.global_config.conf.get('pm', option))
+        self.conf.write(open(self.config_path, "w"))
+
+class SessConfig(Configs):
+    def __init__(self, sess):
+        Configs.__init__(self)
+        self.sess = sess
+        self.config_file_name = str(sess.tid) + ".conf"
+        self.config_path = "./config/sess/" + self.config_file_name
+        self.global_config = DefaultConfigs()
+        self.check_config_files_exists()
+        self.conf.read(self.config_path)
+
+    def check_config_files_exists(self):
+        if not os.path.isdir("./config/sess/"):
+            os.mkdir("./config/sess/")
+        if not os.path.exists(self.config_path):
+            with open(self.config_path, "w") as tmp:
+                tmp.close()
+            self.set_default()
+
+    def set_default(self):
+        self.conf.read(self.config_path)
+        self.conf.add_section('sess')
+        for option in self.global_config.conf.options('sess'):
+            self.conf.set('sess', option, self.global_config.conf.get('sess', option))
         self.conf.write(open(self.config_path, "w"))

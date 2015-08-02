@@ -18,6 +18,7 @@ logging.basicConfig(
     datefmt='%a, %d %b %Y %H:%M:%S',
 )
 
+
 def get_revalue(html, rex, er, ex):
     v = re.search(rex, html)
 
@@ -48,9 +49,9 @@ class QQ:
         self.ptwebqq = ''
         self.psessionid = ''
         self.appid = 0
-        self.vfwebqq = 0
+        self.vfwebqq = ''
         self.qrcode_path = self.default_config.conf.get("global", "qrcode_path")  # QRCode保存路径
-        self.username = ""
+        self.username = ''
         self.account = 0
 
     def login_by_qrcode(self):
@@ -82,6 +83,7 @@ class QQ:
                 ret = html.split("'")
                 if ret[1] == '65' or ret[1] == '0':  # 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
                     break
+                # TODO: 失效处理
                 time.sleep(2)
             if ret[1] == '0' or error_times > 10:
                 break
@@ -104,7 +106,6 @@ class QQ:
             html = self.req.Get(url.replace('&amp;', '&'))
             url = get_revalue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
             self.req.Get(url)
-
 
         self.ptwebqq = self.req.getCookie('ptwebqq')
 
@@ -151,11 +152,12 @@ class QQ:
 
             if ret_code in (102, ):
                 logging.info("received retcode: " + str(ret_code) + ": No message.")
+                time.sleep(1)
                 return
 
             if ret_code in (121, ):
                 logging.warning("received retcode: " + str(ret_code))
-                raise KeyError("Account offline.")
+                exit("Account offline.")
 
             elif ret_code == 0:
                 msg_list = []
@@ -192,6 +194,8 @@ class QQ:
 
         except ValueError, e:
             logging.warning("Check error occured: " + str(e))
+        # except KeyError, e:
+        #     exit(e)
         except BaseException, e:
             logging.warning("Unknown check error occured, retrying. Error: " + str(e))
             return self.check_msg()

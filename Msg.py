@@ -47,7 +47,7 @@ class SessMsg(MsgWithContent):
         self.service_type = json_input['value']['service_type']
         self.id = json_input['value']['id']
         self.ruin = json_input['value']['ruin']
-        self.flags = json_input['value']['flag']
+        self.flags = json_input['value']['flags']
 
 
 class PmMsg(MsgWithContent):

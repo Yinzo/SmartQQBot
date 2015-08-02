@@ -39,7 +39,7 @@ class Pm(threading.Thread):
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
             try:
-                if bool(self.config.conf.getint("group", func)):
+                if bool(self.config.conf.getint("pm", func)):
                     logging.info("evaling " + func)
                     if eval("self." + func)(msg):
                         logging.info("msg handle finished.")

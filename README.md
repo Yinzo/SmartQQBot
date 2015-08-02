@@ -85,3 +85,4 @@ ERROR | 影响程序正常运行的错误提示
 + 编写文档
 + 细化配置项（tucao_auth = (all/self/custom/none)）
 + Friend类补充
++ 寻找偶尔被保护的原因

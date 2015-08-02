@@ -80,11 +80,10 @@ class QQ:
                 html = self.req.Get(
                     'https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid={0}&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-{1}&mibao_css={2}&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'.format(
                         appid, date_to_millis(datetime.datetime.utcnow()) - star_time, mibao_css, js_ver, sign), initurl)
+                logging.debug("QRCode check html:   " + str(html))
                 ret = html.split("'")
-                if ret[1] == '65' or ret[1] == '0':  # 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
+                if ret[1] in ('0', '65'):  # 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
                     break
-                # TODO: 失效处理
-                time.sleep(2)
             if ret[1] == '0' or error_times > 10:
                 break
 
@@ -161,20 +160,27 @@ class QQ:
 
             elif ret_code == 0:
                 msg_list = []
+                pm_list = []
+                sess_list = []
+                group_list = []
+                notify_list = []
                 for msg in ret['result']:
                     ret_type = msg['poll_type']
                     if ret_type == 'message':
-                        msg_list.append(PmMsg(msg))
+                        pm_list.append(PmMsg(msg))
                     elif ret_type == 'group_message':
-                        msg_list.append(GroupMsg(msg))
+                        group_list.append(GroupMsg(msg))
                     elif ret_type == 'sess_message':
-                        msg_list.append(SessMsg(msg))
+                        sess_list.append(SessMsg(msg))
                     elif ret_type == 'input_notify':
-                        msg_list.append(InputNotify(msg))
+                        notify_list.append(InputNotify(msg))
                     elif ret_code == 'kick_message':
-                        msg_list.append(KickMessage(msg))
+                        notify_list.append(KickMessage(msg))
                     else:
                         logging.warning("unknown message type: " + str(ret_type) + "details:    " + str(msg))
+
+                group_list.sort(key=lambda x:x.seq)
+                msg_list += pm_list + sess_list + group_list + notify_list
                 if not msg_list:
                     return
                 return msg_list

@@ -45,6 +45,7 @@ class Group(threading.Thread):
             "follow",
             "repeat",
             "callout",
+            "command",
             "tucao",
         ]
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
@@ -93,6 +94,23 @@ class Group(threading.Thread):
                 logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
+    def command(self, msg):
+        match = re.match(r'^(?:!|！)([^\s]+)', msg.content)
+        if match:
+            command = str(match.group(1))
+            logging.info("command format detected, command: " + command)
+            if command == "吐槽列表":
+                self.show_tucao_list()
+                return True
+        return False
+
+    def show_tucao_list(self):
+        result = ""
+        for key in self.tucao_dict:
+            result += "关键字：{0}      回复：{1}\n".format(key, " / ".join(self.tucao_dict[key]))
+        logging.info("Replying the list of tucao")
+        self.reply(result)
+
     def callout(self, msg):
         if "智障机器人" in msg.content:
             logging.info(str(self.gid) + " calling me out, trying to reply....")
@@ -110,7 +128,7 @@ class Group(threading.Thread):
 
     def tucao(self, msg):
         # TODO:现有吐槽队列展示功能
-        match = re.match(r'^(?:!|！)(learn|delete) {(.+)}(?:\s*){(.+)}', msg.content)
+        match = re.match(r'^(?:!|！)(learn|delete)(?:\s{0,1}){(.+)}(?:\s{0,1}){(.+)}', msg.content)
         if match:
             logging.info("tucao command detected.")
             command = str(match.group(1)).decode('utf8')

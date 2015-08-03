@@ -45,7 +45,8 @@ class Group(threading.Thread):
             "follow",
             "repeat",
             "callout",
-            "command",
+            "command_1arg",
+            "command_2arg",
             "tucao",
         ]
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
@@ -63,7 +64,7 @@ class Group(threading.Thread):
                         logging.info("msg handle finished.")
                         return func
             except ConfigParser.NoOptionError as er:
-                logging.warning(er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
+                logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
     def reply(self, reply_content, fail_times=0):
@@ -94,14 +95,31 @@ class Group(threading.Thread):
                 logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
-    def command(self, msg):
-        match = re.match(r'^(?:!|！)([^\s]+)', msg.content)
+    def command_1arg(self, msg):
+        # webqq接受的消息会以空格结尾
+        match = re.match(r'^(?:!|！)([^\s\{\}]+)\s*$', msg.content)
         if match:
             command = str(match.group(1))
             logging.info("command format detected, command: " + command)
+
             if command == "吐槽列表":
                 self.show_tucao_list()
                 return True
+
+        return False
+
+    def command_2arg(self, msg):
+        match = re.match(r'^(?:!|！)([^\s\{\}]+)(?:\s{0,1})\{([^\s\{\}]+)\}\s*$', msg.content)
+        if match:
+            command = str(match.group(1))
+            arg1 = str(match.group(2))
+            logging.info("command format detected, command:{0}, arg1:{1}".format(command, arg1))
+            if command == "删除关键字" and unicode(arg1) in self.tucao_dict:
+                self.tucao_dict.pop(unicode(arg1))
+                self.reply("已删除关键字:{0}".format(arg1))
+                self.tucao_save()
+                return True
+
         return False
 
     def show_tucao_list(self):
@@ -135,7 +153,7 @@ class Group(threading.Thread):
             key = str(match.group(2)).decode('utf8')
             value = str(match.group(3)).decode('utf8')
             if command == 'learn':
-                if key in self.tucao_dict:
+                if key in self.tucao_dict and value not in self.tucao_dict[key]:
                     self.tucao_dict[key].append(value)
                 else:
                     self.tucao_dict[key] = [value]

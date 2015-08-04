@@ -9,7 +9,7 @@ from HttpClient import *
 
 
 class Pm(threading.Thread):
-    def __init__(self, operator, ip, use_global_config=True):
+    def __init__(self, operator, ip):
         super(Pm, self).__init__()
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
@@ -23,18 +23,25 @@ class Pm(threading.Thread):
         self.msg_list = []
         self.global_config = DefaultConfigs()
         self.private_config = PmConfig(self)
-        if use_global_config:
-            self.config = self.global_config
-        else:
-            self.config = self.private_config
+        self.update_config()
         self.process_order = [
+            "command_0arg",
+            "command_1arg",
             "repeat",
             "callout",
         ]
         logging.info(str(self.tid) + "私聊已激活, 当前执行顺序： " + str(self.process_order))
 
-    def handle(self, msg):
+    def update_config(self):
+        use_private_config = bool(self.private_config.conf.getint("pm", "use_private_config"))
+        if use_private_config:
+            self.config = self.private_config
+        else:
+            self.config = self.global_config
         self.config.update()
+
+    def handle(self, msg):
+        self.update_config()
         logging.info("msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
@@ -89,4 +96,22 @@ class Pm(threading.Thread):
                 logging.info(str(self.tid) + " repeating, trying to reply " + str(msg.content))
                 self.reply(msg.content)
                 return True
+        return False
+
+    def command_0arg(self, msg):
+        # webqq接受的消息会以空格结尾
+        match = re.match(r'^(?:!|！)([^\s\{\}]+)\s*$', msg.content)
+        if match:
+            command = str(match.group(1))
+            logging.info("command format detected, command: " + command)
+
+        return False
+
+    def command_1arg(self, msg):
+        match = re.match(r'^(?:!|！)([^\s\{\}]+)(?:\s?)\{([^\s\{\}]+)\}\s*$', msg.content)
+        if match:
+            command = str(match.group(1))
+            arg1 = str(match.group(2))
+            logging.info("command format detected, command:{0}, arg1:{1}".format(command, arg1))
+
         return False

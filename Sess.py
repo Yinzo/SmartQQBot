@@ -9,7 +9,7 @@ from HttpClient import *
 
 
 class Sess(threading.Thread):
-    def __init__(self, operator, sess_msg, use_global_config=True):
+    def __init__(self, operator, sess_msg):
         super(Sess, self).__init__()
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
@@ -25,17 +25,22 @@ class Sess(threading.Thread):
         self.msg_list = []
         self.global_config = DefaultConfigs()
         self.private_config = SessConfig(self)
-        if use_global_config:
-            self.config = self.global_config
-        else:
-            self.config = self.private_config
+        self.update_config()
         self.process_order = [
             "callout",
         ]
         logging.info(str(self.tid) + "临时聊天已激活, 当前执行顺序： " + str(self.process_order))
 
-    def handle(self, msg):
+    def update_config(self):
+        use_private_config = bool(self.private_config.conf.getint("sess", "use_private_config"))
+        if use_private_config:
+            self.config = self.private_config
+        else:
+            self.config = self.global_config
         self.config.update()
+
+    def handle(self, msg):
+        self.update_config()
         logging.info("msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:

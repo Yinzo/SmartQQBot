@@ -18,7 +18,7 @@ logging.basicConfig(
 
 class Group(threading.Thread):
 
-    def __init__(self, operator, ip, use_global_config=True):
+    def __init__(self, operator, ip):
         super(Group, self).__init__()
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
@@ -36,24 +36,29 @@ class Group(threading.Thread):
         self.tucao_dict = {}
         self.global_config = DefaultConfigs()
         self.private_config = GroupConfig(self)
-        # TODO: 配置热切换
-        if use_global_config:
-            self.config = self.global_config
-        else:
-            self.config = self.private_config
+        self.update_config()
         self.process_order = [
             "follow",
             "repeat",
             "callout",
+            "command_0arg",
             "command_1arg",
-            "command_2arg",
             "tucao",
         ]
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
 
-    def handle(self, msg):
+    def update_config(self):
+        self.private_config.update()
+        use_private_config = bool(self.private_config.conf.getint("group", "use_private_config"))
+        if use_private_config:
+            self.config = self.private_config
+        else:
+            self.config = self.global_config
         self.config.update()
+
+    def handle(self, msg):
+        self.update_config()
         logging.info("msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
@@ -95,7 +100,7 @@ class Group(threading.Thread):
                 logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
-    def command_1arg(self, msg):
+    def command_0arg(self, msg):
         # webqq接受的消息会以空格结尾
         match = re.match(r'^(?:!|！)([^\s\{\}]+)\s*$', msg.content)
         if match:
@@ -108,8 +113,8 @@ class Group(threading.Thread):
 
         return False
 
-    def command_2arg(self, msg):
-        match = re.match(r'^(?:!|！)([^\s\{\}]+)(?:\s{0,1})\{([^\s\{\}]+)\}\s*$', msg.content)
+    def command_1arg(self, msg):
+        match = re.match(r'^(?:!|！)([^\s\{\}]+)(?:\s?)\{([^\s\{\}]+)\}\s*$', msg.content)
         if match:
             command = str(match.group(1))
             arg1 = str(match.group(2))
@@ -145,8 +150,7 @@ class Group(threading.Thread):
         return False
 
     def tucao(self, msg):
-        # TODO:现有吐槽队列展示功能
-        match = re.match(r'^(?:!|！)(learn|delete)(?:\s{0,1}){(.+)}(?:\s{0,1}){(.+)}', msg.content)
+        match = re.match(r'^(?:!|！)(learn|delete)(?:\s?){(.+)}(?:\s?){(.+)}', msg.content)
         if match:
             logging.info("tucao command detected.")
             command = str(match.group(1)).decode('utf8')

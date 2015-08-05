@@ -2,10 +2,11 @@ SmartQQ-Bot Ver-0.2
 =========
 **注意:**此框架仍处于开发中，许多模块仍可能出现较大改动，如果仍想继续升级该框架，推荐各位暂时不要进行较大规模的自定义。
 
-***该分支使用登陆部分逻辑与代码参考了[原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)](https://github.com/xqin/SmartQQ-for-Raspberry-Pi)这一项目***，以此为基础制作了基于SmartQQ的自动机器人*框架*。
+***该分支使用二维码登陆的协议参考了[原名：SmartQQ-for-Raspberry-Pi(PiWebQQV2)](https://github.com/xqin/SmartQQ-for-Raspberry-Pi)这一项目***，自行整合开发了基于SmartQQ的自动机器人**框架**。
 
 登陆时采用QQ安全中心的二维码做为登陆条件, 不需要在程序里输入QQ号码及QQ密码。
 
+*旧版机器人仍有保留在old_QQBot.py中。*
 ##基本功能
 
 ###群聊功能：
@@ -119,3 +120,10 @@ ERROR | 影响程序正常运行的错误提示
 + 细化配置项（tucao_auth = (all/self/custom/none)）
 + Friend类补充
 + 寻找偶尔被保护的原因
+
+
+##账户被保护的可能原因：
++ 多次发言中包含网址
++ 短时间内多次发言中包含敏感词汇
++ 短时间多次发送相同内容
++ 短时间异地登陆

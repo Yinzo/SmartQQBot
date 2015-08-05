@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# Code by Yinzo:        https://github.com/Yinzo
+# Origin repository:    https://github.com/Yinzo/SmartQQBot
+
 import threading
 
 from QQLogin import *
@@ -25,6 +28,7 @@ class Sess(threading.Thread):
         self.msg_list = []
         self.global_config = DefaultConfigs()
         self.private_config = SessConfig(self)
+        self.config = self.global_config
         self.update_config()
         self.process_order = [
             "callout",
@@ -84,13 +88,14 @@ class Sess(threading.Thread):
             return self.get_group_sig(fail_time + 1)
 
     def reply(self, reply_content, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
+        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode(
+            "utf-8")
         rsp = ""
         try:
-
             req_url = "http://d.web2.qq.com/channel/send_sess_msg2"
             data = (
-                ('r','{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
+                ('r',
+                 '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
                      self.tuin,
                      self.__operator.client_id,
                      self.msg_id + 1,

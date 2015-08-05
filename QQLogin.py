@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# Code by Yinzo:        https://github.com/Yinzo
+# Origin repository:    https://github.com/Yinzo/SmartQQBot
+
 import random
 import time
 import datetime
@@ -79,7 +83,8 @@ class QQ:
             while True:
                 html = self.req.Get(
                     'https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid={0}&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-{1}&mibao_css={2}&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'.format(
-                        appid, date_to_millis(datetime.datetime.utcnow()) - star_time, mibao_css, js_ver, sign), initurl)
+                        appid, date_to_millis(datetime.datetime.utcnow()) - star_time, mibao_css, js_ver, sign),
+                    initurl)
                 logging.debug("QRCode check html:   " + str(html))
                 ret = html.split("'")
                 if ret[1] in ('0', '65'):  # 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
@@ -135,7 +140,32 @@ class QQ:
 
         logging.info("QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
 
-    def check_msg(self):
+    def relogin(self, error_times=0):
+        if error_times >= 10:
+            return False
+        try:
+            html = self.req.Post('http://d.web2.qq.com/channel/login2', {
+                'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","key":"","status":"online"}}'.format(
+                    self.ptwebqq,
+                    self.client_id,
+                    self.psessionid)
+            }, self.default_config.conf.get("global", "connect_referer"))
+            logging.debug("relogin html:  " + str(html))
+            ret = json.loads(html)
+            self.vfwebqq = ret['result']['vfwebqq']
+            self.psessionid = ret['result']['psessionid']
+            return True
+        except:
+            logging.info("login fail, retryng..." + str(error_times))
+            return self.relogin(error_times + 1)
+
+    def check_msg(self, error_times=0):
+        if error_times >= 5:
+            if not self.relogin():
+                raise IOError("Account offline.")
+            else:
+                error_times = 0
+
         # 调用后进入单次轮询，等待服务器发回状态。
         html = self.req.Post('http://d.web2.qq.com/channel/poll2', {
             'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.psessionid, self.ptwebqq,
@@ -149,14 +179,18 @@ class QQ:
 
             ret_code = ret['retcode']
 
-            if ret_code in (102, ):
+            if ret_code in (102,):
                 logging.info("received retcode: " + str(ret_code) + ": No message.")
                 time.sleep(1)
                 return
 
-            if ret_code in (121, ):
+            if ret_code in (103,):
+                logging.warning("received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
+                return self.check_msg(error_times + 1)
+
+            if ret_code in (121,):
                 logging.warning("received retcode: " + str(ret_code))
-                exit("Account offline.")
+                return self.check_msg(5)
 
             elif ret_code == 0:
                 msg_list = []
@@ -179,7 +213,7 @@ class QQ:
                     else:
                         logging.warning("unknown message type: " + str(ret_type) + "details:    " + str(msg))
 
-                group_list.sort(key=lambda x:x.seq)
+                group_list.sort(key=lambda x: x.seq)
                 msg_list += pm_list + sess_list + group_list + notify_list
                 if not msg_list:
                     return
@@ -200,11 +234,11 @@ class QQ:
 
         except ValueError, e:
             logging.warning("Check error occured: " + str(e))
-        # except KeyError, e:
-        #     exit(e)
+            return self.check_msg(error_times + 1)
+
         except BaseException, e:
             logging.warning("Unknown check error occured, retrying. Error: " + str(e))
-            return self.check_msg()
+            return self.check_msg(error_times + 1)
 
     # 查询QQ号，通常首次用时0.2s，以后基本不耗时
     def get_account(self, msg):
@@ -225,7 +259,8 @@ class QQ:
             try:
                 logging.info("Requesting the account by uin:    " + str(tuin))
                 info = json.loads(HttpClient().Get(
-                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(uin_str, self.vfwebqq),
+                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}'.format(uin_str,
+                                                                                                  self.vfwebqq),
                     self.default_config.conf.get("global", "connect_referer")))
                 logging.debug("uin_request html:    " + str(info))
                 if info['retcode'] != 0:

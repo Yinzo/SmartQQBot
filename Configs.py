@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# Code by Yinzo:        https://github.com/Yinzo
+# Origin repository:    https://github.com/Yinzo/SmartQQBot
+
 import ConfigParser
 import os
 

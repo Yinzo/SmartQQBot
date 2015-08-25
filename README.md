@@ -12,7 +12,7 @@ SmartQQ-Bot Ver-0.2
 ###群聊功能：
 <small>注：以下命令皆是在qq中发送，群聊命令发送到所在群中</small>
 
-+ 群聊吐槽功能(tucao)，类似于小黄鸡，在群中通过发送```!learn {ha}{哈哈}```语句，则机器人检测到发言中包含“ha”时将自动回复“哈哈”。```!delete {ha}{哈哈}```可以删除该内容。吐槽内容本地保存在data/tucao_save/中。
++ 群聊吐槽功能(tucao)，类似于小黄鸡，在群中通过发送`!learn {ha}{哈哈}`语句，则机器人检测到发言中包含“ha”时将自动回复“哈哈”。`!delete {ha}{哈哈}`可以删除该内容。吐槽内容本地保存在data/tucao_save/中。
 
 + 群聊复读功能(repeat)，检测到群聊中***连续两个***回复内容相同，将自动复读该内容1次。
 
@@ -35,7 +35,7 @@ SmartQQ-Bot Ver-0.2
 + 唤出功能(callout)，具体同私聊与群聊。
 
 ##快速开始
-+ ```python main.py```
++ `python main.py`
 + 等待提示“登陆二维码下载成功，请扫描”，打开脚本所在目录的v.jpg图片扫描二维码。
 + 等待登陆成功的提示
 + 群聊各功能需要通过修改config文件夹下的共有设置QQBot_default.conf中的功能开关。
@@ -50,20 +50,26 @@ SmartQQ-Bot Ver-0.2
 	+ 临时对话功能：Sess.py
 
 + 在对应类(class)中编写方法，方法的参数固定为self与msg，即
+
 ```def [Function Name](self, msg):```
-	+ 需要注意方法的返回值，执行成功请返回```True```,没有执行或执行失败请返回```False```
+
++ 需要注意方法的返回值，执行成功请返回`True`,没有执行或执行失败请返回`False`
 + 在对应类的process_order中，选择适当的位置加入你添加的功能的名称（Function Name），你添加的位置决定了功能的执行顺序如
+
 ```
 self.process_order = [
             "repeat",
             "callout",
         ]
-```    
+```
+
 + 在共有设置中添加功能的开关，如
+
 ```
 callout = 0
 repeat = 1
 ```
+
 0代表关闭、1代表开启
 + (可选)在Config.py中的DefaultConfigs类下的__init__方法中添加属性的默认参数。
 + 私有设置会在程序启动后收到消息时自动由共有设置生成

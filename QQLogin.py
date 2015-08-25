@@ -127,7 +127,7 @@ class QQ:
                 login_error = 0
             except:
                 login_error += 1
-                logging.info("login fail, retryng...")
+                logging.info("login fail, retrying...")
 
         if ret['retcode'] != 0:
             logging.debug(str(ret))
@@ -186,6 +186,7 @@ class QQ:
 
             if ret_code in (103,):
                 logging.warning("received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
+                time.sleep(1)
                 return self.check_msg(error_times + 1)
 
             if ret_code in (121,):
@@ -234,10 +235,12 @@ class QQ:
 
         except ValueError, e:
             logging.warning("Check error occured: " + str(e))
+            time.sleep(1)
             return self.check_msg(error_times + 1)
 
         except BaseException, e:
             logging.warning("Unknown check error occured, retrying. Error: " + str(e))
+            time.sleep(1)
             return self.check_msg(error_times + 1)
 
     # 查询QQ号，通常首次用时0.2s，以后基本不耗时

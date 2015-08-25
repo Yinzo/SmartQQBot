@@ -66,7 +66,7 @@ class QQ:
         html = self.req.Get(initurl + '0')
 
         appid = get_revalue(html, r'var g_appid =encodeURIComponent\("(\d+)"\);', 'Get AppId Error', 1)
-        sign = get_revalue(html, r'var g_login_sig=encodeURIComponent\("(.+?)"\);', 'Get Login Sign Error', 0)
+        sign = get_revalue(html, r'var g_login_sig=encodeURIComponent\("(.*?)"\);', 'Get Login Sign Error', 0)
         js_ver = get_revalue(html, r'var g_pt_version=encodeURIComponent\("(\d+)"\);', 'Get g_pt_version Error', 1)
         mibao_css = get_revalue(html, r'var g_mibao_css=encodeURIComponent\("(.+?)"\);', 'Get g_mibao_css Error', 1)
 

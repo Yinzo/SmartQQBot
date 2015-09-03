@@ -4,7 +4,6 @@
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
 import cPickle
-import threading
 
 from QQLogin import *
 from Configs import *
@@ -19,10 +18,9 @@ logging.basicConfig(
 )
 
 
-class Group(threading.Thread):
+class Group:
 
     def __init__(self, operator, ip):
-        super(Group, self).__init__()
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
         if isinstance(ip, (int, long, str)):
@@ -70,6 +68,7 @@ class Group(threading.Thread):
                     logging.info("evaling " + func)
                     if eval("self." + func)(msg):
                         logging.info("msg handle finished.")
+                        self.msg_list.append(msg)
                         return func
             except ConfigParser.NoOptionError as er:
                 logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")

@@ -11,9 +11,8 @@ from Msg import *
 from HttpClient import *
 
 
-class Pm(threading.Thread):
+class Pm:
     def __init__(self, operator, ip):
-        super(Pm, self).__init__()
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
         if isinstance(ip, (int, long, str)):
@@ -53,6 +52,7 @@ class Pm(threading.Thread):
                     logging.info("evaling " + func)
                     if eval("self." + func)(msg):
                         logging.info("msg handle finished.")
+                        self.msg_list.append(msg)
                         return func
             except ConfigParser.NoOptionError as er:
                 logging.warning(er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")

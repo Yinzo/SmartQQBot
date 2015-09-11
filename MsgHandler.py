@@ -134,7 +134,6 @@ class MsgHandleQueue(threading.Thread):
 
     def run(self):
         while 1:
-            logging.debug("checking msg queue.")
             if len(self.msg_queue):
                 self.handler.handle(self.msg_queue.pop(0))
                 logging.debug("queue handling.Now queue length:" + str(len(self.msg_queue)))

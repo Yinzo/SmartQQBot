@@ -76,6 +76,7 @@ class QQ:
         ret = []
         while True:
             error_times += 1
+            print 'download QR code image...'
             self.req.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
                               self.qrcode_path)
             logging.info("Please scan the downloaded QRCode")

@@ -39,10 +39,11 @@ class MsgHandler:
             elif isinstance(msg, MsgWithContent):
                 logging.info(str(self.__operator.get_account(msg)) + ":" + msg.content)
 
-            if isinstance(msg, GroupMsg):
+            if isinstance(msg, GroupMsg):#群聊信息的处理
                 # 判断群对象是否存在，info_seq实际上为群号
                 if msg.info_seq not in self.__group_list:
                     self.__group_list[msg.info_seq] = Group(self.__operator, msg)
+                    # 维护一个线程队列，然后每一个线程处理各自的信息
                     self.process_threads[msg.info_seq] = MsgHandleQueue(self.__group_list[msg.info_seq])
                     self.process_threads[msg.info_seq].start()
                     logging.debug("Now group list:  " + str(self.__group_list))
@@ -57,10 +58,11 @@ class MsgHandler:
 
                 self.process_threads[msg.info_seq].append(msg)
 
-            elif isinstance(msg, PmMsg):
+            elif isinstance(msg, PmMsg):#私聊信息处理
                 tid = self.__operator.get_account(msg)
                 if tid not in self.__pm_list:
                     self.__pm_list[tid] = Pm(self.__operator, msg)
+                    # 维护一个线程队列，然后每一个线程处理各自的信息
                     self.process_threads[tid] = MsgHandleQueue(self.__pm_list[tid])
                     self.process_threads[tid].start()
                     logging.debug("Now pm thread list:  " + str(self.__pm_list))
@@ -77,7 +79,7 @@ class MsgHandler:
 
                 self.process_threads[tid].append(msg)
 
-            elif isinstance(msg, SessMsg):
+            elif isinstance(msg, SessMsg):#临时会话的处理
                 tid = self.__operator.get_account(msg)
                 if tid not in self.__sess_list:
                     self.__sess_list[tid] = Sess(self.__operator, msg)
@@ -123,7 +125,7 @@ class MsgHandler:
         ))
         raise KeyboardInterrupt("Kicked")
 
-
+# 为了加速程序处理消息，采用了多线程技术
 class MsgHandleQueue(threading.Thread):
 
     def __init__(self, handler):

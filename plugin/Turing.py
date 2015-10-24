@@ -21,7 +21,7 @@ def strip_tags(html):
 class Turing:
     def getReply(self,info):
         # try:
-            info=urllib2.quote(info)
+            info=urllib2.quote(info.encode('utf-8'))
             # print info
             urlStr="http://www.tuling123.com/openapi/api?key=2bd2aeb49107f6e7499b8a4dee9a6cab&info=%s" % info
             response=urllib2.urlopen(urlStr)
@@ -62,5 +62,5 @@ class Turing:
         #     return "None Found ！"
 
 # Usage:
-tr=Turing()
-print tr.getReply('北京到拉萨的火车')
+# tr=Turing()
+# print tr.getReply('北京到拉萨的火车')

@@ -5,7 +5,7 @@ import json
 class Weather:
     def getWeatherOfCity(self,cityName):
         try:
-            cityName=urllib2.quote(cityName)
+            cityName=urllib2.quote(cityName.encode('utf-8'))
             print cityName
             urlStr="http://api.map.baidu.com/telematics/v3/weather?location=%s&output=json&ak=31662bc776555612e3639dbca1ad1fd5" % cityName
             response=urllib2.urlopen(urlStr)

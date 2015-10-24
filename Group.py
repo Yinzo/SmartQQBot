@@ -9,7 +9,8 @@ from QQLogin import *
 from Configs import *
 from Msg import *
 from HttpClient import *
-from wether import Wether
+from plugin.weather import Weather
+from plugin.turing import Turing
 logging.basicConfig(
     filename='smartqq.log',
     level=logging.DEBUG,
@@ -40,6 +41,7 @@ class Group:
         self.update_config()
         self.process_order = [
             "wether",#添加天气查询
+            'ask',
             "follow",
             "repeat",
             "callout",
@@ -237,19 +239,39 @@ class Group:
         return False
 
     def wether(self, msg):
-        match = re.match(r'^(wether|天气) (\w*)', msg.content)
+        match = re.match(ur'^(weather|天气) (\w+|[\u4e00-\u9fa5]+)',msg.content)
         if match:
             logging.info("查询天气...")
-            command = str(match.group(1))
-            city = str(match.group(2))
+            print msg.content
+            command = match.group(1)
+            city = match.group(2)
             logging.info("city:")
             logging.info(city)
-            if command == 'wether' or command == '天气':
+            print city
+            if command == 'weather' or command == u'天气':
                 # self.reply("我开始查询" + city + "的天气啦")
-                query = Wether()
-                info = query.getWetherOfCity(city)
+                query = Weather()
+                info = query.getWeatherOfCity(city)
                 logging.info(str(info))
                 self.reply(str(info))
                 return True
-           
+        return False
+
+    def ask(self, msg):
+        match = re.match(ur'^(ask|问) (\w+|[\u4e00-\u9fa5]+)',msg.content)
+        if match:
+            logging.info("问答测试...")
+            print msg.content
+            command = match.group(1)
+            info = match.group(2)
+            logging.info("info:")
+            logging.info(info)
+            print info
+            if command == 'info' or command == u'问':
+                # self.reply("我开始查询" + city + "的天气啦")
+                query = Turing()
+                info = query.getReply(info)
+                logging.info(str(info))
+                self.reply(str(info))
+                return True
         return False

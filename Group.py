@@ -245,8 +245,7 @@ class Group:
             print msg.content
             command = match.group(1)
             city = match.group(2)
-            logging.info("city:")
-            logging.info(city)
+            logging.info(msg.content)
             print city
             if command == 'weather' or command == u'天气':
                 # self.reply("我开始查询" + city + "的天气啦")
@@ -260,13 +259,13 @@ class Group:
     def ask(self, msg):
         match = re.match(ur'^(ask|问) (\w+|[\u4e00-\u9fa5]+)',msg.content)
         if match:
-            logging.info("问答测试...")
+            # logging.info("问答测试...")
             print msg.content
             command = match.group(1)
             info = match.group(2)
-            logging.info("info:")
-            logging.info(info)
-            print info
+            # logging.info("info:")
+            logging.info(msg.content)
+            # print info
             if command == 'info' or command == u'问':
                 # self.reply("我开始查询" + city + "的天气啦")
                 query = Turing()

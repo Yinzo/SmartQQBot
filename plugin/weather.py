@@ -34,5 +34,5 @@ class Weather:
             return "None found city"
 
 # Usage:
-tq=Weather()
-print tq.getWeatherOfCity('上海')
+# tq=Weather()
+# print tq.getWeatherOfCity('上海')

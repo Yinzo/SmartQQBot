@@ -10,7 +10,8 @@ from Configs import *
 from Msg import *
 from HttpClient import *
 from plugin.weather import Weather
-from plugin.turing import Turing
+from plugin.Turing import Turing
+
 logging.basicConfig(
     filename='smartqq.log',
     level=logging.DEBUG,
@@ -40,7 +41,7 @@ class Group:
         self.private_config = GroupConfig(self)
         self.update_config()
         self.process_order = [
-            "wether",#添加天气查询
+            "weather",
             'ask',
             "follow",
             "repeat",
@@ -78,7 +79,7 @@ class Group:
                 logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
-    #发送消息出去，到群里或者是到个人列表中
+    # 发送消息出去，到群里或者是到个人列表中
     def reply(self, reply_content, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
         rsp = ""
@@ -238,8 +239,8 @@ class Group:
                 return True
         return False
 
-    def wether(self, msg):
-        match = re.match(ur'^(weather|天气) (\w+|[\u4e00-\u9fa5]+)',msg.content)
+    def weather(self, msg):
+        match = re.match(ur'^(weather|天气) (\w+|[\u4e00-\u9fa5]+)', msg.content)
         if match:
             logging.info("查询天气...")
             print msg.content
@@ -257,7 +258,7 @@ class Group:
         return False
 
     def ask(self, msg):
-        match = re.match(ur'^(ask|问) (\w+|[\u4e00-\u9fa5]+)',msg.content)
+        match = re.match(ur'^(ask|问) (\w+|[\u4e00-\u9fa5]+)', msg.content)
         if match:
             # logging.info("问答测试...")
             print msg.content
@@ -266,7 +267,7 @@ class Group:
             # logging.info("info:")
             logging.info(msg.content)
             # print info
-            if command == 'info' or command == u'问':
+            if command == 'ask' or command == u'问':
                 # self.reply("我开始查询" + city + "的天气啦")
                 query = Turing()
                 info = query.getReply(info)

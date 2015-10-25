@@ -9,7 +9,8 @@ from QQLogin import *
 from Configs import *
 from Msg import *
 from HttpClient import *
-
+from plugin.weather import Weather
+from plugin.turing import Turing
 logging.basicConfig(
     filename='smartqq.log',
     level=logging.DEBUG,
@@ -39,12 +40,15 @@ class Group:
         self.private_config = GroupConfig(self)
         self.update_config()
         self.process_order = [
+            "wether",#添加天气查询
+            'ask',
             "follow",
             "repeat",
             "callout",
             "command_0arg",
             "command_1arg",
             "tucao",
+            
         ]
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
@@ -74,6 +78,7 @@ class Group:
                 logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
+    #发送消息出去，到群里或者是到个人列表中
     def reply(self, reply_content, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
         rsp = ""
@@ -230,5 +235,42 @@ class Group:
         else:
             if str(self.__operator.uin_to_account(msg.send_uin)) in self.follow_list:
                 self.reply(msg.content)
+                return True
+        return False
+
+    def wether(self, msg):
+        match = re.match(ur'^(weather|天气) (\w+|[\u4e00-\u9fa5]+)',msg.content)
+        if match:
+            logging.info("查询天气...")
+            print msg.content
+            command = match.group(1)
+            city = match.group(2)
+            logging.info(msg.content)
+            print city
+            if command == 'weather' or command == u'天气':
+                # self.reply("我开始查询" + city + "的天气啦")
+                query = Weather()
+                info = query.getWeatherOfCity(city)
+                logging.info(str(info))
+                self.reply(str(info))
+                return True
+        return False
+
+    def ask(self, msg):
+        match = re.match(ur'^(ask|问) (\w+|[\u4e00-\u9fa5]+)',msg.content)
+        if match:
+            # logging.info("问答测试...")
+            print msg.content
+            command = match.group(1)
+            info = match.group(2)
+            # logging.info("info:")
+            logging.info(msg.content)
+            # print info
+            if command == 'info' or command == u'问':
+                # self.reply("我开始查询" + city + "的天气啦")
+                query = Turing()
+                info = query.getReply(info)
+                logging.info(str(info))
+                self.reply(str(info))
                 return True
         return False

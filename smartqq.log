@@ -1,0 +1,3 @@
+﻿Sat, 24 Oct 2015 12:57:41  QQLogin.py[line:175] DEBUG check_msg html:  {"retcode":102,"errmsg":""}
+
+Sat, 24 Oct 2015 12:57:41  QQLogin.py[line:184] INFO received retcode: 102: No message.

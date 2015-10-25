@@ -41,7 +41,7 @@ class MsgWithContent(Msg):
 
         return msgtxt
 
-
+# 临时会话消息
 class SessMsg(MsgWithContent):
 
     def __init__(self, json_input):

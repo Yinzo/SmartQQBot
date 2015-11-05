@@ -1,0 +1,51 @@
+1
+Exception in thread Thread-3:
+Traceback (most recent call last):
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 810, in __bootstrap_inner
+    self.run()
+  File "/Users/yang/SmartQQBot/MsgHandler.py", line 140, in run
+    self.handler.handle(self.msg_queue.pop(0))
+  File "/Users/yang/SmartQQBot/Group.py", line 74, in handle
+    if eval("self." + func)(msg):
+  File "/Users/yang/SmartQQBot/Group.py", line 183, in tucao
+    for key in self.tucao_dict.keys():
+AttributeError: 'NoneType' object has no attribute 'keys'
+
+Exception in thread Thread-1:
+Traceback (most recent call last):
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 810, in __bootstrap_inner
+    self.run()
+  File "/Users/yang/SmartQQBot/MsgHandler.py", line 141, in run
+    self.handler.handle(self.msg_queue.pop(0))
+  File "/Users/yang/SmartQQBot/Group.py", line 74, in handle
+    if eval("self." + func)(msg):
+  File "/Users/yang/SmartQQBot/Group.py", line 273, in ask
+    info = query.getReply(info)
+  File "/Users/yang/SmartQQBot/plugin/Turing.py", line 27, in getReply
+    response=urllib2.urlopen(urlStr)
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/urllib2.py", line 154, in urlopen
+    return opener.open(url, data, timeout)
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/urllib2.py", line 437, in open
+    response = meth(req, response)
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/urllib2.py", line 550, in http_response
+    'http', request, response, code, msg, hdrs)
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/urllib2.py", line 475, in error
+    return self._call_chain(*args)
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/urllib2.py", line 409, in _call_chain
+    result = func(*args)
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/urllib2.py", line 558, in http_error_default
+    raise HTTPError(req.get_full_url(), code, msg, hdrs, fp)
+HTTPError: HTTP Error 503: Service Temporarily Unavailable
+
+Exception in thread Thread-2:
+Traceback (most recent call last):
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 810, in __bootstrap_inner
+    self.run()
+  File "/Users/yang/SmartQQBot/MsgHandler.py", line 141, in run
+    self.handler.handle(self.msg_queue.pop(0))
+  File "/Users/yang/SmartQQBot/Pm.py", line 54, in handle
+    if eval("self." + func)(msg):
+  File "/Users/yang/SmartQQBot/Pm.py", line 126, in ask
+    query = Turing()
+NameError: global name 'Turing' is not defined
+

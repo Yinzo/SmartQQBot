@@ -49,7 +49,7 @@ class Group:
             "command_0arg",
             "command_1arg",
             "tucao",
-            
+
         ]
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
@@ -258,7 +258,7 @@ class Group:
         return False
 
     def ask(self, msg):
-        match = re.match(ur'^(ask|问) (\w+|[\u4e00-\u9fa5]+)', msg.content)
+        match = re.match(ur'^(ask|问|软妹子) (\w+|[\u4e00-\u9fa5]+)', msg.content)
         if match:
             # logging.info("问答测试...")
             print msg.content
@@ -267,7 +267,7 @@ class Group:
             # logging.info("info:")
             logging.info(msg.content)
             # print info
-            if command == 'ask' or command == u'问':
+            if command == 'ask' or command == u'问' or command =='软妹子':
                 # self.reply("我开始查询" + city + "的天气啦")
                 query = Turing()
                 info = query.getReply(info)

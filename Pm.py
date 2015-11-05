@@ -9,6 +9,7 @@ from QQLogin import *
 from Configs import *
 from Msg import *
 from HttpClient import *
+from plugin.Turing import Turing
 
 
 class Pm:
@@ -31,6 +32,7 @@ class Pm:
             "command_1arg",
             "repeat",
             "callout",
+            "ask"
         ]
         logging.info(str(self.tid) + "私聊已激活, 当前执行顺序： " + str(self.process_order))
 
@@ -118,3 +120,12 @@ class Pm:
             logging.info("command format detected, command:{0}, arg1:{1}".format(command, arg1))
 
         return False
+
+    def ask(self, msg):
+        info = msg.content
+        logging.info(msg.content)
+        query = Turing()
+        info = query.getReply(info)
+        logging.info(str(info))
+        self.reply(str(info))
+        return True

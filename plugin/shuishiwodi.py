@@ -26,14 +26,13 @@ class PlayerInfo(object):
 
 class MsgDto(object):
     __slots__ = (
-        'poll_type', 'from_uin', 'msg_id', 'msg_id2', 'msg_type', 'reply_ip', 'to_uin', 'content', 'raw_content')
+        'poll_type', 'from_uin', 'send_uin', 'msg_type', 'reply_ip', 'to_uin', 'content', 'raw_content')
 
     def __init__(self):
-        self.from_uin = ''
+        self.from_uin = ''  # 群的uin
+        self.send_uin = ''  # 发消息人的uin
         self.to_uin = ''
         self.content = ''
-
-    pass
 
 
 class StatusHandler(object):
@@ -89,8 +88,8 @@ class ReadyStatus(StatusHandler):
         if not matchSuccess:
             return False
         playerInfo = PlayerInfo()
-        playerInfo.uin = msgDto.from_uin
-        playerInfo.name = game.uin2name(msgDto.from_uin)
+        playerInfo.uin = msgDto.send_uin
+        playerInfo.name = game.uin2name(msgDto.send_uin)
         if playerInfo.uin in [x.uin for x in game.playerList]:
             return False
         game.addPlayer(playerInfo)
@@ -182,7 +181,7 @@ class SpeechStatus(StatusHandler):
             playerInfo = lst[i]
             game.writePublic(u"发言阶段，请从%d号玩家[%s]开始，依次发言。" % (playerInfo.id, playerInfo.name))
             return
-        uin = msgDto.from_uin
+        uin = msgDto.send_uin
         content = msgDto.content
         if uin not in self._playerSet:
             return False
@@ -217,7 +216,7 @@ class VoteStatus(StatusHandler):
             self._playerSet = set([x.uin for x in game.playerList if not x.isOut])
             game.writePublic(u"投票开始，请投卧底。")
             return
-        uin = msgDto.from_uin
+        uin = msgDto.send_uin
         content = msgDto.content
         if uin not in self._playerSet:
             return False
@@ -374,24 +373,24 @@ if __name__ == "__main__":
     # 报名
     game.run(MsgDto())
     msgDto1 = MsgDto()
-    msgDto1.from_uin = '1'
+    msgDto1.send_uin = '1'
     msgDto1.content = u'我要参加1'
     game.run(msgDto1)
     msgDto2 = MsgDto()
-    msgDto2.from_uin = '2'
+    msgDto2.send_uin = '2'
     msgDto2.content = u'我要参加2'
     game.run(msgDto2)
     msgDto3 = MsgDto()
-    msgDto3.from_uin = '3'
+    msgDto3.send_uin = '3'
     msgDto3.content = u'我要参加3'
     game.run(msgDto3)
     msgDto4 = MsgDto()
-    msgDto4.from_uin = '4'
+    msgDto4.send_uin = '4'
     msgDto4.content = u'我要参加4'
     game.run(msgDto4)
     # game.run(msgDto4)
     msgDto5 = MsgDto()
-    msgDto5.from_uin = '5'
+    msgDto5.send_uin = '5'
     msgDto5.content = u'我要参加'
     game.run(msgDto5)
 

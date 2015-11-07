@@ -131,7 +131,7 @@ class AssignRolesStatus(StatusHandler):
             game.playerList[i].word = specialWord
         # 游戏信息
         playerNames = ','.join([x.name for x in game.playerList])
-        game.writePublic(u"[%s]本次游戏共 %d 人，卧底 %d 人。\n玩家列表：%s" % (
+        game.writePublic(u"[%s]本次游戏共 %d 人，卧底 %d 人。\n玩家列表：%s\n我会私聊通知各玩家身份哦，记得查看~~" % (
             game.gameId, len(game.playerList), self._undercoverCount, playerNames))
         # 私聊玩家，通知词语
         for x in game.playerList:
@@ -337,7 +337,7 @@ class Game(object):
         pass
 
     def writePrivate(self, tuin, content):
-        self.reply_sess(tuin, content)
+        self._output.reply_sess(tuin, content)
         pass
 
     def uin2name(self, uin):
@@ -360,12 +360,13 @@ if __name__ == "__main__":
     reload(sys)
     sys.setdefaultencoding("utf-8")
     logging.basicConfig(level=logging.DEBUG)
-    pub = logging
-    pub.reply = logging.info
+    output = logging
+    output.reply = logging.info
+    output.reply_sess = lambda uin, msg: logging.info(msg)
 
     # 开始5人局
     status = StartStatus()
-    game = Game(status, pub, pri)
+    game = Game(status, output)
     msgDto = MsgDto()
     msgDto.content = u'!game 开始谁是卧底4人局2卧底'
     game.run(msgDto)

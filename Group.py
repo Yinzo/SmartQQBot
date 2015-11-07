@@ -8,20 +8,17 @@ import cPickle
 from QQLogin import *
 from Configs import *
 from Msg import *
-from HttpClient import *
 from plugin import shuishiwodi, shuishiwodiStartStatus
 from plugin.weather import Weather
 from plugin.Turing import Turing
 
-logging.basicConfig(
-    filename='smartqq.log',
-    level=logging.DEBUG,
-    format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-    datefmt='%a, %d %b %Y %H:%M:%S',
-)
-
-
-# logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(
+#     filename='smartqq.log',
+#     level=logging.DEBUG,
+#     format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+#     datefmt='%a, %d %b %Y %H:%M:%S',
+# )
+logging.basicConfig(level=logging.DEBUG)
 
 
 class Group:
@@ -54,7 +51,7 @@ class Group:
             "command_1arg",
             "tucao",
         ]
-        self.__shuishiwodi = shuishiwodi(shuishiwodiStartStatus(), self)
+        self.__game_handler = None
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
 
@@ -83,7 +80,7 @@ class Group:
                 logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
-    # 发送消息出去，到群里或者是到个人列表中
+    # 发送群消息
     def reply(self, reply_content):
         self.msg_id += 1
         return self.__operator.send_qun_msg(self.guin, reply_content, self.msg_id)
@@ -269,12 +266,18 @@ class Group:
             if not args1:
                 self.reply('玩游戏：!game 开始谁是卧底5人局\n结束游戏：!game end')
             if args1 == 'end':
-                pass
+                self.__game_handler = None
                 self.reply('游戏结束')
-            if args1:
-                self.__shuishiwodi.run(msg)
+            if u'谁是卧底' in args1:
+                self.__game_handler = shuishiwodi(shuishiwodiStartStatus(), self)
+                self.__game_handler.run(msg)
             return True
-        if self.__shuishiwodi.status not in ['StartStatus', 'EndStatus']:
-            self.__shuishiwodi.run(msg)
-            return True  # 游戏期间屏蔽其他处理过程
+        # 没有处理程序时退出
+        if not self.__game_handler:
+            return False
+        # 谁是卧底的处理程序
+        if self.__game_handler and isinstance(self.__game_handler, shuishiwodi):
+            if self.__game_handler.status not in ['StartStatus', 'EndStatus']:
+                self.__game_handler.run(msg)
+                return True  # 游戏期间屏蔽其他处理过程
         return False

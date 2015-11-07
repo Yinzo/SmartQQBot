@@ -9,6 +9,7 @@ from QQLogin import *
 from Configs import *
 from Msg import *
 from HttpClient import *
+from plugin import shuishiwodi, shuishiwodiStartStatus
 from plugin.weather import Weather
 from plugin.Turing import Turing
 
@@ -21,7 +22,6 @@ logging.basicConfig(
 
 
 class Group:
-
     def __init__(self, operator, ip):
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
@@ -41,6 +41,7 @@ class Group:
         self.private_config = GroupConfig(self)
         self.update_config()
         self.process_order = [
+            "game",
             "weather",
             'ask',
             "follow",
@@ -49,8 +50,8 @@ class Group:
             "command_0arg",
             "command_1arg",
             "tucao",
-            
         ]
+        self._shuishiwodi = shuishiwodi(shuishiwodiStartStatus(), logging)
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
 
@@ -81,12 +82,15 @@ class Group:
 
     # 发送消息出去，到群里或者是到个人列表中
     def reply(self, reply_content, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
+        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode(
+            "utf-8")
         rsp = ""
         try:
             req_url = "http://d.web2.qq.com/channel/send_qun_msg2"
             data = (
-                ('r', '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, self.__operator.client_id, self.msg_id + 1, self.__operator.psessionid, fix_content)),
+                ('r',
+                 '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(
+                     self.guin, self.__operator.client_id, self.msg_id + 1, self.__operator.psessionid, fix_content)),
                 ('clientid', self.__operator.client_id),
                 ('psessionid', self.__operator.psessionid)
             )
@@ -212,9 +216,9 @@ class Group:
                 logging.info("tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
             except EOFError:
                 logging.info("tucao file is empty.")
-        # except Exception as er:
-        #     logging.error("Fail to load tucao:  ", er)
-        #     raise IOError("Fail to load tucao:  ", er)
+                # except Exception as er:
+                #     logging.error("Fail to load tucao:  ", er)
+                #     raise IOError("Fail to load tucao:  ", er)
 
     def follow(self, msg):
         match = re.match(r'^(?:!|！)(follow|unfollow) (\d+|me)', msg.content)
@@ -274,4 +278,22 @@ class Group:
                 logging.info(str(info))
                 self.reply(str(info))
                 return True
+        return False
+
+    def game(self, msg):
+        match = re.match(ur'^(?:!|！)(game)\s*(\w+|[\u4e00-\u9fa5]+)?', msg.content)
+        if match:
+            command = str(match.group(1))
+            args1 = match.group(2)
+            if not args1:
+                self.reply('玩游戏：!game 开始谁是卧底5人局\n结束游戏：!game end')
+            if args1 == 'end':
+                pass
+                self.reply('游戏结束')
+            if args1:
+                self._shuishiwodi.run(msg)
+            return True
+        if self._shuishiwodi.status not in ['StartStatus', 'EndStatus']:
+            self._shuishiwodi.run(msg)
+            return True  # 游戏期间屏蔽其他处理过程
         return False

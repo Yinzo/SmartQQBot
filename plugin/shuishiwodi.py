@@ -5,8 +5,13 @@ import random
 import re
 import threading
 import time
+import os
+import codecs
 
 __author__ = 'sweet'
+
+pluginRoot = os.path.split(os.path.realpath(__file__))[0]
+wodiConf = os.path.join(pluginRoot, '..', 'config', 'wodi.conf')
 
 
 class PlayerInfo(object):
@@ -20,12 +25,13 @@ class PlayerInfo(object):
 
 
 class MsgDto(object):
-    __slots__ = ('poll_type', 'from_uin', 'msg_id', 'msg_id2', 'msg_type', 'reply_ip', 'to_uin', 'raw_content')
+    __slots__ = (
+        'poll_type', 'from_uin', 'msg_id', 'msg_id2', 'msg_type', 'reply_ip', 'to_uin', 'content', 'raw_content')
 
     def __init__(self):
         self.from_uin = ''
         self.to_uin = ''
-        self.raw_content = ''
+        self.content = ''
 
     pass
 
@@ -48,11 +54,19 @@ class StartStatus(StatusHandler):
         self.status = 'StartStatus'
 
     def handle(self, game, msgDto):
-        playCount = 5
-        undercoverCount = 1
-        game.writePublic(u"玩游戏啦：谁是卧底 %d 人局，想玩的快快加入~(输入 我要参加，加入游戏)" % playCount)
-        game.statusHandle = ReadyStatus(playCount, undercoverCount)
-        return True
+        content = msgDto.content
+        matches = re.match(ur'.*开始谁是卧底((\d+)人局)?(.*(\d+)卧底)?', content)
+        if matches:
+            playCount = 5
+            undercoverCount = 1
+            if matches.group(2):
+                playCount = int(matches.group(2))
+            if matches.group(4):
+                undercoverCount = int(matches.group(4))
+            game.writePublic(u"玩游戏啦：谁是卧底 %d 人局，想玩的快快加入~(输入 我要参加，加入游戏)" % playCount)
+            game.statusHandle = ReadyStatus(playCount, undercoverCount)
+            return True
+        return False
 
 
 class ReadyStatus(StatusHandler):
@@ -71,7 +85,7 @@ class ReadyStatus(StatusHandler):
         self._undercoverCount = undercoverCount
 
     def handle(self, game, msgDto):
-        matchSuccess = re.match(r'^\s*我要参加.*\s*$', msgDto.raw_content)
+        matchSuccess = re.match(ur'^\s*我要参加.*\s*$', msgDto.content)
         if not matchSuccess:
             return False
         playerInfo = PlayerInfo()
@@ -132,10 +146,16 @@ class AssignRolesStatus(StatusHandler):
         抽取平民词与卧底词
         :return:
         """
-        normalWord = specialWord = ''
-
-        return 'normal', 'b'
-        pass
+        with codecs.open(wodiConf, 'r', 'utf-8') as conf:
+            lines = conf.readlines()
+            lineNo = random.randint(0, len(lines) - 1)
+            words = str(lines[lineNo]).replace('\n', '').split('----')
+            if len(words) == 2:
+                n = random.randint(0, 1)
+                normalWord = words[n].strip()
+                specialWord = words[1 - n].strip()
+                return normalWord, specialWord
+        return None, None
 
 
 class SpeechStatus(StatusHandler):
@@ -163,14 +183,14 @@ class SpeechStatus(StatusHandler):
             game.writePublic(u"发言阶段，请从%d号玩家[%s]开始，依次发言。" % (playerInfo.id, playerInfo.name))
             return
         uin = msgDto.from_uin
-        content = msgDto.raw_content
+        content = msgDto.content
         if uin not in self._playerSet:
             return False
         if uin not in self._history:
             self._history[uin] = content
         # 发言结果
         if len(self._history) >= len(self._playerSet):
-            lst = [('[%s号]: %s' % (self._playerSet[uin], value)) for uin, value in self._history.items()]
+            lst = [(u'[%s号]: %s' % (self._playerSet[uin], value)) for uin, value in self._history.items()]
             playerReplys = '\n'.join(lst)
             game.writePublic(u"发言结束：\n" + playerReplys)
             game.statusHandle = VoteStatus()
@@ -198,11 +218,11 @@ class VoteStatus(StatusHandler):
             game.writePublic(u"投票开始，请投卧底。")
             return
         uin = msgDto.from_uin
-        content = msgDto.raw_content
+        content = msgDto.content
         if uin not in self._playerSet:
             return False
         if uin not in self._history:
-            matches = re.match('.*(\d+)号*', content)
+            matches = re.match(ur'.*(\d+)号*', content)
             if matches:
                 id = int(matches.group(1))
                 self._history[uin] = content
@@ -230,10 +250,10 @@ class VerdictStatus(StatusHandler):
     def handle(self, game, msgDto):
         sortedScore = self.__getScore()
         msg = u'投票结果：\n'
-        scoreList = '\t\n'.join(['[%s号]: %s票' % (p.id, p.score) for p in sortedScore])
+        scoreList = '\t\n'.join([u'[%s号]: %s票' % (p.id, p.score) for p in sortedScore])
         outPlayer = sortedScore[0]
         game.outPlayer(outPlayer.id)
-        result = '\n==== [%s号]%s 被投票出局 ====' % (outPlayer.id, outPlayer.name)
+        result = u'\n==== [%s号]%s 被投票出局 ====' % (outPlayer.id, outPlayer.name)
         game.writePublic(msg + scoreList + result)
 
         undercoverCount = len([x for x in game.playerList if x.isUndercover])
@@ -246,7 +266,6 @@ class VerdictStatus(StatusHandler):
             game.writePublic(u'==== 卧底胜利！！！ ====')
             game.statusHandle = EndStatus()
             return True
-            pass
         else:
             game.statusHandle = SpeechStatus()
             return True
@@ -269,8 +288,13 @@ class EndStatus(StatusHandler):
     <结束阶段>
     """
 
+    def __init__(self):
+        super(StatusHandler, self).__init__()
+        self.status = 'EndStatus'
+
     def handle(self, game, msgDto):
-        pass
+        game.statusHandle = StartStatus()
+        return False
 
 
 class Game(object):
@@ -278,15 +302,19 @@ class Game(object):
         self.statusHandle = statusHandle
         self.gameId = str(int(time.time()))[-5:]
         self._output = output
-        self._playerList = []
+        self.__playerList = []
 
     @property
     def playerList(self):
-        return [x for x in self._playerList if not x.isOut][:]
+        return [x for x in self.__playerList if not x.isOut][:]
+
+    @property
+    def status(self):
+        return self.statusHandle.status
 
     def addPlayer(self, playerInfo):
-        playerInfo.id = len(self._playerList) + 1
-        self._playerList.append(playerInfo)
+        playerInfo.id = len(self.__playerList) + 1
+        self.__playerList.append(playerInfo)
 
     def outPlayer(self, id):
         """
@@ -294,7 +322,7 @@ class Game(object):
         :param id: 玩家id
         :return:
         """
-        for x in self._playerList:
+        for x in self.__playerList:
             if x.id == id:
                 x.isOut = True
         pass
@@ -328,57 +356,65 @@ class Game(object):
 
 
 if __name__ == "__main__":
+    import sys
+
+    reload(sys)
+    sys.setdefaultencoding("utf-8")
     logging.basicConfig(level=logging.DEBUG)
+
+    # 开始5人局
     status = StartStatus()
     game = Game(status, logging)
-    game.run(MsgDto())
+    msgDto = MsgDto()
+    msgDto.content = u'!game 开始谁是卧底4人局2卧底'
+    game.run(msgDto)
 
     # 报名
     game.run(MsgDto())
     msgDto1 = MsgDto()
     msgDto1.from_uin = '1'
-    msgDto1.raw_content = '我要参加1'
+    msgDto1.content = u'我要参加1'
     game.run(msgDto1)
     msgDto2 = MsgDto()
     msgDto2.from_uin = '2'
-    msgDto2.raw_content = '我要参加2'
+    msgDto2.content = u'我要参加2'
     game.run(msgDto2)
     msgDto3 = MsgDto()
     msgDto3.from_uin = '3'
-    msgDto3.raw_content = '我要参加3'
+    msgDto3.content = u'我要参加3'
     game.run(msgDto3)
     msgDto4 = MsgDto()
     msgDto4.from_uin = '4'
-    msgDto4.raw_content = '我要参加4'
+    msgDto4.content = u'我要参加4'
     game.run(msgDto4)
     # game.run(msgDto4)
     msgDto5 = MsgDto()
     msgDto5.from_uin = '5'
-    msgDto5.raw_content = '我要参加'
+    msgDto5.content = u'我要参加'
     game.run(msgDto5)
 
     # 发言
-    msgDto1.raw_content = '发言1'
+    msgDto1.content = u'发言1'
     game.run(msgDto1)
-    msgDto2.raw_content = '发言2'
+    msgDto2.content = u'发言2'
     game.run(msgDto2)
-    msgDto3.raw_content = '发言3'
+    msgDto3.content = u'发言3'
     game.run(msgDto3)
-    msgDto4.raw_content = '发言4'
+    msgDto4.content = u'发言4'
     game.run(msgDto4)
-    msgDto5.raw_content = '发言5'
+    msgDto5.content = u'发言5'
     game.run(msgDto5)
 
     # 投票
-    msgDto1.raw_content = '1号'
+    msgDto1.content = u'1号'
     game.run(msgDto1)
-    msgDto2.raw_content = '我投1号'
+    msgDto2.content = u'我投1号'
     game.run(msgDto2)
-    msgDto3.raw_content = '2号是卧底'
+    msgDto3.content = u'2号是卧底'
     game.run(msgDto3)
-    msgDto4.raw_content = '1'
+    msgDto4.content = u'1'
     game.run(msgDto4)
-    msgDto5.raw_content = '3号'
+    msgDto5.content = u'3号'
     game.run(msgDto5)
 
     # time.sleep(3)

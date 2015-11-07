@@ -2,3 +2,4 @@
 *.tucao
 *.cmd
 /.idea
+/config/group/*.conf

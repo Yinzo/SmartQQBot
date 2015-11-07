@@ -3,3 +3,5 @@
 *.cmd
 /.idea
 /config/group/*.conf
+/config/pm/*.conf
+

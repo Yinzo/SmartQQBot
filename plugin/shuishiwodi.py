@@ -301,8 +301,8 @@ class Game(object):
     def __init__(self, statusHandle, output):
         self.statusHandle = statusHandle
         self.gameId = str(int(time.time()))[-5:]
-        self._output = output
         self.__playerList = []
+        self._output = output
 
     @property
     def playerList(self):
@@ -333,12 +333,12 @@ class Game(object):
                 return x
         return None
 
-    def writePublic(self, msg):
-        self._output.info(msg)
+    def writePublic(self, content):
+        self._output.reply(content)
         pass
 
-    def writePrivate(self, uid, msg):
-        self._output.warn('%s:%s' % (uid, msg))
+    def writePrivate(self, tuin, content):
+        self.reply_sess(tuin, content)
         pass
 
     def uin2name(self, uin):
@@ -361,10 +361,12 @@ if __name__ == "__main__":
     reload(sys)
     sys.setdefaultencoding("utf-8")
     logging.basicConfig(level=logging.DEBUG)
+    pub = logging
+    pub.reply = logging.info
 
     # 开始5人局
     status = StartStatus()
-    game = Game(status, logging)
+    game = Game(status, pub, pri)
     msgDto = MsgDto()
     msgDto.content = u'!game 开始谁是卧底4人局2卧底'
     game.run(msgDto)

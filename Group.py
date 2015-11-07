@@ -21,6 +21,9 @@ logging.basicConfig(
 )
 
 
+# logging.basicConfig(level=logging.DEBUG)
+
+
 class Group:
     def __init__(self, operator, ip):
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
@@ -51,7 +54,7 @@ class Group:
             "command_1arg",
             "tucao",
         ]
-        self._shuishiwodi = shuishiwodi(shuishiwodiStartStatus(), logging)
+        self.__shuishiwodi = shuishiwodi(shuishiwodiStartStatus(), self)
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
 
@@ -81,36 +84,14 @@ class Group:
         self.msg_list.append(msg)
 
     # 发送消息出去，到群里或者是到个人列表中
-    def reply(self, reply_content, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode(
-            "utf-8")
-        rsp = ""
-        try:
-            req_url = "http://d.web2.qq.com/channel/send_qun_msg2"
-            data = (
-                ('r',
-                 '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(
-                     self.guin, self.__operator.client_id, self.msg_id + 1, self.__operator.psessionid, fix_content)),
-                ('clientid', self.__operator.client_id),
-                ('psessionid', self.__operator.psessionid)
-            )
-            rsp = HttpClient().Post(req_url, data, self.__operator.default_config.conf.get("global", "connect_referer"))
-            rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
-                raise ValueError("reply group chat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
-            self.msg_id += 1
-            return rsp_json
-        except:
-            if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
-                time.sleep(2)
-                self.reply(reply_content, fail_times + 1)
-            else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
-                return False
+    def reply(self, reply_content):
+        self.msg_id += 1
+        return self.__operator.send_qun_msg(self.guin, reply_content, self.msg_id)
+
+    # 发送临时消息给群成员
+    def reply_sess(self, tuin, reply_content, service_type=0):
+        self.msg_id += 1
+        self.__operator.send_sess_msg2_fromGroup(self.guin, tuin, reply_content, self.msg_id, service_type)
 
     def command_0arg(self, msg):
         # webqq接受的消息会以空格结尾
@@ -291,9 +272,9 @@ class Group:
                 pass
                 self.reply('游戏结束')
             if args1:
-                self._shuishiwodi.run(msg)
+                self.__shuishiwodi.run(msg)
             return True
-        if self._shuishiwodi.status not in ['StartStatus', 'EndStatus']:
-            self._shuishiwodi.run(msg)
+        if self.__shuishiwodi.status not in ['StartStatus', 'EndStatus']:
+            self.__shuishiwodi.run(msg)
             return True  # 游戏期间屏蔽其他处理过程
         return False

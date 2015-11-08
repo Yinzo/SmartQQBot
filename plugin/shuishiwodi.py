@@ -342,13 +342,15 @@ class Game(object):
 
     def uin2name(self, uin):
         """
-        获取群成员信息，暂时先用着吧。。。
+        获取群成员信息，返回昵称
         :param uin:
-        :return:
+        :return:str
         """
-        qq = getattr(self._output, '__operator')
-        nickname = qq.uin_to_account(uin)
-        return nickname
+        lst = self._output.get_member_list()
+        for x in lst:
+            if str(x.uin) == str(uin):
+                return x.nick
+        return ""
 
     def run(self, msgDto):
         isProcess = False

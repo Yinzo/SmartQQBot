@@ -4,7 +4,7 @@
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
 import cPickle
-
+from collections import namedtuple
 from QQLogin import *
 from Configs import *
 from Msg import *
@@ -33,6 +33,7 @@ class Group:
             self.guin = ip.from_uin
             self.gid = ip.info_seq
         self.msg_id = int(random.uniform(20000, 50000))
+        self.group_code = 0
         self.member_list = []
         self.msg_list = []
         self.follow_list = []
@@ -66,6 +67,8 @@ class Group:
 
     def handle(self, msg):
         self.update_config()
+        if self.group_code <= 0:
+            self.group_code = msg.group_code
         logging.info("msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
@@ -79,6 +82,23 @@ class Group:
             except ConfigParser.NoOptionError as er:
                 logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
+
+    def get_member_list(self):
+        if not self.member_list or self.group_code:
+            result = self.__operator.get_group_info_ext2(self.group_code)
+            MemberInfo = namedtuple('MemberInfo', 'nick province gender uin country city')
+            member_lst = map(lambda x: MemberInfo(**x), result["minfo"])
+            d = {}
+            if result["cards"]:
+                for item in result["cards"]:
+                    d[item["muin"]] = item["card"]
+            if d:
+                for member in member_lst:
+                    key = str(member.uin)
+                    if key in d:
+                        member.nick = d[key]
+            self.member_list = member_lst
+        return self.member_list
 
     # 发送群消息
     def reply(self, reply_content):
@@ -276,7 +296,7 @@ class Group:
         if not self.__game_handler:
             return False
         # 谁是卧底的处理程序
-        if self.__game_handler and isinstance(self.__game_handler, shuishiwodi):
+        if isinstance(self.__game_handler, shuishiwodi):
             if self.__game_handler.status not in ['StartStatus', 'EndStatus']:
                 self.__game_handler.run(msg)
                 return True  # 游戏期间屏蔽其他处理过程

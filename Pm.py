@@ -58,33 +58,9 @@ class Pm:
                 logging.warning(er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
-    def reply(self, reply_content, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
-        rsp = ""
-        try:
-            req_url = "http://d.web2.qq.com/channel/send_buddy_msg2"
-            data = (
-                ('r', '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(self.tuin, self.__operator.client_id, self.msg_id + 1, self.__operator.psessionid, fix_content)),
-                ('clientid', self.__operator.client_id),
-                ('psessionid', self.__operator.psessionid)
-            )
-            rsp = HttpClient().Post(req_url, data, self.__operator.default_config.conf.get("global", "connect_referer"))
-            rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
-                raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
-            self.msg_id += 1
-            return rsp_json
-        except:
-            if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
-                time.sleep(2)
-                self.reply(reply_content, fail_times + 1)
-            else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
-                return False
+    def reply(self, reply_content):
+        self.msg_id += 1
+        return self.__operator.send_buddy_msg(self.tuin, reply_content, self.msg_id)
 
     def callout(self, msg):
         if "智障机器人" in msg.content:

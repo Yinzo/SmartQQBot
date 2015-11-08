@@ -37,9 +37,9 @@ class MsgHandler:
                 raise TypeError("Handler received a not a Msg or Notify instance.")
 
             elif isinstance(msg, MsgWithContent):
-                logging.info(str(self.__operator.get_account(msg)) + ":" + msg.content)
+                logging.info(str(self.__get_account(msg)) + ":" + msg.content)
 
-            if isinstance(msg, GroupMsg):#群聊信息的处理
+            if isinstance(msg, GroupMsg):  # 群聊信息的处理
                 # 判断群对象是否存在，info_seq实际上为群号
                 if msg.info_seq not in self.__group_list:
                     self.__group_list[msg.info_seq] = Group(self.__operator, msg)
@@ -58,8 +58,8 @@ class MsgHandler:
 
                 self.process_threads[msg.info_seq].append(msg)
 
-            elif isinstance(msg, PmMsg):#私聊信息处理
-                tid = self.__operator.get_account(msg)
+            elif isinstance(msg, PmMsg):  # 私聊信息处理
+                tid = self.__get_account(msg)
                 if tid not in self.__pm_list:
                     self.__pm_list[tid] = Pm(self.__operator, msg)
                     # 维护一个线程队列，然后每一个线程处理各自的信息
@@ -79,8 +79,8 @@ class MsgHandler:
 
                 self.process_threads[tid].append(msg)
 
-            elif isinstance(msg, SessMsg):#临时会话的处理
-                tid = self.__operator.get_account(msg)
+            elif isinstance(msg, SessMsg):  # 临时会话的处理
+                tid = self.__get_account(msg)
                 if tid not in self.__sess_list:
                     self.__sess_list[tid] = Sess(self.__operator, msg)
                     self.process_threads[tid] = MsgHandleQueue(self.__sess_list[tid])
@@ -110,8 +110,20 @@ class MsgHandler:
                 logging.warning("Unsolved Msg type :" + str(msg.poll_type))
                 raise TypeError("Unsolved Msg type :" + str(msg.poll_type))
 
+    def __get_account(self, msg):
+        assert isinstance(msg, (Msg, Notify)), "function get_account received a not Msg or Notify parameter."
+
+        if isinstance(msg, (PmMsg, SessMsg, InputNotify)):
+            # 如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
+            tuin = msg.from_uin
+            account = self.__operator.uin_to_account(tuin)
+            return account
+
+        elif isinstance(msg, GroupMsg):
+            return str(msg.info_seq).join("[]") + str(self.__operator.uin_to_account(msg.send_uin))
+
     def __input_notify_handler(self, msg):
-        logging.info(str(self.__operator.get_account(msg)) + " is typing...")
+        logging.info(str(self.__get_account(msg)) + " is typing...")
 
     def __buddies_status_change_handler(self, msg):
         pass
@@ -125,9 +137,9 @@ class MsgHandler:
         ))
         raise KeyboardInterrupt("Kicked")
 
+
 # 为了加速程序处理消息，采用了多线程技术
 class MsgHandleQueue(threading.Thread):
-
     def __init__(self, handler):
         super(MsgHandleQueue, self).__init__()
         self.handler = handler

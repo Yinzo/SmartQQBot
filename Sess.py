@@ -87,45 +87,9 @@ class Sess:
             logging.warning("Getting group sig met an error: " + str(e) + " Retrying...")
             return self.get_group_sig(fail_time + 1)
 
-    def reply(self, reply_content, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode(
-            "utf-8")
-        rsp = ""
-        try:
-            req_url = "http://d.web2.qq.com/channel/send_sess_msg2"
-            data = (
-                ('r',
-                 '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
-                     self.tuin,
-                     self.__operator.client_id,
-                     self.msg_id + 1,
-                     self.__operator.psessionid,
-                     fix_content,
-                     self.group_sig,
-                     self.service_type)
-                 ),
-                ('clientid', self.__operator.client_id),
-                ('psessionid', self.__operator.psessionid),
-                ('group_sig', self.group_sig),
-                ('service_type', self.service_type)
-            )
-            rsp = HttpClient().Post(req_url, data, self.__operator.default_config.conf.get("global", "connect_referer"))
-            rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
-                raise ValueError("reply sess chat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
-            self.msg_id += 1
-            return rsp_json
-        except:
-            if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
-                time.sleep(2)
-                self.reply(reply_content, fail_times + 1)
-            else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
-                return False
+    def reply(self, reply_content):
+        self.msg_id += 1
+        return self.__operator.send_sess_msg2(self.tuin, reply_content, self.msg_id, self.group_sig, self.service_type)
 
     def callout(self, msg):
         if "智障机器人" in msg.content:

@@ -1,3 +1,9 @@
 *.pyc
 *.tucao
 *.cmd
+*.log
+
+/.idea
+/config/group/*.conf
+/config/pm/*.conf
+

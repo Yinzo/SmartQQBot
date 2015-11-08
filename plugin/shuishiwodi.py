@@ -297,11 +297,11 @@ class EndStatus(StatusHandler):
 
 
 class Game(object):
-    def __init__(self, statusHandle, output):
+    def __init__(self, statusHandle, groupHandler):
         self.statusHandle = statusHandle
         self.gameId = str(int(time.time()))[-5:]
         self.__playerList = []
-        self._output = output
+        self._output = groupHandler
 
     @property
     def playerList(self):
@@ -341,7 +341,14 @@ class Game(object):
         pass
 
     def uin2name(self, uin):
-        return "name" + uin
+        """
+        获取群成员信息，暂时先用着吧。。。
+        :param uin:
+        :return:
+        """
+        qq = getattr(self._output, '__operator')
+        nickname = qq.uin_to_account(uin)
+        return nickname
 
     def run(self, msgDto):
         isProcess = False

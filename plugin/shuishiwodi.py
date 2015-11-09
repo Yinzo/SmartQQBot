@@ -445,12 +445,13 @@ class Game(object):
         return None
 
     def writePublic(self, content):
-        time.sleep(1)
         self._output.reply(content)
+        time.sleep(0.5)
         pass
 
     def writePrivate(self, tuin, content):
         self._output.reply_sess(tuin, content)
+        time.sleep(0.5)
         pass
 
     def uin2name(self, uin):

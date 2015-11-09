@@ -414,17 +414,17 @@ class QQ:
             rsp_json = json.loads(rsp)
             if rsp_json['retcode'] != 0:
                 raise ValueError("reply group chat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
+            logging.info("send_qun_msg: Reply successfully.")
+            logging.debug("send_qun_msg: Reply response: " + str(rsp))
             return rsp_json
         except:
             if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.warning("send_qun_msg: Response Error.Wait for 2s and Retrying." + str(fail_times))
                 logging.debug(rsp)
                 time.sleep(2)
                 self.send_qun_msg(guin, reply_content, msg_id, fail_times + 1)
             else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                logging.warning("send_qun_msg: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
     # 发送私密消息
@@ -526,15 +526,15 @@ class QQ:
             rsp_json = json.loads(rsp)
             if rsp_json['retcode'] != 0:
                 raise ValueError("reply sess chat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
+            logging.info("send_sess_msg2_fromGroup: Reply successfully.")
+            logging.debug("send_sess_msg2_fromGroup: Reply response: " + str(rsp))
             return rsp_json
         except:
             if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.warning("send_sess_msg2_fromGroup: Response Error.Wait for 2s and Retrying." + str(fail_times))
                 logging.debug(rsp)
                 time.sleep(2)
                 self.send_sess_msg2_fromGroup(guin, tuin, reply_content, msg_id, service_type, fail_times + 1)
             else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                logging.warning("send_sess_msg2_fromGroup: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False

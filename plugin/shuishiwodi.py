@@ -228,6 +228,7 @@ class SpeechStatus(StatusHandler):
         return False
 
     def __first(self):
+        game = self.__game
         lst = game.playerList
         for x in lst:
             self._playerSet[x.uin] = x.id

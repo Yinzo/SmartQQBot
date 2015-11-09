@@ -285,12 +285,15 @@ class Group:
             args1 = match.group(2)
             if not args1:
                 self.reply('玩游戏：!game 开始谁是卧底5人局\n结束游戏：!game end')
+                return True
             if args1 == 'end':
                 self.__game_handler = None
                 self.reply('游戏结束')
-            if u'谁是卧底' in args1:
+                return True
+            if args1 and u'谁是卧底' in args1:
                 self.__game_handler = shuishiwodi(shuishiwodiStartStatus(), self)
                 self.__game_handler.run(msg)
+                return True
             return True
         # 没有处理程序时退出
         if not self.__game_handler:

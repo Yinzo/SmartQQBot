@@ -4,11 +4,11 @@
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
 import cPickle
-
+from collections import namedtuple
 from QQLogin import *
 from Configs import *
 from Msg import *
-from HttpClient import *
+from plugin import shuishiwodi, shuishiwodiStartStatus
 from plugin.weather import Weather
 from plugin.Turing import Turing
 
@@ -20,8 +20,10 @@ logging.basicConfig(
 )
 
 
-class Group:
+# logging.basicConfig(level=logging.DEBUG)
 
+
+class Group:
     def __init__(self, operator, ip):
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
@@ -33,6 +35,7 @@ class Group:
             self.guin = ip.from_uin
             self.gid = ip.info_seq
         self.msg_id = int(random.uniform(20000, 50000))
+        self.group_code = 0
         self.member_list = []
         self.msg_list = []
         self.follow_list = []
@@ -41,6 +44,7 @@ class Group:
         self.private_config = GroupConfig(self)
         self.update_config()
         self.process_order = [
+            "game",
             "weather",
             'ask',
             "follow",
@@ -49,8 +53,8 @@ class Group:
             "command_0arg",
             "command_1arg",
             "tucao",
-            
         ]
+        self.__game_handler = None
         logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
 
@@ -65,6 +69,8 @@ class Group:
 
     def handle(self, msg):
         self.update_config()
+        if self.group_code <= 0:
+            self.group_code = msg.group_code
         logging.info("msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
@@ -79,34 +85,34 @@ class Group:
                 logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
-    # 发送消息出去，到群里或者是到个人列表中
-    def reply(self, reply_content, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t")).decode("utf-8")
-        rsp = ""
-        try:
-            req_url = "http://d.web2.qq.com/channel/send_qun_msg2"
-            data = (
-                ('r', '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(self.guin, self.__operator.client_id, self.msg_id + 1, self.__operator.psessionid, fix_content)),
-                ('clientid', self.__operator.client_id),
-                ('psessionid', self.__operator.psessionid)
-            )
-            rsp = HttpClient().Post(req_url, data, self.__operator.default_config.conf.get("global", "connect_referer"))
-            rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
-                raise ValueError("reply group chat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
-            self.msg_id += 1
-            return rsp_json
-        except:
-            if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
-                time.sleep(2)
-                self.reply(reply_content, fail_times + 1)
-            else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
-                return False
+    def get_member_list(self):
+        if not self.member_list:
+            result = self.__operator.get_group_info_ext2(self.group_code)
+            if not result or not result["minfo"]:
+                return self.member_list
+            MemberInfo = namedtuple('MemberInfo', 'nick province gender uin country city')
+            member_lst = map(lambda x: MemberInfo(**x), result["minfo"])
+            d = {}
+            if result["cards"]:
+                for item in result["cards"]:
+                    d[item["muin"]] = item["card"]
+            if d:
+                for member in member_lst:
+                    key = str(member.uin)
+                    if key in d:
+                        member.nick = d[key]
+            self.member_list = member_lst
+        return self.member_list
+
+    # 发送群消息
+    def reply(self, reply_content):
+        self.msg_id += 1
+        return self.__operator.send_qun_msg(self.guin, reply_content, self.msg_id)
+
+    # 发送临时消息给群成员
+    def reply_sess(self, tuin, reply_content, service_type=0):
+        self.msg_id += 1
+        self.__operator.send_sess_msg2_fromGroup(self.guin, tuin, reply_content, self.msg_id, service_type)
 
     def command_0arg(self, msg):
         # webqq接受的消息会以空格结尾
@@ -212,9 +218,9 @@ class Group:
                 logging.info("tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
             except EOFError:
                 logging.info("tucao file is empty.")
-        # except Exception as er:
-        #     logging.error("Fail to load tucao:  ", er)
-        #     raise IOError("Fail to load tucao:  ", er)
+                # except Exception as er:
+                #     logging.error("Fail to load tucao:  ", er)
+                #     raise IOError("Fail to load tucao:  ", er)
 
     def follow(self, msg):
         match = re.match(r'^(?:!|！)(follow|unfollow) (\d+|me)', msg.content)
@@ -274,4 +280,31 @@ class Group:
                 logging.info(str(info))
                 self.reply(str(info))
                 return True
+        return False
+
+    def game(self, msg):
+        match = re.match(ur'^(?:!|！)(game)\s*(\w+|[\u4e00-\u9fa5]+)?', msg.content)
+        if match:
+            command = str(match.group(1))
+            args1 = match.group(2)
+            if not args1:
+                self.reply('玩游戏：!game 开始谁是卧底5人局\n结束游戏：!game end')
+                return True
+            if args1 == 'end':
+                self.__game_handler = None
+                self.reply('游戏结束')
+                return True
+            if args1 and u'谁是卧底' in args1:
+                self.__game_handler = shuishiwodi(shuishiwodiStartStatus(), self)
+                self.__game_handler.run(msg)
+                return True
+            return True
+        # 没有处理程序时退出
+        if not self.__game_handler:
+            return False
+        # 谁是卧底的处理程序
+        if isinstance(self.__game_handler, shuishiwodi):
+            if self.__game_handler.status not in ['StartStatus', 'EndStatus']:
+                self.__game_handler.run(msg)
+                return True  # 游戏期间屏蔽其他处理过程
         return False

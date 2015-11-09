@@ -12,13 +12,15 @@ from plugin import shuishiwodi, shuishiwodiStartStatus
 from plugin.weather import Weather
 from plugin.Turing import Turing
 
-# logging.basicConfig(
-#     filename='smartqq.log',
-#     level=logging.DEBUG,
-#     format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-#     datefmt='%a, %d %b %Y %H:%M:%S',
-# )
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    filename='smartqq.log',
+    level=logging.DEBUG,
+    format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+    datefmt='%a, %d %b %Y %H:%M:%S',
+)
+
+
+# logging.basicConfig(level=logging.DEBUG)
 
 
 class Group:
@@ -84,8 +86,10 @@ class Group:
         self.msg_list.append(msg)
 
     def get_member_list(self):
-        if not self.member_list or self.group_code:
+        if not self.member_list:
             result = self.__operator.get_group_info_ext2(self.group_code)
+            if not result or not result["minfo"]:
+                return self.member_list
             MemberInfo = namedtuple('MemberInfo', 'nick province gender uin country city')
             member_lst = map(lambda x: MemberInfo(**x), result["minfo"])
             d = {}

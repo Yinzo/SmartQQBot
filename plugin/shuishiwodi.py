@@ -54,7 +54,7 @@ class StartStatus(StatusHandler):
 
     def handle(self, game, msgDto):
         content = msgDto.content
-        matches = re.match(ur'.*开始谁是卧底((\d+)人局)?(.*(\d+)卧底)?', content)
+        matches = re.match(ur'.*谁是卧底((\d+)人局)?(.*(\d+)卧底)?', content)
         if matches:
             playCount = 5
             undercoverCount = 1
@@ -130,8 +130,8 @@ class AssignRolesStatus(StatusHandler):
             game.playerList[i].isUndercover = True
             game.playerList[i].word = specialWord
         # 游戏信息
-        playerNames = ','.join([x.name for x in game.playerList])
-        game.writePublic(u"[%s]本次游戏共 %d 人，卧底 %d 人。\n玩家列表：%s\n我会私聊通知各玩家身份哦，记得查看~~" % (
+        playerNames = '\n'.join(['[%s号]%s' % (x.id, x.name) for x in game.playerList])
+        game.writePublic(u"[%s]本次游戏共 %d 人，卧底 %d 人。玩家列表：\n%s\n\n我会私聊通知各玩家身份哦，记得查看!!~~" % (
             game.gameId, len(game.playerList), self._undercoverCount, playerNames))
         # 私聊玩家，通知词语
         for x in game.playerList:
@@ -247,14 +247,21 @@ class VerdictStatus(StatusHandler):
         self._score = scoreDict
 
     def handle(self, game, msgDto):
-        sortedScore = self.__getScore()
+        sortedScore = self.__getScore(game.playerList)
         msg = u'投票结果：\n'
         scoreList = '\t\n'.join([u'[%s号]: %s票' % (p.id, p.score) for p in sortedScore])
         outPlayer = sortedScore[0]
+        p2 = sortedScore[1]
+        # 平票
+        if outPlayer.score == p2.score:
+            game.writePublic(u'平票！继续发言')
+            game.statusHandle = SpeechStatus()
+            return True
+        # 玩家出局
         game.outPlayer(outPlayer.id)
         result = u'\n==== [%s号]%s 被投票出局 ====' % (outPlayer.id, outPlayer.name)
         game.writePublic(msg + scoreList + result)
-
+        # 胜负判断
         undercoverCount = len([x for x in game.playerList if x.isUndercover])
         playerCount = len(game.playerList)
         if undercoverCount == 0:
@@ -270,15 +277,14 @@ class VerdictStatus(StatusHandler):
             return True
         return False
 
-    def __getScore(self):
+    def __getScore(self, playerList):
         keys = self._score.keys()
-        lst = game.playerList[:]
-        for x in lst:
+        for x in playerList:
             if x.id in keys:
                 x.score = self._score[x.id]
             else:
                 x.score = 0
-        sortedScore = sorted(lst, key=lambda x: x.score, reverse=True)
+        sortedScore = sorted(playerList, key=lambda x: x.score, reverse=True)
         return [x for x in sortedScore if x.score > 0]
 
 
@@ -305,7 +311,7 @@ class Game(object):
 
     @property
     def playerList(self):
-        return [x for x in self.__playerList if not x.isOut][:]
+        return tuple([x for x in self.__playerList if not x.isOut])
 
     @property
     def status(self):
@@ -333,6 +339,7 @@ class Game(object):
         return None
 
     def writePublic(self, content):
+        time.sleep(1)
         self._output.reply(content)
         pass
 

@@ -6,4 +6,5 @@
 /.idea
 /config/group/*.conf
 /config/pm/*.conf
+/config/sess/*.conf
 

@@ -59,11 +59,11 @@ class StartStatus(StatusHandler):
             playCount = 5
             undercoverCount = 1
             if matches.group(2):
-                playCount = int(matches.group(2))
+                playCount = max(3, int(matches.group(2)))  # 三个人以下就别玩了。。。
             if matches.group(4):
                 undercoverCount = int(matches.group(4))
             game.writePublic(u"玩游戏啦：谁是卧底 %d 人局，想玩的快快加入~(输入 我要参加，加入游戏)" % playCount)
-            game.statusHandle = ReadyStatus(playCount, undercoverCount)
+            game.statusHandle = ReadyStatus(game, playCount, undercoverCount)
             return True
         return False
 
@@ -74,17 +74,17 @@ class ReadyStatus(StatusHandler):
     公告游戏人数
     允许玩家加入游戏
     """
-    _playCount = 0
-    _undercoverCount = 0
 
-    def __init__(self, playCount, undercoverCount=1):
+    def __init__(self, game, maxPlayerCount, undercoverCount=1):
         super(StatusHandler, self).__init__()
         self.status = 'ReadyStatus'
-        self._playCount = playCount
-        self._undercoverCount = undercoverCount
+        self.__game = game
+        self.__maxPlayerCount = maxPlayerCount
+        self.__undercoverCount = undercoverCount
+        self.__startNotifyThread()
 
     def handle(self, game, msgDto):
-        matchSuccess = re.match(ur'^\s*我要参加.*\s*$', msgDto.content)
+        matchSuccess = re.match(ur'^\s*我要参加\s*$', msgDto.content)
         if not matchSuccess:
             return False
         playerInfo = PlayerInfo()
@@ -93,11 +93,39 @@ class ReadyStatus(StatusHandler):
         if playerInfo.uin in [x.uin for x in game.playerList]:
             return False
         game.addPlayer(playerInfo)
-        game.writePublic(u"%s 加入游戏，当前人数 %d/%d" % (playerInfo.name, len(game.playerList), self._playCount))
-        if len(game.playerList) >= self._playCount:
-            game.statusHandle = AssignRolesStatus(self._undercoverCount)
-            return True
+        game.writePublic(u"%s 加入游戏，当前人数 %d/%d" % (playerInfo.name, len(game.playerList), self.__maxPlayerCount))
+        if len(game.playerList) >= self.__maxPlayerCount:
+            return self.next()
         return False
+
+    def __startNotifyThread(self, timeout=80):
+        def process(statusHandle, game, timeout):
+            while statusHandle == game.statusHandle and timeout > 0:
+                time.sleep(1)
+                timeout -= 1
+                if timeout <= 0:
+                    statusHandle.next()  # 开始游戏
+                    return
+                if timeout % 20 == 0:
+                    game.writePublic(u"要玩游戏的快加入啦，剩余%s秒。" % (timeout))
+                    continue
+            return
+
+        thread = threading.Thread(target=process, args=(self, self.__game, timeout))
+        thread.start()
+
+    def next(self):
+        """
+        进入下一阶段
+        """
+        lock = self.__game.lock
+        lock.acquire()
+        try:
+            if self.__game.statusHandle == self:
+                self.__game.statusHandle = AssignRolesStatus(self.__game, self.__undercoverCount)
+            return True
+        finally:
+            lock.release()
 
 
 class AssignRolesStatus(StatusHandler):
@@ -105,39 +133,51 @@ class AssignRolesStatus(StatusHandler):
     <分配角色阶段>
     初始化用户身份信息
     """
-    _undercoverCount = 0
 
-    def __init__(self, undercoverCount=1):
+    def __init__(self, game, undercoverCount=1):
         """
         :param undercoverCount: 卧底人数
         :return:
         """
         super(StatusHandler, self).__init__()
         self.status = 'AssignRolesStatus'
-        self._undercoverCount = undercoverCount
+        self.__game = game
+        self.__undercoverCount = undercoverCount
+        self.__nextStatusHandle = None
+        self.__assignRoles()
 
     def handle(self, game, msgDto):
+        game.statusHandle = self.__nextStatusHandle
+        return True
+
+    def __assignRoles(self):
+        game = self.__game
+        playerCount = len(game.playerList)
         maxUndercover = len(game.playerList) // 3
-        self._undercoverCount = min(maxUndercover, self._undercoverCount)
+        self.__undercoverCount = min(maxUndercover, self.__undercoverCount)
+        if playerCount < 3 or self.__undercoverCount <= 0:
+            game.writePublic("玩家过少，游戏结束")
+            self.__nextStatusHandle = EndStatus()
+            return True
         # 获取卧底词
         normalWord, specialWord = self.__extractWords()
         # 分配卧底身份
         for x in game.playerList:
             x.isUndercover = False
             x.word = normalWord
-        while len([x for x in game.playerList if x.isUndercover]) < self._undercoverCount:
+        while len([x for x in game.playerList if x.isUndercover]) < self.__undercoverCount:
             i = random.randint(0, len(game.playerList) - 1)
             game.playerList[i].isUndercover = True
             game.playerList[i].word = specialWord
         # 游戏信息
         playerNames = '\n'.join(['[%s号]%s' % (x.id, x.name) for x in game.playerList])
         game.writePublic(u"[%s]本次游戏共 %d 人，卧底 %d 人。玩家列表：\n%s\n\n我会私聊通知各玩家身份哦，记得查看!!~~" % (
-            game.gameId, len(game.playerList), self._undercoverCount, playerNames))
+            game.gameId, len(game.playerList), self.__undercoverCount, playerNames))
         # 私聊玩家，通知词语
         for x in game.playerList:
             game.writePrivate(x.uin, u'谁是卧底，您本局[%s]的词语是：%s' % (game.gameId, x.word))
         # 进入发言阶段
-        game.statusHandle = SpeechStatus()
+        self.__nextStatusHandle = SpeechStatus(self.__game)
         return True
 
     def __extractWords(self):
@@ -163,24 +203,16 @@ class SpeechStatus(StatusHandler):
     玩家依次发言
     """
 
-    def __init__(self, ):
+    def __init__(self, game):
         super(StatusHandler, self).__init__()
         self.status = 'SpeechStatus'
+        self.__game = game
         self._history = {}
-        self._first = True
-        self._playerSet = set()
+        self._playerSet = {}
+        self.__first()
+        self.__startNotifyThread()
 
     def handle(self, game, msgDto):
-        if self._first:
-            self._first = False
-            lst = game.playerList
-            self._playerSet = {}
-            for x in lst:
-                self._playerSet[x.uin] = x.id
-            i = random.randint(0, len(lst) - 1)
-            playerInfo = lst[i]
-            game.writePublic(u"发言阶段，请从%d号玩家[%s]开始，依次发言。" % (playerInfo.id, playerInfo.name))
-            return
         uin = msgDto.send_uin
         content = msgDto.content
         if uin not in self._playerSet:
@@ -192,9 +224,46 @@ class SpeechStatus(StatusHandler):
             lst = [(u'[%s号]: %s' % (self._playerSet[uin], value)) for uin, value in self._history.items()]
             playerReplys = '\n'.join(lst)
             game.writePublic(u"发言结束：\n" + playerReplys)
-            game.statusHandle = VoteStatus()
-            return True
+            return self.next()
         return False
+
+    def __first(self):
+        lst = game.playerList
+        for x in lst:
+            self._playerSet[x.uin] = x.id
+        i = random.randint(0, len(lst) - 1)
+        playerInfo = lst[i]
+        game.writePublic(u"发言阶段，请从%d号玩家[%s]开始，依次发言。" % (playerInfo.id, playerInfo.name))
+        return
+
+    def __startNotifyThread(self, timeout=80):
+        def process(statusHandle, game, timeout):
+            while statusHandle == game.statusHandle and timeout > 0:
+                time.sleep(10)
+                timeout -= 10
+                if timeout <= 0:
+                    statusHandle.next()  # 进行下一阶段
+                    return
+                if timeout % 20 == 0:
+                    game.writePublic(u"还没有发言的玩家快发言啦，剩余%s秒。" % (timeout))
+                    continue
+            return
+
+        thread = threading.Thread(target=process, args=(self, self.__game, timeout))
+        thread.start()
+
+    def next(self):
+        """
+        进入下一阶段
+        """
+        lock = self.__game.lock
+        lock.acquire()
+        try:
+            if self.__game.statusHandle == self:
+                self.__game.statusHandle = VoteStatus(self.__game)
+            return True
+        finally:
+            lock.release()
 
 
 class VoteStatus(StatusHandler):
@@ -203,19 +272,16 @@ class VoteStatus(StatusHandler):
     玩家投出代表自己的一票
     """
 
-    def __init__(self, ):
+    def __init__(self, game):
         super(StatusHandler, self).__init__()
         self.status = 'VoteStatus'
+        self.__game = game
         self._history = {}
         self._score = {}  # 投票结果
-        self._first = True
+        self.__first()
+        self.__startNotifyThread()
 
     def handle(self, game, msgDto):
-        if self._first:
-            self._first = False
-            self._playerSet = set([x.uin for x in game.playerList if not x.isOut])
-            game.writePublic(u"投票开始，请投卧底。")
-            return
         uin = msgDto.send_uin
         content = msgDto.content
         if uin not in self._playerSet:
@@ -231,9 +297,42 @@ class VoteStatus(StatusHandler):
                     self._score[id] += 1
         # 投票结束
         if len(self._history) >= len(self._playerSet):
-            game.statusHandle = VerdictStatus(self._score)
-            return True
+            return self.next()
         return False
+
+    def __first(self):
+        self._playerSet = set([x.uin for x in game.playerList if not x.isOut])
+        game.writePublic(u"投票开始，请投卧底。")
+        return
+
+    def __startNotifyThread(self, timeout=80):
+        def process(statusHandle, game, timeout):
+            while statusHandle == game.statusHandle and timeout > 0:
+                time.sleep(10)
+                timeout -= 10
+                if timeout <= 0:
+                    statusHandle.next()  # 进行下一阶段
+                    return
+                if timeout % 20 == 0:
+                    game.writePublic(u"快投票哇，剩余%s秒。" % (timeout))
+                    continue
+            return
+
+        thread = threading.Thread(target=process, args=(self, self.__game, timeout))
+        thread.start()
+
+    def next(self):
+        """
+        进入下一阶段
+        """
+        lock = self.__game.lock
+        lock.acquire()
+        try:
+            if self.__game.statusHandle == self:
+                self.__game.statusHandle = VerdictStatus(self.__game, self._score)
+            return True
+        finally:
+            lock.release()
 
 
 class VerdictStatus(StatusHandler):
@@ -241,12 +340,20 @@ class VerdictStatus(StatusHandler):
     <裁决阶段>
     """
 
-    def __init__(self, scoreDict):
+    def __init__(self, game, scoreDict):
         super(StatusHandler, self).__init__()
         self.status = 'VerdictStatus'
+        self.__game = game
         self._score = scoreDict
+        self.__nextStatusHandle = None
+        self.__first()
 
     def handle(self, game, msgDto):
+        game.statusHandle = self.__nextStatusHandle
+        return True
+
+    def __first(self):
+        game = self.__game
         sortedScore = self.__getScore(game.playerList)
         msg = u'投票结果：\n'
         scoreList = '\t\n'.join([u'[%s号]: %s票' % (p.id, p.score) for p in sortedScore])
@@ -254,8 +361,8 @@ class VerdictStatus(StatusHandler):
         p2 = sortedScore[1]
         # 平票
         if outPlayer.score == p2.score:
-            game.writePublic(u'平票！继续发言')
-            game.statusHandle = SpeechStatus()
+            game.writePublic(msg + scoreList + u'\n==== 平票！请继续发言 ====')
+            self.__nextStatusHandle = SpeechStatus(game)
             return True
         # 玩家出局
         game.outPlayer(outPlayer.id)
@@ -266,16 +373,14 @@ class VerdictStatus(StatusHandler):
         playerCount = len(game.playerList)
         if undercoverCount == 0:
             game.writePublic(u'==== 卧底出局，平民赢得胜利！！！ ====')
-            game.statusHandle = EndStatus()
+            self.__nextStatusHandle = EndStatus()
             return True
         elif playerCount == 2 or playerCount == undercoverCount:
-            game.writePublic(u'==== 卧底胜利！！！ ====')
-            game.statusHandle = EndStatus()
+            game.writePublic(u'==== 卧底获胜！！！ ====')
+            self.__nextStatusHandle = EndStatus()
             return True
-        else:
-            game.statusHandle = SpeechStatus()
-            return True
-        return False
+        self.__nextStatusHandle = SpeechStatus(game)
+        return True
 
     def __getScore(self, playerList):
         keys = self._score.keys()
@@ -308,6 +413,7 @@ class Game(object):
         self.gameId = str(int(time.time()))[-5:]
         self.__playerList = []
         self._output = groupHandler
+        self.lock = threading.Lock()
 
     @property
     def playerList(self):
@@ -379,33 +485,33 @@ if __name__ == "__main__":
     output = logging
     output.reply = logging.info
     output.reply_sess = lambda uin, msg: logging.info(msg)
+    output.get_member_list = lambda: []
 
     # 开始5人局
     status = StartStatus()
     game = Game(status, output)
     msgDto = MsgDto()
-    msgDto.content = u'!game 开始谁是卧底4人局2卧底'
+    msgDto.content = u'!game 开始谁是卧底5人局2卧底'
     game.run(msgDto)
 
     # 报名
     game.run(MsgDto())
     msgDto1 = MsgDto()
     msgDto1.send_uin = '1'
-    msgDto1.content = u'我要参加1'
+    msgDto1.content = u'我要参加'
     game.run(msgDto1)
     msgDto2 = MsgDto()
     msgDto2.send_uin = '2'
-    msgDto2.content = u'我要参加2'
+    msgDto2.content = u'我要参加'
     game.run(msgDto2)
     msgDto3 = MsgDto()
     msgDto3.send_uin = '3'
-    msgDto3.content = u'我要参加3'
+    msgDto3.content = u'我要参加'
     game.run(msgDto3)
     msgDto4 = MsgDto()
     msgDto4.send_uin = '4'
-    msgDto4.content = u'我要参加4'
+    msgDto4.content = u'我要参加'
     game.run(msgDto4)
-    # game.run(msgDto4)
     msgDto5 = MsgDto()
     msgDto5.send_uin = '5'
     msgDto5.content = u'我要参加'
@@ -434,5 +540,6 @@ if __name__ == "__main__":
     game.run(msgDto4)
     msgDto5.content = u'3号'
     game.run(msgDto5)
+    threading.Event().set()
 
     # time.sleep(3)

@@ -175,7 +175,7 @@ class AssignRolesStatus(StatusHandler):
             game.gameId, len(game.playerList), self.__undercoverCount, playerNames))
         # 私聊玩家，通知词语
         for x in game.playerList:
-            game.writePrivate(x.uin, u'谁是卧底，您本局[%s]的词语是：%s' % (game.gameId, x.word))
+            game.writePrivate(x.uin, u'[%s]谁是卧底，您本局[%s]的词语是：%s' % (x.name,game.gameId, x.word))
         # 进入发言阶段
         self.__nextStatusHandle = SpeechStatus(self.__game)
         return True
@@ -302,6 +302,7 @@ class VoteStatus(StatusHandler):
         return False
 
     def __first(self):
+        game = self.__game
         self._playerSet = set([x.uin for x in game.playerList if not x.isOut])
         game.writePublic(u"投票开始，请投卧底。")
         return

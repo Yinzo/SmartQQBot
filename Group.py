@@ -291,6 +291,8 @@ class Group:
                 self.reply('玩游戏：!game 开始谁是卧底5人局\n结束游戏：!game end')
                 return True
             if args1 == 'end':
+                if self.__game_handler and self.__game_handler.statusHandle:
+                    self.__game_handler.statusHandle = None
                 self.__game_handler = None
                 self.reply('游戏结束')
                 return True

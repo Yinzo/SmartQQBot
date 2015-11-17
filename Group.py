@@ -255,7 +255,6 @@ class Group:
             logging.info(msg.content)
             print city
             if command == 'weather' or command == u'天气':
-                # self.reply("我开始查询" + city + "的天气啦")
                 query = Weather()
                 info = query.getWeatherOfCity(city)
                 logging.info(str(info))

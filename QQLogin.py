@@ -24,7 +24,13 @@ def init_logging():
         format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
         datefmt='%a, %d %b %Y %H:%M:%S',
     )
-    logging.getLogger().addHandler(logging.StreamHandler())
+    
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s')
+    handler.setFormatter(formatter)
+    logger = logging.getLogger()
+    logger.addHandler(handler)
 
 def display_QRCode(path):
     img = Image.open(path)
@@ -167,19 +173,11 @@ class QQ:
         html = self.req.Get(ret[5])
         logging.debug("mibao_res html:  " + str(html))
 
-
-
-        #Cookie proxy
-        # self.req.dumpCookie()
-        # self.req.Get('http://w.qq.com/index.html?webqq_type=10')
-        # self.req.dumpCookie()
-
-
         url = get_revalue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
         if url != '':
             html = self.req.Get(url.replace('&amp;', '&'))
             url = get_revalue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
-            logging.debug("UUUUUU =" + str(url))
+            logging.debug("Redirected html =" + str(url))
             self.req.Get(url)
 
         self.ptwebqq = self.req.getCookie('ptwebqq')
@@ -285,7 +283,7 @@ class QQ:
                     else:
                         logging.warning("unknown message type: " + str(ret_type) + "details:    " + str(msg))
 
-                group_list.sort(key=lambda x: x.seq)
+                group_list.sort(key=lambda x: x.msg_id)
                 msg_list += pm_list + sess_list + group_list + notify_list
                 if not msg_list:
                     return
@@ -335,14 +333,14 @@ class QQ:
                 info = info['result']
                 self.friend_list[uin_str] = info['account']
 
-            except BaseException, error:
-                logging.warning(error)
+            except:
+                logging.exception("uin_to_account")
 
         assert isinstance(uin_str, str), "tuin is not string"
         try:
             return self.friend_list[uin_str]
-        except KeyError, e:
-            logging.warning(e)
+        except:
+            logging.exception("uin_to_account")
             logging.debug("now uin list:    " + str(self.friend_list))
 
     # 获取自己的信息
@@ -438,6 +436,7 @@ class QQ:
             logging.debug("send_qun_msg: Reply response: " + str(rsp))
             return rsp_json
         except:
+            logging.exception("send_qun_msg exception")
             if fail_times < 5:
                 logging.warning("send_qun_msg: Response Error.Wait for 2s and Retrying." + str(fail_times))
                 logging.debug(rsp)

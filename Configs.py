@@ -42,7 +42,7 @@ class DefaultConfigs(Configs):
             self.conf.add_section('pm')
             self.conf.add_section('group')
             self.conf.add_section('sess')
-            self.conf.set('global', 'connect_referer', 'http://d.web2.qq.com/proxy.html?v=20130916001&callback=1&id=2')
+            self.conf.set('global', 'connect_referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
             self.conf.set('global', 'smartQQ_url', 'http://w.qq.com/login.html')
             self.conf.set('global', 'qrcode_path', './v.jpg')
             self.conf.set('global', 'tucao_path', './data/tucao_save/')

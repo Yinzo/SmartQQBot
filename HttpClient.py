@@ -38,6 +38,10 @@ class HttpClient:
     #  def urlencode(self, data):
     #    return urllib.quote(data)
 
+    def dumpCookie(self):
+        for c in self.__cookie:
+            print c.name,'=',c.value
+
     def getCookie(self, key):
         for c in self.__cookie:
             if c.name == key:

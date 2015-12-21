@@ -9,9 +9,7 @@ class Msg:
         self.poll_type = json_input['poll_type']
         self.from_uin = json_input['value']['from_uin']
         self.msg_id = json_input['value']['msg_id']
-        self.msg_id2 = json_input['value']['msg_id2']
         self.msg_type = json_input['value']['msg_type']
-        self.reply_ip = json_input['value']['reply_ip']
         self.to_uin = json_input['value']['to_uin']
 
 
@@ -64,5 +62,3 @@ class GroupMsg(MsgWithContent):
         MsgWithContent.__init__(self, json_input)
         self.group_code = json_input['value']['group_code']
         self.send_uin = json_input['value']['send_uin']
-        self.seq = json_input['value']['seq']
-        self.info_seq = json_input['value']['info_seq']

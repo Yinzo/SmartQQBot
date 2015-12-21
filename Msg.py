@@ -6,7 +6,7 @@
 class Msg:
 
     def __init__(self, json_input):
-        self.poll_type = json_input['poll_type']
+        self.poll_type = json_input['poll_type']        
         self.from_uin = json_input['value']['from_uin']
         self.msg_id = json_input['value']['msg_id']
         self.msg_type = json_input['value']['msg_type']

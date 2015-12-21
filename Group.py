@@ -33,7 +33,7 @@ class Group:
             self.gid = ""
         elif isinstance(ip, GroupMsg):
             self.guin = ip.from_uin
-            self.gid = ip.info_seq
+            self.gid = ip.group_code
         self.msg_id = int(random.uniform(20000, 50000))
         self.group_code = 0
         self.member_list = []

@@ -40,23 +40,23 @@ class MsgHandler:
                 logging.info(str(self.__get_account(msg)) + ":" + msg.content)
 
             if isinstance(msg, GroupMsg):  # 群聊信息的处理
-                # 判断群对象是否存在，info_seq实际上为群号
-                if msg.info_seq not in self.__group_list:
-                    self.__group_list[msg.info_seq] = Group(self.__operator, msg)
+                # 判断群对象是否存在，group_code实际上为群号
+                if msg.group_code not in self.__group_list:
+                    self.__group_list[msg.group_code] = Group(self.__operator, msg)
                     # 维护一个线程队列，然后每一个线程处理各自的信息
-                    self.process_threads[msg.info_seq] = MsgHandleQueue(self.__group_list[msg.info_seq])
-                    self.process_threads[msg.info_seq].start()
+                    self.process_threads[msg.group_code] = MsgHandleQueue(self.__group_list[msg.group_code])
+                    self.process_threads[msg.group_code].start()
                     logging.debug("Now group list:  " + str(self.__group_list))
 
-                tgt_group = self.__group_list[msg.info_seq]
-                if len(tgt_group.msg_list) >= 1 and msg.seq == tgt_group.msg_list[-1].seq:
+                tgt_group = self.__group_list[msg.group_code]
+                if len(tgt_group.msg_list) >= 1 and msg.msg_id == tgt_group.msg_list[-1].msg_id:
                     # 若如上一条seq重复则抛弃此条信息不处理
                     logging.info("消息重复，抛弃")
                     return
 
                 tgt_group.msg_id = msg.msg_id
 
-                self.process_threads[msg.info_seq].append(msg)
+                self.process_threads[msg.group_code].append(msg)
 
             elif isinstance(msg, PmMsg):  # 私聊信息处理
                 tid = self.__get_account(msg)
@@ -120,7 +120,7 @@ class MsgHandler:
             return account
 
         elif isinstance(msg, GroupMsg):
-            return str(msg.info_seq).join("[]") + str(self.__operator.uin_to_account(msg.send_uin))
+            return str(msg.msg_id).join("[]") + str(self.__operator.uin_to_account(msg.send_uin))
 
     def __input_notify_handler(self, msg):
         logging.info(str(self.__get_account(msg)) + " is typing...")

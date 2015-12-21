@@ -3,7 +3,7 @@
 # Code by Yinzo:        https://github.com/Yinzo
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
-import random
+
 import time
 import datetime
 import re
@@ -167,22 +167,27 @@ class QQ:
         html = self.req.Get(ret[5])
         logging.debug("mibao_res html:  " + str(html))
 
+        # url = get_revalue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
+        # if url != '':
+        #     html = self.req.Get(url.replace('&amp;', '&'))
+        #     url = get_revalue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
+        #     self.req.Get(url)
 
-
-        #Cookie proxy
-        # self.req.dumpCookie()
-        # self.req.Get('http://w.qq.com/index.html?webqq_type=10')
-        # self.req.dumpCookie()
-
-
-        url = get_revalue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
-        if url != '':
-            html = self.req.Get(url.replace('&amp;', '&'))
-            url = get_revalue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
-            logging.debug("UUUUUU =" + str(url))
-            self.req.Get(url)
 
         self.ptwebqq = self.req.getCookie('ptwebqq')
+
+        # 测试用请求
+        self.req.Get("http://w.qq.com/proxy.html?login2qq=1&webqq_type=10")
+        self.req.Get("http://web2.qq.com/web2_cookie_proxy.html")
+        self.req.Get("http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1")
+        self.req.Get("http://s.web2.qq.com/api/getvfwebqq?ptwebqq={0}&clientid={1}&psessionid={2}&t={3}".format(
+            self.ptwebqq,
+            self.client_id,
+            self.psessionid,
+            date_to_millis(datetime.datetime.utcnow()) - star_time
+        ))
+        self.req.Get("http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2")
+
 
         login_error = 1
         ret = {}
@@ -250,10 +255,10 @@ class QQ:
 
             ret_code = ret['retcode']
 
-            if ret_code in (102,):
-                logging.info("received retcode: " + str(ret_code) + ": No message.")
-                time.sleep(1)
-                return
+            # if ret_code in (0,):
+            #     logging.info("received retcode: " + str(ret_code) + ": No message.")
+            #     time.sleep(1)
+            #     return
 
             if ret_code in (103,):
                 logging.warning("received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
@@ -265,6 +270,10 @@ class QQ:
                 return self.check_msg(5)
 
             elif ret_code == 0:
+                if len(ret['result']) == 0:
+                    logging.info("received retcode: " + str(ret_code) + ": No message.")
+                    time.sleep(1)
+                    return
                 msg_list = []
                 pm_list = []
                 sess_list = []

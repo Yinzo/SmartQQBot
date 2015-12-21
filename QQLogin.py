@@ -9,19 +9,26 @@ import datetime
 import re
 import json
 import logging
+import thread
+from PIL import Image
 
 from Configs import *
 from Msg import *
 from Notify import *
 from HttpClient import *
 
-logging.basicConfig(
-    filename='smartqq.log',
-    level=logging.DEBUG,
-    format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-    datefmt='%a, %d %b %Y %H:%M:%S',
-)
+def init_logging():
+    logging.basicConfig(
+        filename='smartqq.log',
+        level=logging.DEBUG,
+        format='%(asctime)s  %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+        datefmt='%a, %d %b %Y %H:%M:%S',
+    )
+    logging.getLogger().addHandler(logging.StreamHandler())
 
+def display_QRCode(path):
+    img = Image.open(path)
+    img.show()
 
 def get_revalue(html, rex, er, ex):
     v = re.search(rex, html)
@@ -52,7 +59,7 @@ class QQ:
         self.__groupSig_list = {}
         self.__self_info = {}
 
-        self.client_id = int(random.uniform(111111, 888888))
+        self.client_id = 53999199
         self.ptwebqq = ''
         self.psessionid = ''
         self.appid = 0
@@ -60,6 +67,8 @@ class QQ:
         self.qrcode_path = self.default_config.conf.get("global", "qrcode_path")  # QRCode保存路径
         self.username = ''
         self.account = 0
+
+        init_logging()
 
     def __hash_digest(self, uin, ptwebqq):
         """
@@ -96,7 +105,7 @@ class QQ:
     def __getGroupSig(self, guin, tuin, service_type=0):
         key = '%s --> %s' % (guin, tuin)
         if key not in self.__groupSig_list:
-            url = "http://d.web2.qq.com/channel/get_c2cmsg_sig2?id=%s&to_uin=%s&service_type=%s&clientid=%s&psessionid=%s&t=%d" % (
+            url = "http://d1.web2.qq.com/channel/get_c2cmsg_sig2?id=%s&to_uin=%s&service_type=%s&clientid=%s&psessionid=%s&t=%d" % (
                 guin, tuin, service_type, self.client_id, self.psessionid, int(time.time() * 100))
             response = self.req.Get(url)
             rsp_json = json.loads(response)
@@ -130,6 +139,7 @@ class QQ:
             self.req.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
                               self.qrcode_path)
             logging.info("Please scan the downloaded QRCode")
+            thread.start_new_thread(display_QRCode, (self.qrcode_path,))
 
             while True:
                 html = self.req.Get(
@@ -156,10 +166,20 @@ class QQ:
 
         html = self.req.Get(ret[5])
         logging.debug("mibao_res html:  " + str(html))
+
+
+
+        #Cookie proxy
+        # self.req.dumpCookie()
+        # self.req.Get('http://w.qq.com/index.html?webqq_type=10')
+        # self.req.dumpCookie()
+
+
         url = get_revalue(html, r' src="(.+?)"', 'Get mibao_res Url Error.', 0)
         if url != '':
             html = self.req.Get(url.replace('&amp;', '&'))
             url = get_revalue(html, r'location\.href="(.+?)"', 'Get Redirect Url Error', 1)
+            logging.debug("UUUUUU =" + str(url))
             self.req.Get(url)
 
         self.ptwebqq = self.req.getCookie('ptwebqq')
@@ -168,7 +188,7 @@ class QQ:
         ret = {}
         while login_error > 0:
             try:
-                html = self.req.Post('http://d.web2.qq.com/channel/login2', {
+                html = self.req.Post('http://d1.web2.qq.com/channel/login2', {
                     'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(self.ptwebqq,
                                                                                                           self.client_id,
                                                                                                           self.psessionid)
@@ -195,7 +215,7 @@ class QQ:
         if error_times >= 10:
             return False
         try:
-            html = self.req.Post('http://d.web2.qq.com/channel/login2', {
+            html = self.req.Post('http://d1.web2.qq.com/channel/login2', {
                 'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","key":"","status":"online"}}'.format(
                     self.ptwebqq,
                     self.client_id,
@@ -218,7 +238,7 @@ class QQ:
                 error_times = 0
 
         # 调用后进入单次轮询，等待服务器发回状态。
-        html = self.req.Post('http://d.web2.qq.com/channel/poll2', {
+        html = self.req.Post('http://d1.web2.qq.com/channel/poll2', {
             'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.psessionid, self.ptwebqq,
                                                                                          self.client_id)
         }, self.default_config.conf.get("global", "connect_referer"))
@@ -402,7 +422,7 @@ class QQ:
             "utf-8")
         rsp = ""
         try:
-            req_url = "http://d.web2.qq.com/channel/send_qun_msg2"
+            req_url = "http://d1.web2.qq.com/channel/send_qun_msg2"
             data = (
                 ('r',
                  '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":"{1}","msg_id":{2},"psessionid":"{3}"}}'.format(
@@ -433,7 +453,7 @@ class QQ:
             "utf-8")
         rsp = ""
         try:
-            req_url = "http://d.web2.qq.com/channel/send_buddy_msg2"
+            req_url = "http://d1.web2.qq.com/channel/send_buddy_msg2"
             data = (
                 ('r',
                  '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}"}}'.format(
@@ -464,7 +484,7 @@ class QQ:
             "utf-8")
         rsp = ""
         try:
-            req_url = "http://d.web2.qq.com/channel/send_sess_msg2"
+            req_url = "http://d1.web2.qq.com/channel/send_sess_msg2"
             data = (
                 ('r',
                  '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
@@ -505,7 +525,7 @@ class QQ:
             "utf-8")
         rsp = ""
         try:
-            req_url = "http://d.web2.qq.com/channel/send_sess_msg2"
+            req_url = "http://d1.web2.qq.com/channel/send_sess_msg2"
             data = (
                 ('r',
                  '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":"{1}", "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(

@@ -7,25 +7,38 @@ class HttpClient:
     __req.addheaders = [
         ('Accept', 'application/javascript, */*;q=0.8'),
         ('User-Agent',
-         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.125 Safari/537.36"),
-        ('Referer', 'http://d.web2.qq.com/proxy.html?v=20130916001&callback=1&id=2')
+         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.80 Safari/537.36"),
+        ('Referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
     ]
     urllib2.install_opener(__req)
 
     def Get(self, url, refer=None):
         try:
+
+            print "requesting " + str(url) + " with cookies:"
+            print self.__cookie
             req = urllib2.Request(url)
             if not (refer is None):
                 req.add_header('Referer', refer)
-            return urllib2.urlopen(req).read()
+            req.add_header('Referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
+            print req.headers
+            tmp_req = urllib2.urlopen(req)
+            return tmp_req.read()
         except urllib2.HTTPError, e:
             return e.read()
 
     def Post(self, url, data, refer=None):
         try:
+            print "requesting " + str(url) + " with data:"
+            print data
+            print "Cookies: "
+            print self.__cookie
             req = urllib2.Request(url, urllib.urlencode(data))
             if not (refer is None):
                 req.add_header('Referer', refer)
+            req.add_header('Referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
+            print "Headers: "
+            print req.headers
             return urllib2.urlopen(req, timeout=180).read()
         except urllib2.HTTPError, e:
             return e.read()

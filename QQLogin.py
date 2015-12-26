@@ -449,7 +449,7 @@ class QQ:
             )
             rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
+            if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("reply group chat error" + str(rsp_json['retcode']))
             logging.info("send_qun_msg: Reply successfully.")
             logging.debug("send_qun_msg: Reply response: " + str(rsp))
@@ -481,7 +481,7 @@ class QQ:
             )
             rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
+            if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
             logging.info("Reply successfully.")
             logging.debug("Reply response: " + str(rsp))
@@ -521,7 +521,7 @@ class QQ:
             )
             rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
+            if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("reply sess chat error" + str(rsp_json['retcode']))
             logging.info("Reply successfully.")
             logging.debug("Reply response: " + str(rsp))
@@ -562,7 +562,7 @@ class QQ:
             )
             rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
-            if rsp_json['retcode'] != 0:
+            if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("reply sess chat error" + str(rsp_json['retcode']))
             logging.info("send_sess_msg2_fromGroup: Reply successfully.")
             logging.debug("send_sess_msg2_fromGroup: Reply response: " + str(rsp))

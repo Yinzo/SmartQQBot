@@ -116,11 +116,11 @@ class MsgHandler:
         if isinstance(msg, (PmMsg, SessMsg, InputNotify)):
             # 如果消息的发送者的真实QQ号码不在FriendList中,则自动去取得真实的QQ号码并保存到缓存中
             tuin = msg.from_uin
-            account = self.__operator.uin_to_account(tuin)
+            account = self.__operator.get_friend_info(tuin)
             return account
 
         elif isinstance(msg, GroupMsg):
-            return str(msg.msg_id).join("[]") + str(self.__operator.uin_to_account(msg.send_uin))
+            return str(msg.msg_id).join("[]") + str(self.__operator.get_friend_info(msg.send_uin))
 
     def __input_notify_handler(self, msg):
         logging.info(str(self.__get_account(msg)) + " is typing...")

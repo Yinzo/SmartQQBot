@@ -41,10 +41,10 @@ class HttpClient:
 
     def Post(self, url, data, refer=None):
         try:
-            print "requesting " + str(url) + " with data:"
-            print data
-            print "Cookies: "
-            print self.__cookie
+            # print "requesting " + str(url) + " with data:"
+            # print data
+            # print "Cookies: "
+            # print self.__cookie
             req = urllib2.Request(url, urllib.urlencode(data))
             if not (refer is None):
                 req.add_header('Referer', refer)

@@ -4,6 +4,7 @@
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
 import cPickle
+import random
 from collections import namedtuple
 from QQLogin import *
 from Configs import *

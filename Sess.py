@@ -4,6 +4,7 @@
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
 import threading
+import random
 
 from QQLogin import *
 from Configs import *

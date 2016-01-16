@@ -2,6 +2,7 @@
 *.tucao
 *.cmd
 *.log
+cookie.data
 
 /.idea
 /config/group/*.conf

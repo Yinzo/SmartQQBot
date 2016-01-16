@@ -1,4 +1,4 @@
-import cookielib, urllib, urllib2, socket, time
+import cookielib, urllib, urllib2, socket, time, os
 
 
 class HttpClient:
@@ -16,6 +16,8 @@ class HttpClient:
     urllib2.install_opener(__req)
 
     def __init__(self):
+        if not os.path.isdir("./cookie"):
+            os.mkdir("./cookie")
         try:
             self.__cookie.load(ignore_discard=True,ignore_expires=True)
         except Exception:
@@ -46,9 +48,10 @@ class HttpClient:
             # print "Cookies: "
             # print self.__cookie
             req = urllib2.Request(url, urllib.urlencode(data))
-            if not (refer is None):
+            if refer is not None:
                 req.add_header('Referer', refer)
-            req.add_header('Referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
+            else:
+                req.add_header('Referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
             # print "Headers: "
             # print req.headers
             tmp_req = urllib2.urlopen(req, timeout=180)

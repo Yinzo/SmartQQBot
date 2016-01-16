@@ -17,6 +17,7 @@ from Msg import *
 from Notify import *
 from HttpClient import *
 
+
 def init_logging():
     logging.basicConfig(
         filename='smartqq.log',
@@ -32,9 +33,11 @@ def init_logging():
     logger = logging.getLogger()
     logger.addHandler(handler)
 
+
 def display_QRCode(path):
     img = Image.open(path)
     img.show()
+
 
 def get_revalue(html, rex, er, ex):
     v = re.search(rex, html)
@@ -86,7 +89,7 @@ class QQ:
         :return:
         """
         N = [0, 0, 0, 0]
-        #print(N[0])
+        # print(N[0])
         for t in range(len(ptwebqq)):
             N[t % 4] ^= ord(ptwebqq[t])
         U = ["EC", "OK"]
@@ -123,12 +126,12 @@ class QQ:
             return self.__groupSig_list[key]
         return ""
 
-    def __login(self, times = 10):
+    def __login(self, times=10):
         login_error = 1
         while login_error > 0:
             try:
-                logging.info("Tring to login in. {0}".format(login_error))
-                print('Tring to login in.')
+                logging.info("Tring to login in with cookies. {0}".format(login_error))
+                print('Tring to auto login in.')
                 self.ptwebqq = self.req.getCookie('ptwebqq')
 
                 html = self.req.Post('http://d1.web2.qq.com/channel/login2', {
@@ -139,18 +142,23 @@ class QQ:
                 logging.debug("login html:  " + str(html))
                 ret = json.loads(html)
 
-                html2 = self.req.Get("http://s.web2.qq.com/api/getvfwebqq?ptwebqq={0}&clientid={1}&psessionid={2}&t={3}".format(
-                    self.ptwebqq,
-                    self.client_id,
-                    self.psessionid,
-                    self.req.getTimeStamp()
-                ))
+                html2 = self.req.Get(
+                        "http://s.web2.qq.com/api/getvfwebqq?ptwebqq={0}&clientid={1}&psessionid={2}&t={3}".format(
+                                self.ptwebqq,
+                                self.client_id,
+                                self.psessionid,
+                                self.req.getTimeStamp()
+                        ))
                 logging.debug("getvfwebqq html:  " + str(html2))
                 ret2 = json.loads(html2)
 
                 if (ret['retcode'] != 0) or (ret2['retcode'] != 0):
                     logging.debug(str(ret))
-                    logging.warning("return code:" + str(ret['retcode']) + str(ret['retcode']))
+                    logging.debug(str(ret2))
+                    logging.warning(
+                        "login2 retcode: {login2}, getvfwebqq retcode: {getvfwebqq}".format(login2=str(ret['retcode']),
+                                                                                            getvfwebqq=str(
+                                                                                                    ret2['retcode'])))
                     raise
 
                 self.psessionid = ret['result']['psessionid']
@@ -162,13 +170,14 @@ class QQ:
             except:
                 login_error += 1
                 logging.info("login fail, retrying...")
-                print('login fail')
+                print('auto login fail')
                 if login_error > times:
                     return False
 
     def __login_by_qrcode(self):
         try:
-            logging.info("Requesting the login pages...")
+            logging.info("Trying to login by qrcode.")
+            logging.info("Requesting the qrcode login pages...")
             initurl_html = self.req.Get(self.default_config.conf.get("global", "smartqq_url"))
             logging.debug("login page html: " + str(initurl_html))
             initurl = get_revalue(initurl_html, r'\.src = "(.+?)"', "Get Login Url Error.", 1)
@@ -193,13 +202,15 @@ class QQ:
 
                 while True:
                     html = self.req.Get(
-                        'https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid={0}&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-{1}&mibao_css={2}&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'.format(
-                            appid, date_to_millis(datetime.datetime.utcnow()) - star_time, mibao_css, js_ver, sign),
-                        initurl)
+                            'https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid={0}&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-{1}&mibao_css={2}&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'.format(
+                                    appid, date_to_millis(datetime.datetime.utcnow()) - star_time, mibao_css, js_ver,
+                                    sign),
+                            initurl)
                     logging.debug("QRCode check html:   " + str(html))
                     ret = html.split("'")
                     if ret[1] in ('0', '65'):  # 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
                         break
+                    time.sleep(1)
                 if ret[1] == '0' or error_times > 10:
                     break
 
@@ -214,18 +225,17 @@ class QQ:
             logging.debug("mibao_res html:  " + str(html))
             return True
         except:
-            logging.info("qr login fail, retrying...")
+            logging.info("qr login fail")
             print('qr login fail')
             return False
 
     def login(self):
         if not self.__login(1):
             while True:
-                self.__login_by_qrcode()
-                if self.__login(): break
+                if self.__login_by_qrcode():
+                    if self.__login(): break
         ret = self.get_self_info2()
         self.username = ret['nick']
-
 
         logging.info("QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
 
@@ -238,8 +248,10 @@ class QQ:
 
         # 调用后进入单次轮询，等待服务器发回状态。
         html = self.req.Post('http://d1.web2.qq.com/channel/poll2', {
-            'r': '{{"ptwebqq":"{1}","clientid":{2},"psessionid":"{0}","key":""}}'.format(self.psessionid, self.ptwebqq,
-                                                                                         self.client_id)
+            'r': '{{"ptwebqq":"{ptwebqq}","clientid":{clientid},"psessionid":"{psessionid}","key":""}}'.format(
+                psessionid=self.psessionid,
+                ptwebqq=self.ptwebqq,
+                clientid=self.client_id)
         }, self.default_config.conf.get("global", "connect_referer"))
         logging.debug("check_msg html:  " + str(html))
         try:
@@ -254,10 +266,10 @@ class QQ:
             #     time.sleep(1)
             #     return
 
-            # if ret_code in (103,):
-            #     logging.warning("received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
-            #     time.sleep(1)
-            #     return self.check_msg(error_times + 1)
+            if ret_code in (103,):
+                logging.warning("received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
+                time.sleep(1)
+                return self.check_msg(error_times + 1)
 
             if ret_code in (121,):
                 logging.warning("received retcode: " + str(ret_code))
@@ -317,7 +329,6 @@ class QQ:
             time.sleep(1)
             return self.check_msg(error_times + 1)
 
-    # 查询QQ号，通常首次用时0.2s，以后基本不耗时
     def uin_to_account(self, tuin):
         """
         将uin转换成用户QQ号
@@ -328,14 +339,14 @@ class QQ:
         try:
             logging.info("Requesting the account by uin:    " + str(tuin))
             info = json.loads(self.req.Get(
-                'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}&t={2}'.format(uin_str,
-                                                                                              self.vfwebqq,
-                                                                                              self.req.getTimeStamp()),
-                self.default_config.conf.get("global", "connect_referer")))
-            logging.debug("uin_request html:    " + str(info))
+                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}&t={2}'.format(uin_str,
+                                                                                                        self.vfwebqq,
+                                                                                                        self.req.getTimeStamp()),
+                    self.default_config.conf.get("global", "connect_referer")))
+            logging.debug("uin_to_account html:    " + str(info))
             if info['retcode'] != 0:
-                raise TypeError('uin to account result error')
-            info = info['result']
+                raise TypeError('uin_to_account retcode error')
+            info = info['result']['account']
             return info
 
         except:
@@ -371,17 +382,17 @@ class QQ:
         try:
             logging.info("Requesting the account info by uin:    " + str(tuin))
             info = json.loads(self.req.Get(
-                'http://s.web2.qq.com/api/get_friend_info2?tuin={0}&vfwebqq={1}&clientid={2}&psessionid={3}&t={4}'
-                    .format(
-                        uin_str,
-                        self.vfwebqq,
-                        self.client_id,
-                        self.psessionid,
-                        self.req.getTimeStamp()),
-                ))
+                    'http://s.web2.qq.com/api/get_friend_info2?tuin={0}&vfwebqq={1}&clientid={2}&psessionid={3}&t={4}'
+                        .format(
+                            uin_str,
+                            self.vfwebqq,
+                            self.client_id,
+                            self.psessionid,
+                            self.req.getTimeStamp()),
+            ))
             logging.debug("get_friend_info2 html:    " + str(info))
             if info['retcode'] != 0:
-                raise TypeError('uin to account info result error')
+                raise TypeError('get_friend_info2 result error')
             info = info['result']
             return info
 
@@ -393,16 +404,14 @@ class QQ:
     def get_friend_info(self, tuin):
         uin_str = str(tuin)
         if uin_str not in self.friend_list:
-            account = self.uin_to_account(tuin)
-            info = self.get_friend_info2(tuin) or {'nick':'群用户'}
+            info = self.get_friend_info2(tuin) or {'nick': '群用户'}
+            info['account'] = self.uin_to_account(tuin)
+            self.friend_list[uin_str] = info
 
-            self.friend_list[uin_str] = dict(info, **account)
-
-        assert isinstance(uin_str, str), "tuin is not string"
         try:
-            return '【{0}({1})】'.format(self.friend_list[uin_str]['nick'],self.friend_list[uin_str]['account'])
+            return '【{0}({1})】'.format(self.friend_list[uin_str]['nick'], self.friend_list[uin_str]['account'])
         except:
-            logging.exception("uin_to_account")
+            logging.warning("get_friend_info return fail.")
             logging.debug("now uin list:    " + str(self.friend_list[uin_str]))
 
     # 获取好友的签名信息
@@ -452,7 +461,7 @@ class QQ:
             data = (
                 ('r',
                  '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":{1},"msg_id":{2},"psessionid":"{3}"}}'.format(
-                     guin, self.client_id, msg_id, self.psessionid, fix_content)),
+                         guin, self.client_id, msg_id, self.psessionid, fix_content)),
                 ('clientid', self.client_id),
                 ('psessionid', self.psessionid)
             )
@@ -483,13 +492,13 @@ class QQ:
             data = (
                 ('r',
                  '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":{1}, "msg_id":{2}, "psessionid":"{3}"}}'.format(
-                     tuin, self.client_id, msg_id, self.psessionid, fix_content)),
+                         tuin, self.client_id, msg_id, self.psessionid, fix_content)),
                 ('clientid', self.client_id),
                 ('psessionid', self.psessionid)
             )
             rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
-            if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
+            if 'errCode' in rsp_json and rsp_json['errCode'] != 0:
                 raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
             logging.info("Reply successfully.")
             logging.debug("Reply response: " + str(rsp))
@@ -513,13 +522,13 @@ class QQ:
             data = (
                 ('r',
                  '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":{1}, "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
-                     tuin,
-                     self.client_id,
-                     msg_id,
-                     self.psessionid,
-                     fix_content,
-                     group_sig,
-                     service_type)
+                         tuin,
+                         self.client_id,
+                         msg_id,
+                         self.psessionid,
+                         fix_content,
+                         group_sig,
+                         service_type)
                  ),
                 ('clientid', self.client_id),
                 ('psessionid', self.psessionid),
@@ -553,13 +562,13 @@ class QQ:
             data = (
                 ('r',
                  '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":{1}, "msg_id":{2}, "psessionid":"{3}", "group_sig":"{5}", "service_type":{6}}}'.format(
-                     tuin,
-                     self.client_id,
-                     msg_id,
-                     self.psessionid,
-                     fix_content,
-                     group_sig,
-                     service_type)
+                         tuin,
+                         self.client_id,
+                         msg_id,
+                         self.psessionid,
+                         fix_content,
+                         group_sig,
+                         service_type)
                  ),
                 ('clientid', self.client_id),
                 ('psessionid', self.psessionid),
@@ -580,5 +589,6 @@ class QQ:
                 time.sleep(2)
                 self.send_sess_msg2_fromGroup(guin, tuin, reply_content, msg_id, service_type, fail_times + 1)
             else:
-                logging.warning("send_sess_msg2_fromGroup: Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                logging.warning(
+                    "send_sess_msg2_fromGroup: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False

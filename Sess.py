@@ -17,8 +17,7 @@ class Sess:
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator
         if not isinstance(sess_msg, SessMsg):
-            logging.error("Received not a sess msg.")
-            raise TypeError("Received not a sess msg.")
+            raise TypeError("RUNTIMELOG Received not a sess msg.")
         self.tuin = sess_msg.from_uin
         self.tid = self.__operator.uin_to_account(self.tuin)
         self.id = sess_msg.id
@@ -33,7 +32,7 @@ class Sess:
         self.process_order = [
             "callout",
         ]
-        logging.info(str(self.tid) + "临时聊天已激活, 当前执行顺序： " + str(self.process_order))
+        logging.info("RUNTIMELOG " + str(self.tid) + "临时聊天已激活, 当前执行顺序： " + str(self.process_order))
 
     def update_config(self):
         use_private_config = bool(self.private_config.conf.getint("sess", "use_private_config"))
@@ -45,30 +44,29 @@ class Sess:
 
     def handle(self, msg):
         self.update_config()
-        logging.info("msg handling.")
+        logging.info("RUNTIMELOG msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
             try:
                 if bool(self.config.conf.getint("sess", func)):
-                    logging.info("evaling " + func)
+                    logging.info("RUNTIMELOG evaling " + func)
                     if eval("self." + func)(msg):
-                        logging.info("msg handle finished.")
+                        logging.info("RUNTIMELOG msg handle finished.")
                         self.msg_list.append(msg)
                         return func
-            except ConfigParser.NoOptionError as er:
-                logging.warning(er, "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
+            except ConfigParser.NoOptionError:
+                logging.warning("RUNTIMELOG 没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
     def get_group_sig(self, fail_time=0):
         if fail_time > 10:
-            logging.error("can not get group_sig, check the internet connection.")
-            raise IOError("can not get group_sig, check the internet connection.")
+            raise IOError("RUNTIMELOG can not get group_sig, check the internet connection.")
         ts = time.time()
         while ts < 1000000000000:
             ts *= 10
         ts = int(ts)
         try:
-            logging.info("trying to get group_sig")
+            logging.info("RUNTIMELOG trying to get group_sig")
             group_sig = HttpClient().Get(
                 'http://d.web2.qq.com/channel/get_c2cmsg_sig2?id={0}&to_uin={1}&clientid={2}&psessionid={3}&service_type={4}&t={5}'.format(
                     self.id,
@@ -78,14 +76,13 @@ class Sess:
                     self.service_type,
                     ts,
                 ), self.__operator.default_config.conf.get('global', 'connect_referer'))
-            logging.debug("group_sig response:  " + str(group_sig))
+            logging.debug("RESPONSE group_sig response:  " + str(group_sig))
             group_sig = json.loads(group_sig)['result']['value']
             if group_sig == "":
-                logging.warning("Receive a None when getting group sig")
-                raise ValueError("Receive a None when getting group sig")
+                raise ValueError("RUNTIMELOG Receive a None when getting group sig")
             return group_sig
         except BaseException, e:
-            logging.warning("Getting group sig met an error: " + str(e) + " Retrying...")
+            logging.warning("RUNTIMELOG Getting group sig met an error: " + str(e) + " Retrying...")
             return self.get_group_sig(fail_time + 1)
 
     def reply(self, reply_content):
@@ -94,7 +91,7 @@ class Sess:
 
     def callout(self, msg):
         if "智障机器人" in msg.content:
-            logging.info(str(self.tid) + " calling me out, trying to reply....")
+            logging.info("RUNTIMELOG " + str(self.tid) + " calling me out, trying to reply....")
             self.reply("干嘛（‘·д·）")
             return True
         return False

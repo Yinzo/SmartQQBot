@@ -10,7 +10,6 @@ import re
 import json
 import logging
 import thread as _thread
-from PIL import Image
 
 from Configs import *
 from Msg import *
@@ -35,9 +34,32 @@ def init_logging():
 
 
 def display_QRCode(path):
-    img = Image.open(path)
-    img.show()
+    # try:
+    #     import qrcode
+    #     qr = qrcode.QRCode()
+    #     qr.border = 1
 
+
+    try:
+        from PIL import Image
+        img = Image.open(path)
+        img.show()
+    except ImportError:
+        print '缺少PIL模块, 可使用sudo pip install PIL尝试安装'
+
+
+    # def _printQR(self, mat):
+    #     for i in mat:
+    #         BLACK = '\033[40m  \033[0m'
+    #         WHITE = '\033[47m  \033[0m'
+    #         print ''.join([BLACK if j else WHITE for j in i])
+    #
+    # def _str2qr(self, str):
+    #     qr = qrcode.QRCode()
+    #     qr.border = 1
+    #     qr.add_data(str)
+    #     mat = qr.get_matrix()
+    #     self._printQR(mat) # qr.print_tty() or qr.print_ascii()
 
 def get_revalue(html, rex, er, ex):
     v = re.search(rex, html)
@@ -45,10 +67,9 @@ def get_revalue(html, rex, er, ex):
     if v is None:
 
         if ex:
-            logging.error(er)
-            raise TypeError(er)
+            raise TypeError("RUNTIMELOG ", er)
         else:
-            logging.warning(er)
+            logging.warning("RUNTIMELOG ", er)
         return ''
 
     return v.group(1)
@@ -130,7 +151,7 @@ class QQ:
         login_error = 1
         while login_error > 0:
             try:
-                logging.info("Tring to login in with cookies. {0}".format(login_error))
+                logging.info("RUNTIMELOG Tring to login in with cookies. {0}".format(login_error))
                 print('Tring to auto login in.')
                 self.ptwebqq = self.req.getCookie('ptwebqq')
 
@@ -139,7 +160,7 @@ class QQ:
                                                                                                           self.client_id,
                                                                                                           self.psessionid)
                 }, self.default_config.conf.get("global", "connect_referer"))
-                logging.debug("login html:  " + str(html))
+                logging.debug("RESPONSE login html:  " + str(html))
                 ret = json.loads(html)
 
                 html2 = self.req.Get(
@@ -149,14 +170,14 @@ class QQ:
                                 self.psessionid,
                                 self.req.getTimeStamp()
                         ))
-                logging.debug("getvfwebqq html:  " + str(html2))
+                logging.debug("RESPONSE getvfwebqq html:  " + str(html2))
                 ret2 = json.loads(html2)
 
                 if (ret['retcode'] != 0) or (ret2['retcode'] != 0):
-                    logging.debug(str(ret))
-                    logging.debug(str(ret2))
+                    logging.debug("RESPONSE " + str(ret))
+                    logging.debug("RESPONSE " + str(ret2))
                     logging.warning(
-                        "login2 retcode: {login2}, getvfwebqq retcode: {getvfwebqq}".format(login2=str(ret['retcode']),
+                        "RUNTIMELOG login2 retcode: {login2}, getvfwebqq retcode: {getvfwebqq}".format(login2=str(ret['retcode']),
                                                                                             getvfwebqq=str(
                                                                                                     ret2['retcode'])))
                     raise
@@ -164,25 +185,28 @@ class QQ:
                 self.psessionid = ret['result']['psessionid']
                 self.account = ret['result']['uin']
                 self.vfwebqq = ret2['result']['vfwebqq']
-                logging.info("Login successfully.")
+                logging.info("RUNTIMELOG Login successfully.")
                 print('Login successfully.')
                 return True
             except:
                 login_error += 1
-                logging.info("login fail, retrying...")
+                logging.info("RUNTIMELOG Login fail, retrying...")
                 print('auto login fail')
                 if login_error > times:
                     return False
 
     def __login_by_qrcode(self):
         try:
-            logging.info("Trying to login by qrcode.")
-            logging.info("Requesting the qrcode login pages...")
-            initurl_html = self.req.Get(self.default_config.conf.get("global", "smartqq_url"))
-            logging.debug("login page html: " + str(initurl_html))
-            initurl = get_revalue(initurl_html, r'\.src = "(.+?)"', "Get Login Url Error.", 1)
-            html = self.req.Get(initurl + '0')
-
+            logging.info("RUNTIMELOG Trying to login by qrcode.")
+            logging.info("RUNTIMELOG Requesting the qrcode login pages...")
+            # initurl_html = self.req.Get(self.default_config.conf.get("global", "smartqq_url"))
+            # logging.debug("RESPONSE login page html: " + str(initurl_html))
+            # mqjs_url = get_revalue(initurl_html, r'<script src="(http://pub.idqqimg.com/smartqq/js/mq.js?t=\d+)', "Get mqjs_url Error.", 1)
+            # mqjs = self.req.Get(mqjs_url)
+            # initurl = get_revalue(initurl_html, r'\.src = "(.+?)"', "Get Login Url Error.", 1)
+            # html = self.req.Get(initurl + '0')
+            initurl = "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001"
+            html = self.req.Get("https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001")
             appid = get_revalue(html, r'<input type="hidden" name="aid" value="(\d+)" />', 'Get AppId Error', 1)
             sign = get_revalue(html, r'g_login_sig=encodeURIComponent\("(.*?)"\)', 'Get Login Sign Error', 0)
             js_ver = get_revalue(html, r'g_pt_version=encodeURIComponent\("(\d+)"\)', 'Get g_pt_version Error', 1)
@@ -194,10 +218,10 @@ class QQ:
             ret = []
             while True:
                 error_times += 1
-                print('download QR code image...')
+                print('download QRcode image...')
                 self.req.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
                                   self.qrcode_path)
-                logging.info("Please scan the downloaded QRCode")
+                print "请扫描二维码"
                 _thread.start_new_thread(display_QRCode, (self.qrcode_path,))
 
                 while True:
@@ -206,13 +230,14 @@ class QQ:
                                     appid, date_to_millis(datetime.datetime.utcnow()) - star_time, mibao_css, js_ver,
                                     sign),
                             initurl)
-                    logging.debug("QRCode check html:   " + str(html))
+                    logging.debug("RESPONSE QRCode check html:   " + str(html))
                     ret = html.split("'")
                     if ret[1] in ('0', '65'):  # 65: QRCode 失效, 0: 验证成功, 66: 未失效, 67: 验证中
                         break
                     time.sleep(1)
                 if ret[1] == '0' or error_times > 10:
                     break
+                time.sleep(1)
 
             if ret[1] != '0':
                 return False
@@ -222,11 +247,11 @@ class QQ:
                 os.remove(self.qrcode_path)
 
             html = self.req.Get(ret[5])
-            logging.debug("mibao_res html:  " + str(html))
+            logging.debug("RESPONSE mibao_res html:  " + str(html))
             return True
-        except:
-            logging.info("qr login fail")
-            print('qr login fail')
+        except BaseException:
+            logging.info("RUNTIMELOG QRcode login fail")
+            print('二维码登陆失败')
             return False
 
     def login(self):
@@ -235,9 +260,14 @@ class QQ:
                 if self.__login_by_qrcode():
                     if self.__login(): break
         ret = self.get_self_info2()
-        self.username = ret['nick']
+        try:
+            self.username = ret['nick']
+        except KeyError:
+            print ret
+            exit()
 
-        logging.info("QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
+        logging.info("RUNTIMELOG QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
+        print "QQ：{0} login successfully, Username：{1}".format(self.account, self.username)
 
     def check_msg(self, error_times=0):
         if error_times >= 5:
@@ -253,7 +283,7 @@ class QQ:
                 ptwebqq=self.ptwebqq,
                 clientid=self.client_id)
         }, self.default_config.conf.get("global", "connect_referer"))
-        logging.debug("check_msg html:  " + str(html))
+        logging.debug("RESPONSE check_msg html:  " + str(html))
         try:
             if html == "":
                 return self.check_msg()
@@ -267,17 +297,17 @@ class QQ:
             #     return
 
             if ret_code in (103,):
-                logging.warning("received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
+                logging.warning("RUNTIMELOG received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
                 time.sleep(1)
                 return self.check_msg(error_times + 1)
 
-            if ret_code in (121,):
-                logging.warning("received retcode: " + str(ret_code))
+            elif ret_code in (121,):
+                logging.warning("RUNTIMELOG received retcode: " + str(ret_code))
                 return self.check_msg(5)
 
             elif ret_code == 0:
                 if 'result' not in ret or len(ret['result']) == 0:
-                    logging.info("received retcode: " + str(ret_code) + ": No message.")
+                    logging.info("RUNTIMELOG received retcode: " + str(ret_code) + ": No message.")
                     time.sleep(1)
                     return
                 msg_list = []
@@ -298,7 +328,7 @@ class QQ:
                     elif ret_code == 'kick_message':
                         notify_list.append(KickMessage(msg))
                     else:
-                        logging.warning("unknown message type: " + str(ret_type) + "details:    " + str(msg))
+                        logging.warning("RUNTIMELOG unknown message type: " + str(ret_type) + "details:    " + str(msg))
 
                 group_list.sort(key=lambda x: x.msg_id)
                 msg_list += pm_list + sess_list + group_list + notify_list
@@ -307,25 +337,29 @@ class QQ:
                 return msg_list
 
             elif ret_code == 100006:
-                logging.warning("POST data error")
+                logging.warning("RUNTIMELOG POST data error")
                 return
 
             elif ret_code == 116:
                 self.ptwebqq = ret['p']
-                logging.info("ptwebqq updated.")
+                logging.info("RUNTIMELOG ptwebqq updated.")
                 return
 
             else:
-                logging.warning("unknown retcode " + str(ret_code))
+                logging.warning("RUNTIMELOG unknown retcode " + str(ret_code))
                 return
 
+        except KeyboardInterrupt:
+            logging.info("User interrupted. Exit.")
+            os._exit(0)
+
         except ValueError as e:
-            logging.warning("Check error occured: " + str(e))
+            logging.warning("RUNTIMELOG Check error occured: " + str(e))
             time.sleep(1)
             return self.check_msg(error_times + 1)
 
         except BaseException as e:
-            logging.warning("Unknown check error occured, retrying. Error: " + str(e))
+            logging.warning("RUNTIMELOG Unknown check error occured, retrying. Error: " + str(e))
             time.sleep(1)
             return self.check_msg(error_times + 1)
 
@@ -337,20 +371,20 @@ class QQ:
         """
         uin_str = str(tuin)
         try:
-            logging.info("Requesting the account by uin:    " + str(tuin))
+            logging.info("RUNTIMELOG Requesting the account by uin:    " + str(tuin))
             info = json.loads(self.req.Get(
                     'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}&t={2}'.format(uin_str,
                                                                                                         self.vfwebqq,
                                                                                                         self.req.getTimeStamp()),
                     self.default_config.conf.get("global", "connect_referer")))
-            logging.debug("uin_to_account html:    " + str(info))
+            logging.debug("RESPONSE uin_to_account html:    " + str(info))
             if info['retcode'] != 0:
                 raise TypeError('uin_to_account retcode error')
             info = info['result']['account']
             return info
 
         except:
-            logging.exception("uin_to_account")
+            logging.warning("RUNTIMELOG uin_to_account fail")
             return None
 
     # 获取自己的信息
@@ -380,7 +414,7 @@ class QQ:
         """
         uin_str = str(tuin)
         try:
-            logging.info("Requesting the account info by uin:    " + str(tuin))
+            logging.info("RUNTIMELOG Requesting the account info by uin:    " + str(tuin))
             info = json.loads(self.req.Get(
                     'http://s.web2.qq.com/api/get_friend_info2?tuin={0}&vfwebqq={1}&clientid={2}&psessionid={3}&t={4}'
                         .format(
@@ -390,14 +424,14 @@ class QQ:
                             self.psessionid,
                             self.req.getTimeStamp()),
             ))
-            logging.debug("get_friend_info2 html:    " + str(info))
+            logging.debug("RESPONSE get_friend_info2 html:    " + str(info))
             if info['retcode'] != 0:
                 raise TypeError('get_friend_info2 result error')
             info = info['result']
             return info
 
         except:
-            logging.exception("get_friend_info2")
+            logging.warning("RUNTIMELOG get_friend_info2 fail")
             return None
 
     # 获取好友详情信息
@@ -411,8 +445,8 @@ class QQ:
         try:
             return '【{0}({1})】'.format(self.friend_list[uin_str]['nick'], self.friend_list[uin_str]['account'])
         except:
-            logging.warning("get_friend_info return fail.")
-            logging.debug("now uin list:    " + str(self.friend_list[uin_str]))
+            logging.warning("RUNTIMELOG get_friend_info return fail.")
+            logging.debug("RUNTIMELOG now uin list:    " + str(self.friend_list[uin_str]))
 
     # 获取好友的签名信息
     def get_single_long_nick2(self, tuin):
@@ -449,7 +483,7 @@ class QQ:
                 return {}
             return rsp_json["result"]
         except Exception as ex:
-            logging.warning("get_group_info_ext2. Error: " + str(ex))
+            logging.warning("RUNTIMELOG get_group_info_ext2. Error: " + str(ex))
             return {}
 
     # 发送群消息
@@ -468,19 +502,19 @@ class QQ:
             rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
-                raise ValueError("reply group chat error" + str(rsp_json['retcode']))
-            logging.info("send_qun_msg: Reply successfully.")
-            logging.debug("send_qun_msg: Reply response: " + str(rsp))
+                raise ValueError("RUNTIMELOG reply group chat error" + str(rsp_json['retcode']))
+            logging.info("RUNTIMELOG send_qun_msg: Reply successfully.")
+            logging.debug("RESPONSE send_qun_msg: Reply response: " + str(rsp))
             return rsp_json
         except:
-            logging.exception("send_qun_msg exception")
+            logging.warning("RUNTIMELOG send_qun_msg fail")
             if fail_times < 5:
-                logging.warning("send_qun_msg: Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
+                logging.warning("RUNTIMELOG send_qun_msg: Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.debug("RESPONSE send_qun_msg rsp:" + str(rsp))
                 time.sleep(2)
                 self.send_qun_msg(guin, reply_content, msg_id, fail_times + 1)
             else:
-                logging.warning("send_qun_msg: Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                logging.warning("RUNTIMELOG send_qun_msg: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
     # 发送私密消息
@@ -500,17 +534,17 @@ class QQ:
             rsp_json = json.loads(rsp)
             if 'errCode' in rsp_json and rsp_json['errCode'] != 0:
                 raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
+            logging.info("RUNTIMELOG Reply successfully.")
+            logging.debug("RESPONSE Reply response: " + str(rsp))
             return rsp_json
         except:
             if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
+                logging.warning("RUNTIMELOG Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.debug("RESPONSE " + str(rsp))
                 time.sleep(2)
                 self.send_buddy_msg(tuin, reply_content, msg_id, fail_times + 1)
             else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                logging.warning("RUNTIMELOG Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
     # 发送临时消息
@@ -539,17 +573,17 @@ class QQ:
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("reply sess chat error" + str(rsp_json['retcode']))
-            logging.info("Reply successfully.")
-            logging.debug("Reply response: " + str(rsp))
+            logging.info("RUNTIMELOG Reply successfully.")
+            logging.debug("RESPONSE Reply response: " + str(rsp))
             return rsp_json
         except:
             if fail_times < 5:
-                logging.warning("Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
+                logging.warning("RUNTIMELOG Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.debug("RESPONSE " + str(rsp))
                 time.sleep(2)
                 self.send_sess_msg2(tuin, reply_content, msg_id, group_sig, service_type, fail_times + 1)
             else:
-                logging.warning("Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                logging.warning("RUNTIMELOG Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
     # 主动发送临时消息
@@ -578,17 +612,17 @@ class QQ:
             rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
-                raise ValueError("reply sess chat error" + str(rsp_json['retcode']))
-            logging.info("send_sess_msg2_fromGroup: Reply successfully.")
-            logging.debug("send_sess_msg2_fromGroup: Reply response: " + str(rsp))
+                raise ValueError("RUNTIMELOG reply sess chat error" + str(rsp_json['retcode']))
+            logging.info("RUNTIMELOG send_sess_msg2_fromGroup: Reply successfully.")
+            logging.debug("RESPONSE send_sess_msg2_fromGroup: Reply response: " + str(rsp))
             return rsp_json
         except:
             if fail_times < 5:
-                logging.warning("send_sess_msg2_fromGroup: Response Error.Wait for 2s and Retrying." + str(fail_times))
-                logging.debug(rsp)
+                logging.warning("RUNTIMELOG send_sess_msg2_fromGroup: Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logging.debug("RESPONSE "+ str(rsp))
                 time.sleep(2)
                 self.send_sess_msg2_fromGroup(guin, tuin, reply_content, msg_id, service_type, fail_times + 1)
             else:
                 logging.warning(
-                    "send_sess_msg2_fromGroup: Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                    "RUNTIMELOG send_sess_msg2_fromGroup: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False

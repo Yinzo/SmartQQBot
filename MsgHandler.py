@@ -33,11 +33,10 @@ class MsgHandler:
             # 仅处理程序管理层面上的操作 Only do the operation of the program management
 
             if not isinstance(msg, (Msg, Notify)):
-                logging.error("Handler received a not a Msg or Notify instance.")
-                raise TypeError("Handler received a not a Msg or Notify instance.")
+                raise TypeError("RUNTIMELOG Handler received a not a Msg or Notify instance.")
 
             elif isinstance(msg, MsgWithContent):
-                logging.info(str(self.__get_account(msg)) + ":" + msg.content)
+                logging.info("DATASTREAM " + str(self.__get_account(msg)) + ":" + msg.content)
 
             if isinstance(msg, GroupMsg):  # 群聊信息的处理
                 # 判断群对象是否存在，group_code实际上为群号
@@ -46,12 +45,12 @@ class MsgHandler:
                     # 维护一个线程队列，然后每一个线程处理各自的信息
                     self.process_threads[msg.group_code] = MsgHandleQueue(self.__group_list[msg.group_code])
                     self.process_threads[msg.group_code].start()
-                    logging.debug("Now group list:  " + str(self.__group_list))
+                    logging.debug("RUNTIMELOG Now group list:  " + str(self.__group_list))
 
                 tgt_group = self.__group_list[msg.group_code]
                 if len(tgt_group.msg_list) >= 1 and msg.msg_id == tgt_group.msg_list[-1].msg_id:
                     # 若如上一条seq重复则抛弃此条信息不处理
-                    logging.info("消息重复，抛弃")
+                    logging.info("RUNTIMELOG 消息重复，抛弃")
                     return
 
                 tgt_group.msg_id = msg.msg_id
@@ -65,14 +64,14 @@ class MsgHandler:
                     # 维护一个线程队列，然后每一个线程处理各自的信息
                     self.process_threads[tid] = MsgHandleQueue(self.__pm_list[tid])
                     self.process_threads[tid].start()
-                    logging.debug("Now pm thread list:  " + str(self.__pm_list))
+                    logging.debug("RUNTIMELOG Now pm thread list:  " + str(self.__pm_list))
 
                 tgt_pm = self.__pm_list[tid]
                 if len(tgt_pm.msg_list) >= 1 and msg.time == tgt_pm.msg_list[-1].time \
                         and msg.from_uin == tgt_pm.msg_list[-1].from_uin \
                         and msg.content == tgt_pm.msg_list[-1].content:
                     # 私聊没有seq可用于判断重复，只能抛弃同一个人在同一时间戳发出的内容相同的消息。
-                    logging.info("消息重复，抛弃")
+                    logging.info("RUNTIMELOG 消息重复，抛弃")
                     return
 
                 tgt_pm.msg_id = msg.msg_id
@@ -85,14 +84,14 @@ class MsgHandler:
                     self.__sess_list[tid] = Sess(self.__operator, msg)
                     self.process_threads[tid] = MsgHandleQueue(self.__sess_list[tid])
                     self.process_threads[tid].start()
-                    logging.debug("Now sess thread list:  " + str(self.__sess_list))
+                    logging.debug("RUNTIMELOG Now sess thread list:  " + str(self.__sess_list))
 
                 tgt_sess = self.__sess_list[tid]
                 if len(tgt_sess.msg_list) >= 1 and msg.time == tgt_sess.msg_list[-1].time \
                         and msg.from_uin == tgt_sess.msg_list[-1].from_uin \
                         and msg.content == tgt_sess.msg_list[-1].content:
                     # 私聊没有seq可用于判断重复，只能抛弃同一个人在同一时间戳发出的同一内容的消息。
-                    logging.info("消息重复，抛弃")
+                    logging.info("RUNTIMELOG 消息重复，抛弃")
                     return
                 tgt_sess.msg_id = msg.msg_id
                 self.process_threads[tid].append(msg)
@@ -107,8 +106,7 @@ class MsgHandler:
                 self.__kick_message(msg)
 
             else:
-                logging.warning("Unsolved Msg type :" + str(msg.poll_type))
-                raise TypeError("Unsolved Msg type :" + str(msg.poll_type))
+                raise TypeError("RUNTIMELOG Unsolved Msg type :" + str(msg.poll_type))
 
     def __get_account(self, msg):
         assert isinstance(msg, (Msg, Notify)), "function get_account received a not Msg or Notify parameter."
@@ -123,14 +121,13 @@ class MsgHandler:
             return str(msg.msg_id).join("[]") + str(self.__operator.get_friend_info(msg.send_uin))
 
     def __input_notify_handler(self, msg):
-        logging.info(str(self.__get_account(msg)) + " is typing...")
+        logging.info("DATASTREAM " + str(self.__get_account(msg)) + " is typing...")
 
     def __buddies_status_change_handler(self, msg):
         pass
 
     def __kick_message(self, msg):
-        logging.warning(str(msg.to_uin) + " is kicked. Reason: " + str(msg.reason))
-        logging.warning("[{0}]{1} is kicked. Reason:  {2}".format(
+        logging.warning("RUNTIMELOG [{0}]{1} is kicked. Reason:  {2}".format(
             str(msg.to_uin),
             self.__operator.username,
             str(msg.reason),
@@ -150,7 +147,7 @@ class MsgHandleQueue(threading.Thread):
         while 1:
             if len(self.msg_queue):
                 self.handler.handle(self.msg_queue.pop(0))
-                logging.debug("queue handling.Now queue length:" + str(len(self.msg_queue)))
+                logging.debug("RUNTIMELOG queue handling.Now queue length:" + str(len(self.msg_queue)))
             else:
                 time.sleep(1)
 

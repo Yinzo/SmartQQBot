@@ -4,17 +4,18 @@
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
 
-import time
 import datetime
+import os
+import time
+import logging
 import re
 import json
-import logging
 import thread as _thread
 
-from smart_qq_bot.config import *
-from smart_qq_bot.message import *
-from smart_qq_bot.notify import *
-from smart_qq_bot.http_client import *
+from smart_qq_bot.config import DefaultConfigs
+from smart_qq_bot.message import PmMsg, GroupMsg, SessMsg
+from smart_qq_bot.notify import InputNotify, KickMessage
+from smart_qq_bot.http_client import HttpClient
 
 
 def init_logging():

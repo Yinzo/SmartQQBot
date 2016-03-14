@@ -12,11 +12,15 @@ SmartQQ-Bot Ver-0.2
 + `PIL`
 
 ##快速开始
-+ `python main.py`
++ `cd smart_qq_bot;python main.py`
 + 等待弹出二维码进行扫描登陆，或手动打开脚本所在目录的v.jpg进行扫描。
 + 等待登陆成功的提示
 + 各功能的启用，需要修改config文件夹下的共有设置QQBot_default.conf中进行功能的开启关闭。
 + 首次登陆过后，以后的登陆会尝试使用保存的cookie进行自动登录。
+
+##注意
+
++ 当前需要在浏览器先登录一次，然后才能用机器人登录成功。
 
 ##基本功能
 

@@ -6,11 +6,16 @@
 import ConfigParser
 import os
 
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-class Configs:
+
+class Configs(object):
     def __init__(self):
         self.conf = ConfigParser.ConfigParser()
-        self.config_path = "./config/QQBot_default.conf"
+        self.config_path = os.path.join(
+            PROJECT_ROOT,
+            "config/QQBot_default.conf",
+        )
 
     def update(self):
         self.conf.read(self.config_path)

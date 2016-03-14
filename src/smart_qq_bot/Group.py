@@ -6,9 +6,9 @@
 import cPickle
 import random
 from collections import namedtuple
-from QQLogin import *
-from Configs import *
-from Msg import *
+from login import *
+from config import *
+from message import *
 from plugin import shuishiwodi, shuishiwodiStartStatus
 from plugin.weather import Weather
 from plugin.Turing import Turing

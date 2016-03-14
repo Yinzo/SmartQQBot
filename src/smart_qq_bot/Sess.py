@@ -6,10 +6,10 @@
 import threading
 import random
 
-from QQLogin import *
-from Configs import *
-from Msg import *
-from HttpClient import *
+from login import *
+from config import *
+from message import *
+from http_client import *
 
 
 class Sess:

@@ -11,10 +11,10 @@ import json
 import logging
 import thread as _thread
 
-from Configs import *
-from Msg import *
-from Notify import *
-from HttpClient import *
+from config import *
+from message import *
+from notify import *
+from http_client import *
 
 
 def init_logging():
@@ -33,33 +33,14 @@ def init_logging():
     logger.addHandler(handler)
 
 
-def display_QRCode(path):
-    # try:
-    #     import qrcode
-    #     qr = qrcode.QRCode()
-    #     qr.border = 1
-
-
+def show_qr(path):
     try:
         from PIL import Image
         img = Image.open(path)
         img.show()
     except ImportError:
-        print '缺少PIL模块, 可使用sudo pip install PIL尝试安装'
+        raise SystemError('缺少PIL模块, 可使用sudo pip install PIL尝试安装')
 
-
-    # def _printQR(self, mat):
-    #     for i in mat:
-    #         BLACK = '\033[40m  \033[0m'
-    #         WHITE = '\033[47m  \033[0m'
-    #         print ''.join([BLACK if j else WHITE for j in i])
-    #
-    # def _str2qr(self, str):
-    #     qr = qrcode.QRCode()
-    #     qr.border = 1
-    #     qr.add_data(str)
-    #     mat = qr.get_matrix()
-    #     self._printQR(mat) # qr.print_tty() or qr.print_ascii()
 
 def get_revalue(html, rex, er, ex):
     v = re.search(rex, html)
@@ -79,7 +60,7 @@ def date_to_millis(d):
     return int(time.mktime(d.timetuple())) * 1000
 
 
-class QQ:
+class QQ(object):
     def __init__(self):
         self.default_config = DefaultConfigs()
         self.req = HttpClient()
@@ -222,7 +203,7 @@ class QQ:
                 self.req.Download('https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
                                   self.qrcode_path)
                 print "请扫描二维码"
-                _thread.start_new_thread(display_QRCode, (self.qrcode_path,))
+                _thread.start_new_thread(show_qr, (self.qrcode_path,))
 
                 while True:
                     html = self.req.Get(

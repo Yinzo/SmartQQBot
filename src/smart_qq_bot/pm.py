@@ -3,16 +3,15 @@
 # Code by Yinzo:        https://github.com/Yinzo
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
-import threading
 import random
 
-from login import *
-from config import *
-from message import *
-from http_client import *
+from smart_qq_bot.login import *
+from smart_qq_bot.config import *
+from smart_qq_bot.message import *
+from smart_qq_bot.http_client import *
 
 
-class Pm:
+class Pm(object):
     def __init__(self, operator, ip):
         assert isinstance(operator, QQ), "Pm's operator is not a QQ"
         self.__operator = operator

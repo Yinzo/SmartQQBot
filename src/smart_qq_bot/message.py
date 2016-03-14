@@ -3,7 +3,8 @@
 # Code by Yinzo:        https://github.com/Yinzo
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 
-class Msg:
+
+class Msg(object):
 
     def __init__(self, json_input):
         self.poll_type = json_input['poll_type']        

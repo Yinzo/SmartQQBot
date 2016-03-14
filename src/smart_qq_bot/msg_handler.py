@@ -2,11 +2,13 @@
 
 # Code by Yinzo:        https://github.com/Yinzo
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
+import logging
 
-from group import *
-from pm import *
-from sess import *
+from smart_qq_bot.group import *
+from smart_qq_bot.pm import *
+from smart_qq_bot.sess import *
 import threading
+
 
 logging.basicConfig(
     filename='smartqq.log',

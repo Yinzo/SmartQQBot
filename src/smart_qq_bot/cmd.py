@@ -8,8 +8,8 @@ import socket
 
 import sys
 
-from msg_handler import MsgHandler
-from login import QQ
+from smart_qq_bot.msg_handler import MsgHandler
+from smart_qq_bot.login import QQ
 
 
 def patch():

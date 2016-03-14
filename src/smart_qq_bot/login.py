@@ -11,10 +11,10 @@ import json
 import logging
 import thread as _thread
 
-from config import *
-from message import *
-from notify import *
-from http_client import *
+from smart_qq_bot.config import *
+from smart_qq_bot.message import *
+from smart_qq_bot.notify import *
+from smart_qq_bot.http_client import *
 
 
 def init_logging():

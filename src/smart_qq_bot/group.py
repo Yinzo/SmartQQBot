@@ -9,9 +9,10 @@ from collections import namedtuple
 from login import *
 from config import *
 from message import *
-from plugin import shuishiwodi, shuishiwodiStartStatus
-from plugin.weather import Weather
-from plugin.Turing import Turing
+
+from smart_qq_bot.plugin import shuishiwodi, shuishiwodiStartStatus
+from smart_qq_bot.plugin.weather import Weather
+from smart_qq_bot.plugin.Turing import Turing
 
 logging.basicConfig(
     filename='smartqq.log',

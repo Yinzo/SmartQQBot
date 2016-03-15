@@ -11,8 +11,8 @@ import logging
 import re
 import json
 import thread as _thread
+from smart_qq_bot.config import QR_CODE_PATH, SMART_QQ_REFER
 
-from smart_qq_bot.config import DefaultConfigs
 from smart_qq_bot.message import PmMsg, GroupMsg, SessMsg
 from smart_qq_bot.notify import InputNotify, KickMessage
 from smart_qq_bot.http_client import HttpClient
@@ -63,7 +63,6 @@ def date_to_millis(d):
 
 class QQ(object):
     def __init__(self):
-        self.default_config = DefaultConfigs()
         self.req = HttpClient()
 
         # cache
@@ -76,7 +75,7 @@ class QQ(object):
         self.psessionid = ''
         self.appid = 0
         self.vfwebqq = ''
-        self.qrcode_path = self.default_config.conf.get("global", "qrcode_path")  # QRCode保存路径
+        self.qrcode_path = QR_CODE_PATH
         self.username = ''
         self.account = 0
 
@@ -137,11 +136,17 @@ class QQ(object):
                 print('Tring to auto login in.')
                 self.ptwebqq = self.req.getCookie('ptwebqq')
 
-                html = self.req.Post('http://d1.web2.qq.com/channel/login2', {
-                    'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(self.ptwebqq,
-                                                                                                          self.client_id,
-                                                                                                          self.psessionid)
-                }, self.default_config.conf.get("global", "connect_referer"))
+                html = self.req.Post(
+                    'http://d1.web2.qq.com/channel/login2',
+                    {
+                        'r': '{{"ptwebqq":"{0}","clientid":{1},"psessionid":"{2}","status":"online"}}'.format(
+                            self.ptwebqq,
+                            self.client_id,
+                            self.psessionid
+                        )
+                    },
+                    SMART_QQ_REFER
+                )
                 logging.debug("RESPONSE login html:  " + str(html))
                 ret = json.loads(html)
 
@@ -181,12 +186,7 @@ class QQ(object):
         try:
             logging.info("RUNTIMELOG Trying to login by qrcode.")
             logging.info("RUNTIMELOG Requesting the qrcode login pages...")
-            # initurl_html = self.req.Get(self.default_config.conf.get("global", "smartqq_url"))
-            # logging.debug("RESPONSE login page html: " + str(initurl_html))
-            # mqjs_url = get_revalue(initurl_html, r'<script src="(http://pub.idqqimg.com/smartqq/js/mq.js?t=\d+)', "Get mqjs_url Error.", 1)
-            # mqjs = self.req.Get(mqjs_url)
-            # initurl = get_revalue(initurl_html, r'\.src = "(.+?)"', "Get Login Url Error.", 1)
-            # html = self.req.Get(initurl + '0')
+
             initurl = "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001"
             html = self.req.Get("https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001")
             appid = get_revalue(html, r'<input type="hidden" name="aid" value="(\d+)" />', 'Get AppId Error', 1)
@@ -259,12 +259,17 @@ class QQ(object):
                 error_times = 0
 
         # 调用后进入单次轮询，等待服务器发回状态。
-        html = self.req.Post('http://d1.web2.qq.com/channel/poll2', {
-            'r': '{{"ptwebqq":"{ptwebqq}","clientid":{clientid},"psessionid":"{psessionid}","key":""}}'.format(
-                psessionid=self.psessionid,
-                ptwebqq=self.ptwebqq,
-                clientid=self.client_id)
-        }, self.default_config.conf.get("global", "connect_referer"))
+        html = self.req.Post(
+            'http://d1.web2.qq.com/channel/poll2',
+            {
+                'r': '{{"ptwebqq":"{ptwebqq}","clientid":{clientid},"psessionid":"{psessionid}","key":""}}'.format(
+                    psessionid=self.psessionid,
+                    ptwebqq=self.ptwebqq,
+                    clientid=self.client_id
+                )
+            },
+            SMART_QQ_REFER
+        )
         logging.debug("RESPONSE check_msg html:  " + str(html))
         try:
             if html == "":
@@ -354,19 +359,24 @@ class QQ(object):
         uin_str = str(tuin)
         try:
             logging.info("RUNTIMELOG Requesting the account by uin:    " + str(tuin))
-            info = json.loads(self.req.Get(
-                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}&t={2}'.format(uin_str,
-                                                                                                        self.vfwebqq,
-                                                                                                        self.req.getTimeStamp()),
-                    self.default_config.conf.get("global", "connect_referer")))
+            info = json.loads(
+                self.req.Get(
+                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}&t={2}'.format(
+                        uin_str,
+                        self.vfwebqq,
+                        self.req.getTimeStamp()
+                    ),
+                    SMART_QQ_REFER
+                )
+            )
             logging.debug("RESPONSE uin_to_account html:    " + str(info))
             if info['retcode'] != 0:
                 raise TypeError('uin_to_account retcode error')
             info = info['result']['account']
             return info
 
-        except:
-            logging.warning("RUNTIMELOG uin_to_account fail")
+        except Exception:
+            logging.exception("RUNTIMELOG uin_to_account fail")
             return None
 
     # 获取自己的信息
@@ -481,7 +491,7 @@ class QQ(object):
                 ('clientid', self.client_id),
                 ('psessionid', self.psessionid)
             )
-            rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
+            rsp = self.req.Post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("RUNTIMELOG reply group chat error" + str(rsp_json['retcode']))
@@ -512,7 +522,7 @@ class QQ(object):
                 ('clientid', self.client_id),
                 ('psessionid', self.psessionid)
             )
-            rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
+            rsp = self.req.Post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
             if 'errCode' in rsp_json and rsp_json['errCode'] != 0:
                 raise ValueError("reply pmchat error" + str(rsp_json['retcode']))
@@ -551,7 +561,7 @@ class QQ(object):
                 ('group_sig', group_sig),
                 ('service_type', service_type)
             )
-            rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
+            rsp = self.req.Post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("reply sess chat error" + str(rsp_json['retcode']))
@@ -591,7 +601,7 @@ class QQ(object):
                 ('group_sig', group_sig),
                 ('service_type', service_type)
             )
-            rsp = self.req.Post(req_url, data, self.default_config.conf.get("global", "connect_referer"))
+            rsp = self.req.Post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
                 raise ValueError("RUNTIMELOG reply sess chat error" + str(rsp_json['retcode']))

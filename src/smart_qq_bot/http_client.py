@@ -55,7 +55,7 @@ class HttpClient:
                 tmp_req = urllib2.urlopen(req, timeout=180)
             except:
                 raise IOError
-            self.__cookie.save('cookie/cookie.data',ignore_discard=True,ignore_expires=True)
+            self.__cookie.save('cookie/cookie.data', ignore_discard=True, ignore_expires=True)
             return tmp_req.read()
         except urllib2.HTTPError, e:
             return e.read()

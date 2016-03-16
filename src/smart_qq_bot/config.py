@@ -3,6 +3,7 @@
 # Origin repository:    https://github.com/Yinzo/SmartQQBot
 import logging
 import os
+import sys
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -14,14 +15,9 @@ SAVE_DATA_DIR = "./data/tucao_save/"
 
 def init_logging(log_level=logging.INFO):
     log_format = '[%(levelname)s] %(asctime)s  %(filename)s line %(lineno)d: %(message)s'
-    log_file = 'smartqq.log'
     date_fmt = '%a, %d %b %Y %H:%M:%S'
-
-    root_logger = logging.getLogger()
-
-    handlers = [logging.StreamHandler(), logging.FileHandler(log_file)]
-    formatter = logging.Formatter(log_format, date_fmt)
-    for handler in handlers:
-        handler.setLevel(log_level)
-        handler.setFormatter(formatter)
-        root_logger.addHandler(handler)
+    logging.basicConfig(
+        format=log_format,
+        datefmt=date_fmt,
+        level=log_level,
+    )

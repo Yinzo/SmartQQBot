@@ -6,7 +6,6 @@
 import random
 
 from smart_qq_bot.login import *
-from smart_qq_bot.config import *
 from smart_qq_bot.message import *
 from smart_qq_bot.http_client import *
 

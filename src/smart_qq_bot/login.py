@@ -10,8 +10,6 @@ import json
 from threading import Thread
 
 from smart_qq_bot.config import QR_CODE_PATH, SMART_QQ_REFER
-from smart_qq_bot.message import PmMsg, GroupMsg, SessMsg
-from smart_qq_bot.notify import InputNotify, KickMessage
 from smart_qq_bot.http_client import HttpClient
 
 
@@ -88,7 +86,7 @@ class QQ(object):
         N = [0, 0, 0, 0]
         # print(N[0])
         for t in range(len(ptwebqq)):
-            N[t % 4] ^= ord(ptwebqq[t])
+            N[t % 4] ^= ord(ptwebqq[t       ])
         U = ["EC", "OK"]
         V = [0, 0, 0, 0]
         V[0] = int(uin) >> 24 & 255 ^ ord(U[0][0])
@@ -282,6 +280,7 @@ class QQ(object):
                 if self._login_by_qrcode():
                     if self._login_by_cookie():
                         break
+                time.sleep(4)
             user_info = self.get_self_info2()
             try:
                 self.username = user_info['nick']
@@ -303,97 +302,47 @@ class QQ(object):
             else:
                 error_times = 0
 
-        # 调用后进入单次轮询，等待服务器发回状态。
-        html = self.client.post(
+        # Pooling the message
+        response = self.client.post(
             'http://d1.web2.qq.com/channel/poll2',
             {
-                'r': '{{"ptwebqq":"{ptwebqq}","clientid":{clientid},"psessionid":"{psessionid}","key":""}}'.format(
-                    psessionid=self.psessionid,
-                    ptwebqq=self.ptwebqq,
-                    clientid=self.client_id
+                'r': json.dumps(
+                    {
+                        "ptwebqq": self.ptwebqq,
+                        "clientid": self.client_id,
+                        "psessionid": self.psessionid,
+                        "key": ""
+                    }
                 )
             },
             SMART_QQ_REFER
         )
-        logging.debug("RESPONSE check_msg html:  " + str(html))
-        try:
-            if html == "":
-                return self.check_msg()
-            ret = json.loads(html)
+        logging.debug("Pooling returns response:\n %s" % response)
+        if response == "":
+            return
+        ret = json.loads(response)
 
-            ret_code = ret['retcode']
+        ret_code = ret['retcode']
 
-            # if ret_code in (0,):
-            #     logging.info("received retcode: " + str(ret_code) + ": No message.")
-            #     time.sleep(1)
-            #     return
-
-            if ret_code in (103,):
-                logging.warning("RUNTIMELOG received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times))
-                time.sleep(1)
-                return self.check_msg(error_times + 1)
-
-            elif ret_code in (121,):
-                logging.warning("RUNTIMELOG received retcode: " + str(ret_code))
-                return self.check_msg(5)
-
-            elif ret_code == 0:
-                if 'result' not in ret or len(ret['result']) == 0:
-                    logging.info("RUNTIMELOG received retcode: " + str(ret_code) + ": No message.")
-                    time.sleep(1)
-                    return
-                msg_list = []
-                pm_list = []
-                sess_list = []
-                group_list = []
-                notify_list = []
-                for msg in ret['result']:
-                    ret_type = msg['poll_type']
-                    if ret_type == 'message':
-                        pm_list.append(PmMsg(msg))
-                    elif ret_type == 'group_message':
-                        group_list.append(GroupMsg(msg))
-                    elif ret_type == 'sess_message':
-                        sess_list.append(SessMsg(msg))
-                    elif ret_type == 'input_notify':
-                        notify_list.append(InputNotify(msg))
-                    elif ret_code == 'kick_message':
-                        notify_list.append(KickMessage(msg))
-                    else:
-                        logging.warning("RUNTIMELOG unknown message type: " + str(ret_type) + "details:    " + str(msg))
-
-                group_list.sort(key=lambda x: x.msg_id)
-                msg_list += pm_list + sess_list + group_list + notify_list
-                if not msg_list:
-                    return
-                return msg_list
-
-            elif ret_code == 100006:
-                logging.warning("RUNTIMELOG POST data error")
-                return
-
-            elif ret_code == 116:
-                self.ptwebqq = ret['p']
-                logging.info("RUNTIMELOG ptwebqq updated.")
-                return
-
+        if ret_code in (103,):
+            logging.warning(
+                "Pooling received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times)
+            )
+        elif ret_code in (121,):
+            logging.warning("Pooling error with retcode %s" % ret_code)
+        elif ret_code == 0:
+            if 'result' not in ret or len(ret['result']) == 0:
+                logging.info("Pooling ends, no new message received.")
             else:
-                logging.warning("RUNTIMELOG unknown retcode " + str(ret_code))
-                return
-
-        except KeyboardInterrupt:
-            logging.info("User interrupted. Exit.")
-            os._exit(0)
-
-        except ValueError as e:
-            logging.warning("RUNTIMELOG Check error occured: " + str(e))
-            time.sleep(1)
-            return self.check_msg(error_times + 1)
-
-        except BaseException as e:
-            logging.warning("RUNTIMELOG Unknown check error occured, retrying. Error: " + str(e))
-            time.sleep(1)
-            return self.check_msg(error_times + 1)
+                return ret['result']
+        elif ret_code == 100006:
+            logging.error("Pooling request error, response is: %s" % ret)
+        elif ret_code == 116:
+            self.ptwebqq = ret['p']
+            logging.debug("ptwebqq updated in this pooling")
+        else:
+            logging.warning("Pooling returns unknown retcode %s" % ret_code)
+        return None
 
     def uin_to_account(self, tuin):
         """

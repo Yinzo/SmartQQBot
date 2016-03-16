@@ -7,6 +7,7 @@ import logging
 import socket
 
 import sys
+from smart_qq_bot.config import init_logging
 
 from smart_qq_bot.msg_handler import MsgHandler
 from smart_qq_bot.login import QQ
@@ -19,6 +20,7 @@ def patch():
 
 def run():
     patch()
+    init_logging(logging.DEBUG)
     bot = QQ()
     bot.login()
     bot_handler = MsgHandler(bot)

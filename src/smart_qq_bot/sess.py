@@ -66,7 +66,7 @@ class Sess(object):
         ts = int(ts)
         try:
             logging.info("RUNTIMELOG trying to get group_sig")
-            group_sig = HttpClient().Get(
+            group_sig = HttpClient().get(
                 'http://d.web2.qq.com/channel/get_c2cmsg_sig2?id={0}&to_uin={1}&clientid={2}&psessionid={3}&service_type={4}&t={5}'.format(
                     self.id,
                     self.tuin,

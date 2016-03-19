@@ -1,23 +1,26 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
-# Code by Yinzo:        https://github.com/Yinzo
-# Origin repository:    https://github.com/Yinzo/SmartQQBot
+PRIVATE_MSG = "message"
+GROUP_MSG = "group_message"
+SESS_MSG = "sess_message"
+INPUT_NOTIFY_MSG = "input_notify"
+KICK_MSG = "kick_message"
 
 
-class Msg(object):
+class QMessage(object):
 
     def __init__(self, json_input):
-        self.poll_type = json_input['poll_type']        
+        self.poll_type = json_input['poll_type']
         self.from_uin = json_input['value']['from_uin']
         self.msg_id = json_input['value']['msg_id']
         self.msg_type = json_input['value']['msg_type']
         self.to_uin = json_input['value']['to_uin']
 
 
-class MsgWithContent(Msg):
+class MsgWithContent(QMessage):
 
     def __init__(self, json_input):
-        Msg.__init__(self, json_input)
+        super(MsgWithContent, self).__init__(json_input)
         self.raw_content = json_input['value']['content']
         self.content = MsgWithContent.combine_msg(self.raw_content)
         for i in json_input['value']['content']:
@@ -39,6 +42,7 @@ class MsgWithContent(Msg):
                     msgtxt += "[表情]"
 
         return msgtxt
+
 
 # 临时会话消息
 class SessMsg(MsgWithContent):

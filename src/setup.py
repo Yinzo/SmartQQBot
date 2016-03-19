@@ -12,7 +12,10 @@ here = os.path.abspath(os.path.dirname(__file__))
 setup(
     name='SmartQQBot',
     version='0.2',
-    packages=find_packages(here),
+    packages=find_packages(
+        here,
+        exclude=("tests", ),
+    ),
     url='https://github.com/Yinzo/SmartQQBot',
     license='GPL V3',
     author='Yinzo',

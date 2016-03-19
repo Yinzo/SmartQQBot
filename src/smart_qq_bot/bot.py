@@ -56,7 +56,7 @@ def date_to_millis(d):
     return int(time.mktime(d.timetuple())) * 1000
 
 
-class QQ(object):
+class QQBot(object):
     def __init__(self):
         self.client = HttpClient()
 
@@ -295,12 +295,7 @@ class QQ(object):
                 exit(1)
             logging.info("RUNTIMELOG QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
 
-    def check_msg(self, error_times=0):
-        if error_times >= 5:
-            if not self._login_by_cookie():
-                raise IOError("Account offline.")
-            else:
-                error_times = 0
+    def check_msg(self):
 
         # Pooling the message
         response = self.client.post(
@@ -324,9 +319,9 @@ class QQ(object):
 
         ret_code = ret['retcode']
 
-        if ret_code in (103,):
+        if ret_code in (103, ):
             logging.warning(
-                "Pooling received retcode: " + str(ret_code) + ": Check error.retrying.." + str(error_times)
+                "Pooling received retcode: " + str(ret_code) + ": Check error.retrying.."
             )
         elif ret_code in (121,):
             logging.warning("Pooling error with retcode %s" % ret_code)

@@ -10,16 +10,16 @@ install_requires = (
 here = os.path.abspath(os.path.dirname(__file__))
 
 setup(
-    name='SmartQQBot',
-    version='0.2',
+    name='SmartBot',
+    version='0.1.1',
     packages=find_packages(
         here,
         exclude=("tests", ),
     ),
-    url='https://github.com/Yinzo/SmartQQBot',
+    url='https://github.com/BlinkTunnel/SmartQQBot',
     license='GPL V3',
-    author='Yinzo',
+    author='winkidney',
     install_requires=install_requires,
-    author_email='yinz95@yahoo.com',
-    description='A SmartQQ(original web-QQ) bot client.'
+    author_email='winkidney@gmail.com',
+    description='A SmartBot(from qq bot) bot client.'
 )

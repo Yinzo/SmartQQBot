@@ -14,17 +14,6 @@ OFF_PIC_PLACEHOLDER = "[图片]"
 C_FACE_PLACEHOLDER = "[表情]"
 
 
-def mk_msg(msg_dict):
-    msg_map = {
-        GROUP_MSG: GroupMsg,
-        INPUT_NOTIFY_MSG: QMessage,
-        KICK_MSG: QMessage,
-        SESS_MSG: SessMsg,
-        PRIVATE_MSG: PrivateMsg,
-    }
-    return msg_map[msg_dict['pool_type']]
-
-
 class QMessage(object):
 
     def __init__(self, msg_dict):
@@ -49,15 +38,28 @@ class QMessage(object):
     def content(self):
         text = ""
         for msg_part in self._content:
-            if isinstance(msg_part, basestring):
+            if isinstance(msg_part, (str, unicode)):
                 text += msg_part
             elif len(msg_part) > 1:
                 if str(msg_part[0]) == "offpic":
                     text += ""
-                elif str(text[0]) == "cface":
+                elif str(msg_part[0]) == "cface":
                     text += "[表情]"
 
         return text
+
+    @property
+    def type(self):
+        return self.poll_type
+
+    def __str__(self):
+        return "<class {cls}: {content}>".format(
+            cls=self.__class__.__name__,
+            content=self.poll_type + " " + str(self._content)
+        )
+
+    def __unicode__(self):
+        return unicode(self.__str__())
 
 
 class SessMsg(QMessage):
@@ -83,3 +85,16 @@ class GroupMsg(QMessage):
         super(GroupMsg, self).__init__(msg_dict)
         self.group_code = msg_dict['value']['group_code']
         self.send_uin = msg_dict['value']['send_uin']
+        self.from_uin = msg_dict['value']['from_uin']
+
+MSG_TYPE_MAP = {
+    GROUP_MSG: GroupMsg,
+    INPUT_NOTIFY_MSG: QMessage,
+    KICK_MSG: QMessage,
+    SESS_MSG: SessMsg,
+    PRIVATE_MSG: PrivateMsg,
+}
+
+
+def mk_msg(msg_dict):
+    return MSG_TYPE_MAP[msg_dict['poll_type']](msg_dict)

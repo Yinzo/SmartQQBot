@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-# Code by Yinzo:        https://github.com/Yinzo
-# Origin repository:    https://github.com/Yinzo/SmartQQBot
-import json
 import logging
 import socket
 import sys
 
+from smart_qq_bot.app import bot
 from smart_qq_bot.config import init_logging
-from smart_qq_bot.login import QQ
+from smart_qq_bot.handler import MessageObserver
+from smart_qq_bot.messages import mk_msg
 
 
 def patch():
@@ -15,20 +14,27 @@ def patch():
     sys.setdefaultencoding("utf-8")
 
 
+def load_plugin():
+    from smart_qq_bot.plugins import hello
+
+
 def run():
     patch()
     init_logging(logging.DEBUG)
-    bot = QQ()
+    load_plugin()
     bot.login()
+    observer = MessageObserver(bot)
     while True:
         try:
-            bot.check_msg()
+            msg_list = bot.check_msg()
+            if msg_list is not None:
+                observer.handle_msg_list(
+                    [mk_msg(msg) for msg in msg_list]
+                )
         except socket.timeout as e:
             logging.warning("Message pooling timeout, retrying...")
-            continue
         except Exception:
             logging.exception("Exception occurs when checking msg.")
-            continue
 
 if __name__ == "__main__":
     run()

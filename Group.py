@@ -34,7 +34,7 @@ class Group:
             self.gid = ""
         elif isinstance(ip, GroupMsg):
             self.guin = ip.from_uin
-            self.gid = ip.group_code
+            self.gid = operator.uin_to_account(ip.group_code)
         self.msg_id = int(random.uniform(20000, 50000))
         self.group_code = 0
         self.member_list = []
@@ -56,7 +56,7 @@ class Group:
             "tucao",
         ]
         self.__game_handler = None
-        logging.info(str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
+        logging.info("RUNTIMELOG " + str(self.gid) + "群已激活, 当前执行顺序： " + str(self.process_order))
         self.tucao_load()
 
     def update_config(self):
@@ -72,18 +72,18 @@ class Group:
         self.update_config()
         if self.group_code <= 0:
             self.group_code = msg.group_code
-        logging.info("msg handling.")
+        logging.info("RUNTIMELOG msg handling.")
         # 仅关注消息内容进行处理 Only do the operation of handle the msg content
         for func in self.process_order:
             try:
                 if bool(self.config.conf.getint("group", func)):
-                    logging.info("evaling " + func)
+                    logging.info("RUNTIMELOG evaling " + func)
                     if eval("self." + func)(msg):
-                        logging.info("msg handle finished.")
+                        logging.info("RUNTIMELOG msg handle finished.")
                         self.msg_list.append(msg)
                         return func
             except ConfigParser.NoOptionError as er:
-                logging.warning(str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
+                logging.warning("RUNTIMELOG " + str(er) + "没有找到" + func + "功能的对应设置，请检查共有配置文件是否正确设置功能参数")
         self.msg_list.append(msg)
 
     def get_member_list(self):
@@ -120,7 +120,7 @@ class Group:
         match = re.match(r'^(?:!|！)([^\s\{\}]+)\s*$', msg.content)
         if match:
             command = str(match.group(1))
-            logging.info("command format detected, command: " + command)
+            logging.info("RUNTIMELOG command format detected, command: " + command)
 
             if command == "吐槽列表":
                 self.show_tucao_list()
@@ -133,7 +133,7 @@ class Group:
         if match:
             command = str(match.group(1))
             arg1 = str(match.group(2))
-            logging.info("command format detected, command:{0}, arg1:{1}".format(command, arg1))
+            logging.info("RUNTIMELOG command format detected, command:{0}, arg1:{1}".format(command, arg1))
             if command == "删除关键字" and unicode(arg1) in self.tucao_dict:
                 self.tucao_dict.pop(unicode(arg1))
                 self.reply("已删除关键字:{0}".format(arg1))
@@ -146,12 +146,12 @@ class Group:
         result = ""
         for key in self.tucao_dict:
             result += "关键字：{0}      回复：{1}\n".format(key, " / ".join(self.tucao_dict[key]))
-        logging.info("Replying the list of tucao")
+        logging.info("RUNTIMELOG Replying the list of tucao")
         self.reply(result)
 
     def callout(self, msg):
         if "智障机器人" in msg.content:
-            logging.info(str(self.gid) + " calling me out, trying to reply....")
+            logging.info("RUNTIMELOG " + str(self.gid) + " calling me out, trying to reply....")
             self.reply("干嘛（‘·д·）")
             return True
         return False
@@ -159,7 +159,7 @@ class Group:
     def repeat(self, msg):
         if len(self.msg_list) > 0 and self.msg_list[-1].content == msg.content:
             if str(msg.content).strip() not in ("", " ", "[图片]", "[表情]"):
-                logging.info(str(self.gid) + " repeating, trying to reply " + str(msg.content))
+                logging.info("RUNTIMELOG " + str(self.gid) + " repeating, trying to reply " + str(msg.content))
                 self.reply(msg.content)
                 return True
         return False
@@ -167,7 +167,7 @@ class Group:
     def tucao(self, msg):
         match = re.match(r'^(?:!|！)(learn|delete)(?:\s?){(.+)}(?:\s?){(.+)}', msg.content)
         if match:
-            logging.info("tucao command detected.")
+            logging.info("RUNTIMELOG tucao command detected.")
             command = str(match.group(1)).decode('utf8')
             key = str(match.group(2)).decode('utf8')
             value = str(match.group(3)).decode('utf8')
@@ -189,7 +189,7 @@ class Group:
         else:
             for key in self.tucao_dict.keys():
                 if str(key) in msg.content and self.tucao_dict[key]:
-                    logging.info("tucao pattern detected, replying...")
+                    logging.info("RUNTIMELOG tucao pattern detected, replying...")
                     self.reply(random.choice(self.tucao_dict[key]))
                     return True
         return False
@@ -199,9 +199,9 @@ class Group:
             tucao_file_path = str(self.global_config.conf.get('global', 'tucao_path')) + str(self.gid) + ".tucao"
             with open(tucao_file_path, "w+") as tucao_file:
                 cPickle.dump(self.tucao_dict, tucao_file)
-            logging.info("tucao saved. Now tucao list:  {0}".format(str(self.tucao_dict)))
+            logging.info("RUNTIMELOG tucao saved. Now tucao list:  {0}".format(str(self.tucao_dict)))
         except Exception:
-            logging.error("Fail to save tucao.")
+            logging.error("RUNTIMELOG Fail to save tucao.")
             raise IOError("Fail to save tucao.")
 
     def tucao_load(self):
@@ -216,9 +216,9 @@ class Group:
         with open(tucao_file_name, "r") as tucao_file:
             try:
                 self.tucao_dict = cPickle.load(tucao_file)
-                logging.info("tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
+                logging.info("RUNTIMELOG tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
             except EOFError:
-                logging.info("tucao file is empty.")
+                logging.info("RUNTIMELOG tucao file is empty.")
                 # except Exception as er:
                 #     logging.error("Fail to load tucao:  ", er)
                 #     raise IOError("Fail to load tucao:  ", er)
@@ -226,7 +226,7 @@ class Group:
     def follow(self, msg):
         match = re.match(r'^(?:!|！)(follow|unfollow) (\d+|me)', msg.content)
         if match:
-            logging.info("following...")
+            logging.info("RUNTIMELOG following...")
             command = str(match.group(1))
             target = str(match.group(2))
             if target == 'me':
@@ -249,16 +249,14 @@ class Group:
     def weather(self, msg):
         match = re.match(ur'^(weather|天气) (\w+|[\u4e00-\u9fa5]+)', msg.content)
         if match:
-            logging.info("查询天气...")
-            print msg.content
+            logging.info("RUNTIMELOG 查询天气...")
             command = match.group(1)
             city = match.group(2)
-            logging.info(msg.content)
-            print city
+            logging.info("RUNTIMELOG 查询天气语句: " + msg.content)
             if command == 'weather' or command == u'天气':
                 query = Weather()
                 info = query.getWeatherOfCity(city)
-                logging.info(str(info))
+                logging.info("RESPONSE " + str(info))
                 self.reply(str(info))
                 return True
         return False
@@ -271,13 +269,13 @@ class Group:
             command = match.group(1)
             info = match.group(2)
             # logging.info("info:")
-            logging.info(msg.content)
+            logging.info("RUNTIMELOG 图灵问答语句: " + msg.content)
             # print info
             if command == 'ask' or command == u'问':
                 # self.reply("我开始查询" + city + "的天气啦")
                 query = Turing()
                 info = query.getReply(info)
-                logging.info(str(info))
+                logging.info("RESPONSE " + str(info))
                 self.reply(str(info))
                 return True
         return False

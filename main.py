@@ -19,7 +19,10 @@ if __name__ == '__main__':
         try:
             new_msg = bot.check_msg()
         except socket.timeout, e:
-            logging.warning("check msg timeout, retrying...")
+            logging.warning("RUNTIMELOG check msg timeout, retrying...")
             continue
-        if new_msg is not None:
-            bot_handler.handle(new_msg)
+        except:
+            continue
+        else:
+            if new_msg is not None:
+                bot_handler.handle(new_msg)

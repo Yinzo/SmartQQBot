@@ -1,4 +1,4 @@
-import cookielib, urllib, urllib2, socket, time, os
+import cookielib, urllib, urllib2, socket, time, os, logging
 
 
 class HttpClient:
@@ -8,9 +8,9 @@ class HttpClient:
     # __req = urllib2.build_opener(urllib2.HTTPCookieProcessor(__cookie),logprint)
     __req = urllib2.build_opener(urllib2.HTTPCookieProcessor(__cookie))
     __req.addheaders = [
-        ('Accept', 'application/javascript, */*;q=0.8'),
+        ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
         ('User-Agent',
-         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.80 Safari/537.36"),
+         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36"),
         ('Referer', 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1')
     ]
     urllib2.install_opener(__req)
@@ -28,13 +28,11 @@ class HttpClient:
 
     def Get(self, url, refer=None):
         try:
-            # print "requesting " + str(url) + " with cookies:"
-            # print self.__cookie
             req = urllib2.Request(url)
-            # if not (refer is None):
-            #     req.add_header('Referer', refer)
-            req.add_header('Referer', 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1')
-            # print req.headers
+            if refer is None:
+                req.add_header('Referer', 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1')
+            else:
+                req.add_header('Referer', refer)
             tmp_req = urllib2.urlopen(req)
             self.__cookie.save('cookie/cookie.data',ignore_discard=True,ignore_expires=True)
             return tmp_req.read()
@@ -43,18 +41,20 @@ class HttpClient:
 
     def Post(self, url, data, refer=None):
         try:
-            # print "requesting " + str(url) + " with data:"
-            # print data
-            # print "Cookies: "
-            # print self.__cookie
             req = urllib2.Request(url, urllib.urlencode(data))
-            if refer is not None:
-                req.add_header('Referer', refer)
-            else:
+            if refer is None:
                 req.add_header('Referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
-            # print "Headers: "
-            # print req.headers
-            tmp_req = urllib2.urlopen(req, timeout=180)
+            else:
+                req.add_header('Referer', refer)
+            # logging.DEBUG("REQUEST requesting {url} with header:\t{header}\tdata:\t{data}".format(
+            #     header = req.headers,
+            #     url = str(url),
+            #     data = str(data),
+            # ))
+            try:
+                tmp_req = urllib2.urlopen(req, timeout=180)
+            except:
+                raise IOError
             self.__cookie.save('cookie/cookie.data',ignore_discard=True,ignore_expires=True)
             return tmp_req.read()
         except urllib2.HTTPError, e:

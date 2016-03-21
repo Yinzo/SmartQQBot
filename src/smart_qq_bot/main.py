@@ -15,7 +15,7 @@ def patch():
 
 
 def load_plugin():
-    from smart_qq_bot.plugins import hello
+    from smart_qq_plugins import hello
 
 
 def run():

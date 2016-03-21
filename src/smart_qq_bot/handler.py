@@ -1,6 +1,7 @@
 # coding: utf-8
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from Queue import Queue
+import logging
 from threading import Thread
 from smart_qq_bot.bot import QQBot
 
@@ -27,7 +28,11 @@ MSG_TYPES = MSG_TYPE_MAP.keys()
 MSG_TYPES.append(RAW_TYPE)
 
 
-def register(func, msg_type=None):
+Handler = namedtuple("Handler", ("func", "name"))
+Task = namedtuple("Task", ("func", "name"))
+
+
+def register(func, msg_type=None, dispatcher_name=None):
     """
     Register handler to RAW if msg_type not given.
     :type func: callable
@@ -38,10 +43,11 @@ def register(func, msg_type=None):
             "Invalid message type [%s]: type should be in %s"
             % (msg_type, str(MSG_TYPES))
         )
+    handler = Handler(func=func, name=dispatcher_name)
     if msg_type is None:
-        _registry[RAW_TYPE].append(func)
+        _registry[RAW_TYPE].append(handler)
     else:
-        _registry[msg_type].append(func)
+        _registry[msg_type].append(handler)
 
 
 class Worker(Thread):
@@ -67,7 +73,13 @@ class Worker(Thread):
             if self._stopped:
                 break
             task = self.queue.get()
-            task()
+            try:
+                task.func()
+            except Exception:
+                logging.exception(
+                    "Error occurs when running task from plugin [%s]."
+                    % task.name
+                )
         self._stop_done = True
 
     def stop(self):
@@ -106,7 +118,7 @@ class MessageObserver(object):
         """
         handlers = self._registry[msg.type]
 
-        for handler_func in handlers + self._registry[RAW_TYPE]:
+        for handler in handlers + self._registry[RAW_TYPE]:
             def task():
-                return handler_func(msg=msg, bot=self.bot)
-            self.handler_queue.put(task)
+                return handler.func(msg=msg, bot=self.bot)
+            self.handler_queue.put(Task(func=task, name=handler.name))

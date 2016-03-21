@@ -7,6 +7,7 @@ from smart_qq_bot.app import bot
 from smart_qq_bot.config import init_logging
 from smart_qq_bot.handler import MessageObserver
 from smart_qq_bot.messages import mk_msg
+from smart_qq_bot.plugin import PluginManager
 
 
 def patch():
@@ -14,14 +15,10 @@ def patch():
     sys.setdefaultencoding("utf-8")
 
 
-def load_plugin():
-    from smart_qq_plugins import hello
-
-
 def run():
     patch()
     init_logging(logging.DEBUG)
-    load_plugin()
+    plugin_mgr = PluginManager()
     bot.login()
     observer = MessageObserver(bot)
     while True:

@@ -7,3 +7,11 @@ class MsgProxyNotImplementError(ValueError):
 
 class InvalidHandlerType(ValueError):
     pass
+
+
+class ConfigFileDoesNotExist(IOError):
+    pass
+
+
+class ConfigKeyError(ValueError):
+    pass

@@ -13,7 +13,4 @@ v.jpg
 cookie.data
 
 # Mr.Conf
-config
-config/group/*.conf
-config/pm/*.conf
-config/sess/*.conf
+*.json

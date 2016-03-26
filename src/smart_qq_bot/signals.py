@@ -15,7 +15,7 @@ def on_all_message(func):
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
 
-    register(wrapper)
+    register(wrapper, dispatcher_name=func.__name__)
     return wrapper
 
 
@@ -25,5 +25,5 @@ def on_group_message(func):
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
 
-    register(wrapper, GROUP_MSG)
+    register(wrapper, GROUP_MSG, func.__name__)
     return wrapper

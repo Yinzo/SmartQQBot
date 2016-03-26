@@ -472,6 +472,7 @@ class QQBot(object):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
         rsp = ""
         try:
+            logging.info("Starting send group message: %s" % reply_content)
             req_url = "http://d1.web2.qq.com/channel/send_qun_msg2"
             data = (
                 ('r',

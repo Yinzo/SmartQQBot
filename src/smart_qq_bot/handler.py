@@ -119,6 +119,5 @@ class MessageObserver(object):
         handlers = self._registry[msg.type]
 
         for handler in handlers + self._registry[RAW_TYPE]:
-            def task():
-                return handler.func(msg=msg, bot=self.bot)
+            task = lambda: handler.func(msg=msg, bot=self.bot)
             self.handler_queue.put(Task(func=task, name=handler.name))

@@ -41,10 +41,10 @@ class QMessage(object):
             if isinstance(msg_part, (str, unicode)):
                 text += msg_part
             elif len(msg_part) > 1:
-                if str(msg_part[0]) == "offpic":
-                    text += ""
-                elif str(msg_part[0]) == "cface":
-                    text += "[表情]"
+                if str(msg_part[0]) == OFF_PIC_PART:
+                    text += OFF_PIC_PLACEHOLDER
+                elif str(msg_part[0]) == C_FACE_PART:
+                    text += C_FACE_PLACEHOLDER
 
         return text
 

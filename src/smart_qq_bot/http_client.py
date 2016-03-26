@@ -1,4 +1,10 @@
-import cookielib, urllib, urllib2, socket, time, os, logging
+import cookielib
+import urllib
+import urllib2
+import time
+import os
+
+from smart_qq_bot.config import SMART_QQ_REFER
 
 
 class HttpClient(object):
@@ -28,10 +34,7 @@ class HttpClient(object):
     def get(self, url, refer=None):
         try:
             req = urllib2.Request(url)
-            if refer is None:
-                req.add_header('Referer', 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1')
-            else:
-                req.add_header('Referer', refer)
+            req.add_header('Referer', refer or SMART_QQ_REFER)
             tmp_req = urllib2.urlopen(req)
             self._cookie.save('cookie/cookie.data',ignore_discard=True,ignore_expires=True)
             return tmp_req.read()
@@ -41,19 +44,11 @@ class HttpClient(object):
     def post(self, url, data, refer=None):
         try:
             req = urllib2.Request(url, urllib.urlencode(data))
-            if refer is None:
-                req.add_header('Referer', 'http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2')
-            else:
-                req.add_header('Referer', refer)
-            # logging.DEBUG("REQUEST requesting {url} with header:\t{header}\tdata:\t{data}".format(
-            #     header = req.headers,
-            #     url = str(url),
-            #     data = str(data),
-            # ))
+            req.add_header('Referer', refer or SMART_QQ_REFER)
             try:
                 tmp_req = urllib2.urlopen(req, timeout=180)
             except:
-                raise IOError
+                raise IOError("Http post timeout: %s" % url)
             self._cookie.save('cookie/cookie.data', ignore_discard=True, ignore_expires=True)
             return tmp_req.read()
         except urllib2.HTTPError, e:

@@ -29,7 +29,7 @@ MSG_TYPES.append(RAW_TYPE)
 
 
 Handler = namedtuple("Handler", ("func", "name"))
-Task = namedtuple("Task", ("func", "name"))
+Task = namedtuple("Task", ("func", "name", "kwargs"))
 
 
 def register(func, msg_type=None, dispatcher_name=None):
@@ -74,7 +74,7 @@ class Worker(Thread):
                 break
             task = self.queue.get()
             try:
-                task.func()
+                task.func(**task.kwargs)
             except Exception:
                 logging.exception(
                     "Error occurs when running task from plugin [%s]."
@@ -119,5 +119,10 @@ class MessageObserver(object):
         handlers = self._registry[msg.type]
 
         for handler in handlers + self._registry[RAW_TYPE]:
-            task = lambda: handler.func(msg=msg, bot=self.bot)
-            self.handler_queue.put(Task(func=task, name=handler.name))
+            self.handler_queue.put(
+                Task(
+                    func=handler.func,
+                    name=handler.name,
+                    kwargs={"msg": msg, "bot": self.bot}
+                )
+            )

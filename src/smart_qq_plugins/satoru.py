@@ -14,9 +14,16 @@ class Satoru(object):
         self.load(data_file)
         self.data_file = data_file
         self._learn_regex = re.compile("^!learn.?\{(.*?)\}\{(.*?)\}")
+        self._remove_regx = re.compile("^!remove (.*)")
 
     def is_learn(self, key):
         result = re.findall(self._learn_regex, key)
+        if result:
+            return result[0]
+        return None
+
+    def is_remove(self, key):
+        result = re.findall(self._remove_regx, key)
         if result:
             return result[0]
         return None
@@ -33,11 +40,17 @@ class Satoru(object):
         self.data[key].append(response)
         self.save()
 
+    def remove_rule(self, key):
+        if key in self.data:
+            del self.data[key]
+
+        self.save()
+        logging.info("key [%s] removed" % key)
+
     def match(self, key):
-        for regex in self.data.iterkeys():
-            if re.match(regex, key):
-                result = self.data[key]
-                return result[randint(0, len(result) - 1)]
+        if key in self.data:
+            result = self.data[key]
+            return result[randint(0, len(result) - 1)]
         return None
 
     def save(self):
@@ -63,3 +76,6 @@ def send_msg(msg, bot):
         response = satoru.match(msg.content)
         if response:
             bot.send_qun_msg(msg.from_uin, response, msg_id=randint(1, 1000))
+    result = satoru.is_remove(msg.content)
+    if result:
+        satoru.remove_rule(result)

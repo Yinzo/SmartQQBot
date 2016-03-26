@@ -20,6 +20,11 @@ QR_CODE_STATUS = {
     "validating": 67,
 }
 
+MESSAGE_SENT = {
+    1202,
+    0,
+}
+
 
 class CookieLoginFailed(UserWarning):
     pass
@@ -483,7 +488,7 @@ class QQBot(object):
             )
             rsp = self.client.post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
-            if 'retcode' in rsp_json and rsp_json['retcode'] != 0:
+            if 'retcode' in rsp_json and rsp_json['retcode'] not in MESSAGE_SENT:
                 raise ValueError("RUNTIMELOG reply group chat error" + str(rsp_json['retcode']))
             logging.info("RUNTIMELOG send_qun_msg: Reply successfully.")
             logging.debug("RESPONSE send_qun_msg: Reply response: " + str(rsp))

@@ -76,7 +76,10 @@ class SessMsg(QMessage):
 
 
 class PrivateMsg(QMessage):
-    pass
+    def __init__(self, msg_dict):
+        super(PrivateMsg, self).__init__(msg_dict)
+        self.to_uin = msg_dict['value']['to_uin']
+        self.from_uin = msg_dict['value']['from_uin']
 
 
 class GroupMsg(QMessage):

@@ -18,7 +18,12 @@ QBot
 + 复制config.json.example为config.json，然后修改启动的plugin_on，里面是启用的插件列表
 
 ## 已知问题
-+ ~~ 加载多个插件后，可以接受消息，但无法正确发送(resolved) ~~
++ <s>加载多个插件后，可以接受消息，但无法正确发送(resolved)</s>
+
+## RoadMap
++ 支持每个插件的单独配置文件
++ 支持插件的激活和关闭
++ 优化发消息和Bot类（待定）
 
 ## Thanks to
 * [SmartQQBot](https://github.com/Yinzo/SmartQQBot)

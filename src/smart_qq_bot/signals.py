@@ -6,24 +6,31 @@ from smart_qq_bot.handler import (
 )
 from smart_qq_bot.messages import (
     GROUP_MSG,
-)
+    PRIVATE_MSG)
 
 
-def on_all_message(func):
-
+def _real_wrapper(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
 
-    register(wrapper, dispatcher_name=func.__name__)
     return wrapper
 
 
-def on_group_message(func):
+def _mk_wrapper(msg_type):
+    def _register_func(func=None, name=None):
+        if func is not None:
+            wrapped = _real_wrapper(func)
+            register(wrapped, msg_type, func.__name__)
+            return wrapped
+        else:
+            def wrapper(new_func):
+                wrapped = _real_wrapper(new_func)
+                register(wrapped, msg_type, name or new_func.__name__)
+            return wrapper
+    return _register_func
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
 
-    register(wrapper, GROUP_MSG, func.__name__)
-    return wrapper
+on_all_message = _mk_wrapper(None)
+on_group_message = _mk_wrapper(GROUP_MSG)
+on_private_message = _mk_wrapper(PRIVATE_MSG)

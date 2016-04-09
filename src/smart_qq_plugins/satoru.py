@@ -4,6 +4,7 @@ import logging
 import os
 from random import randint
 import re
+from smart_qq_bot.messages import PrivateMsg
 from smart_qq_bot.signals import on_group_message
 
 
@@ -76,6 +77,7 @@ def send_msg(msg, bot):
         response = satoru.match(msg.content)
         if response:
             bot.send_qun_msg(msg.from_uin, response, msg_id=randint(1, 1000))
-    result = satoru.is_remove(msg.content)
-    if result:
-        satoru.remove_rule(result)
+    if isinstance(msg, PrivateMsg):
+        result = satoru.is_remove(msg.content)
+        if result:
+            satoru.remove_rule(result)

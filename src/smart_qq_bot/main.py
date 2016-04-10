@@ -3,11 +3,10 @@ import logging
 import socket
 import sys
 
-from smart_qq_bot.app import bot
+from smart_qq_bot.app import bot, plugin_manager
 from smart_qq_bot.config import init_logging
 from smart_qq_bot.handler import MessageObserver
 from smart_qq_bot.messages import mk_msg
-from smart_qq_bot.plugin import PluginManager
 
 
 def patch():
@@ -18,7 +17,7 @@ def patch():
 def run():
     patch()
     init_logging(logging.DEBUG)
-    plugin_mgr = PluginManager()
+    plugin_manager.load_plugin()
     bot.login()
     observer = MessageObserver(bot)
     while True:

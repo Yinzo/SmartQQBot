@@ -21,6 +21,7 @@ __all__ = (
 
 
 _registry = defaultdict(list)
+_active = set()
 
 RAW_TYPE = "raw_message"
 
@@ -32,7 +33,7 @@ Handler = namedtuple("Handler", ("func", "name"))
 Task = namedtuple("Task", ("func", "name", "kwargs"))
 
 
-def register(func, msg_type=None, dispatcher_name=None):
+def register(func, msg_type=None, dispatcher_name=None, active_by_default=True):
     """
     Register handler to RAW if msg_type not given.
     :type func: callable
@@ -48,6 +49,47 @@ def register(func, msg_type=None, dispatcher_name=None):
         _registry[RAW_TYPE].append(handler)
     else:
         _registry[msg_type].append(handler)
+    if active_by_default:
+        _active.add(dispatcher_name)
+
+
+def list_handlers():
+    handler_list = []
+    for _, handlers in _registry.iteritems():
+        handler_list.extend(
+            [handler.name for handler in handlers]
+        )
+    return handler_list
+
+
+def list_active_handlers():
+    return _active
+
+
+def is_active(dispatcher_name):
+    return dispatcher_name in _active
+
+
+def inactivate(dispatcher_name):
+    try:
+        _active.remove(dispatcher_name)
+        logging.info(
+            'Plugin %s inactivated.'
+            % dispatcher_name
+        )
+    except KeyError:
+        logging.info(
+            'Plugin name %s does not exist, failed to inactivate.'
+            % dispatcher_name
+        )
+
+
+def activate(dispatcher_name):
+    _active.add(dispatcher_name)
+    logging.info(
+        'Plugin %s activated.'
+        % dispatcher_name
+    )
 
 
 class Worker(Thread):
@@ -119,10 +161,11 @@ class MessageObserver(object):
         handlers = self._registry[msg.type]
 
         for handler in handlers + self._registry[RAW_TYPE]:
-            self.handler_queue.put(
-                Task(
-                    func=handler.func,
-                    name=handler.name,
-                    kwargs={"msg": msg, "bot": self.bot}
+            if is_active(handler.name):
+                self.handler_queue.put(
+                    Task(
+                        func=handler.func,
+                        name=handler.name,
+                        kwargs={"msg": msg, "bot": self.bot}
+                    )
                 )
-            )

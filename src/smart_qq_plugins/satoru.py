@@ -63,7 +63,7 @@ class Satoru(object):
 satoru = Satoru("satoru.json")
 
 
-@on_group_message
+@on_group_message(name="satoru")
 def send_msg(msg, bot):
     """
     :type bot: smart_qq_bot.bot.QQBot

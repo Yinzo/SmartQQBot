@@ -4,7 +4,8 @@ import logging
 import os
 from random import randint
 import re
-from smart_qq_bot.signals import on_group_message
+from smart_qq_bot.messages import PrivateMsg
+from smart_qq_bot.signals import on_group_message, on_private_message
 
 
 class Satoru(object):
@@ -62,7 +63,7 @@ class Satoru(object):
 satoru = Satoru("satoru.json")
 
 
-@on_group_message
+@on_group_message(name="satoru")
 def send_msg(msg, bot):
     """
     :type bot: smart_qq_bot.bot.QQBot
@@ -76,6 +77,10 @@ def send_msg(msg, bot):
         response = satoru.match(msg.content)
         if response:
             bot.send_qun_msg(msg.from_uin, response, msg_id=randint(1, 1000))
+
+
+@on_private_message(name="satoru")
+def remove(msg, bot):
     result = satoru.is_remove(msg.content)
     if result:
         satoru.remove_rule(result)

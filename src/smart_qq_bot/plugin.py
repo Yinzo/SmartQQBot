@@ -28,6 +28,14 @@ class PluginManager(object):
         if load_now:
             self.load_plugin()
 
+    def load_config(self, config_file):
+        """
+        You can load plugin config any time, then load plugin.
+        :typ config_file: str or unicode
+        """
+        self.config_file = config_file
+        self._load_config(config_file)
+
     def _load_config(self, config_file):
         config = None
         if config_file is not None:

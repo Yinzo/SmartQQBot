@@ -16,10 +16,10 @@ setup(
         here,
         exclude=("tests", ),
     ),
-    url='https://github.com/BlinkTunnel/SmartQQBot',
+    url='https://github.com/Yinzo/SmartQQBot',
     license='GPL V3',
-    author='winkidney',
+    author='Yinzo',
     install_requires=install_requires,
-    author_email='winkidney@gmail.com',
+    author_email='http://yinz.me/',
     description='A SmartBot(from qq bot) bot client.'
 )

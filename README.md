@@ -52,5 +52,11 @@ API 文档[API Reference](resources/API.md)
 + 16.04.xx : 支持插件的激活和关闭
 
 ## Thanks to
-* [SmartQQBot](https://github.com/Yinzo/SmartQQBot)
+
++ [SmartQQBot](https://github.com/Yinzo/SmartQQBot)
+
+## Contributors
+
++ [winkidney](https://github.com/winkidney)
++ [Cheng Gu](https://github.com/gucheen)
 

@@ -13,7 +13,7 @@ API 文档[API Reference](resources/API.md)
 
 ## 快速开始
 + 安装Python \> 2.6
-+ 安装依赖（或者在命令行运行python setup.py develop）
++ 安装依赖（`pip install Pillow`或者在命令行运行python setup.py develop）
 + 直接运行`run.py`
 + 等待弹出二维码进行扫描登陆，或手动打开脚本所在目录的v.jpg进行扫描。
 + 控制台不在输出登录确认的log的时候就登录成功了
@@ -51,12 +51,9 @@ API 文档[API Reference](resources/API.md)
 
 + 16.04.xx : 支持插件的激活和关闭
 
-## Thanks to
-
-+ [SmartQQBot](https://github.com/Yinzo/SmartQQBot)
-
 ## Contributors
-
-+ [winkidney](https://github.com/winkidney)
++ [Yinzo](https://github.com/Yinzo)
 + [Cheng Gu](https://github.com/gucheen)
++ [winkidney](https://github.com/winkidney)
+
 

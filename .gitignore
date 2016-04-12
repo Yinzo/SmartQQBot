@@ -1,11 +1,16 @@
+# Mr.Project
+.idea
+
+# Mr.Python
 *.pyc
+*.egg-info
+
+# Mr.Data
 *.tucao
 *.cmd
 *.log
+v.jpg
 cookie.data
 
-/.idea
-/config/group/*.conf
-/config/pm/*.conf
-/config/sess/*.conf
-
+# Mr.Conf
+*.json

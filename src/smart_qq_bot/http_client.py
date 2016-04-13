@@ -3,6 +3,7 @@ import urllib
 import urllib2
 import time
 import os
+from httplib import BadStatusLine
 
 from smart_qq_bot.config import SMART_QQ_REFER
 
@@ -47,12 +48,13 @@ class HttpClient(object):
             req.add_header('Referer', refer or SMART_QQ_REFER)
             try:
                 tmp_req = urllib2.urlopen(req, timeout=180)
-            except:
-                raise IOError("Http post timeout: %s" % url)
+            except BadStatusLine:
+                raise IOError("Server response error, check the network connections: %s" % url)
             self._cookie.save('cookie/cookie.data', ignore_discard=True, ignore_expires=True)
             return tmp_req.read()
         except urllib2.HTTPError, e:
             return e.read()
+
 
     def download(self, url, file):
         output = open(file, 'wb')

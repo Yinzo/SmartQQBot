@@ -16,7 +16,7 @@ def patch():
 
 def run():
     patch()
-    init_logging(logging.DEBUG)
+    init_logging(logging.INFO)
     plugin_manager.load_plugin()
     bot.login()
     observer = MessageObserver(bot)
@@ -27,7 +27,7 @@ def run():
                 observer.handle_msg_list(
                     [mk_msg(msg) for msg in msg_list]
                 )
-        except socket.timeout as e:
+        except socket.timeout, IOError:
             logging.warning("Message pooling timeout, retrying...")
         except Exception:
             logging.exception("Exception occurs when checking msg.")

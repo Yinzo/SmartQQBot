@@ -11,7 +11,12 @@ from threading import Thread
 
 from smart_qq_bot.config import QR_CODE_PATH, SMART_QQ_REFER
 from smart_qq_bot.http_client import HttpClient
-
+from smart_qq_bot.messages import (
+    QMessage,
+    GroupMsg,
+    PrivateMsg,
+    SessMsg,
+)
 
 QR_CODE_STATUS = {
     "qr_code_expired": 65,
@@ -472,7 +477,7 @@ class QQBot(object):
             return {}
 
     # 发送群消息
-    def send_qun_msg(self, guin, reply_content, msg_id, fail_times=0):
+    def send_qun_msg(self, reply_content, guin, msg_id, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
         rsp = ""
         try:
@@ -489,7 +494,7 @@ class QQBot(object):
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] not in MESSAGE_SENT:
                 raise ValueError("RUNTIMELOG reply group chat error" + str(rsp_json['retcode']))
-            logging.info("RUNTIMELOG send_qun_msg: Reply successfully.")
+            logging.info("RUNTIMELOG send_qun_msg: Reply '{}' successfully.".format(reply_content))
             logging.debug("RESPONSE send_qun_msg: Reply response: " + str(rsp))
             return rsp_json
         except:
@@ -503,8 +508,9 @@ class QQBot(object):
                 logging.warning("RUNTIMELOG send_qun_msg: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
+
     # 发送私密消息
-    def send_buddy_msg(self, tuin, reply_content, msg_id, fail_times=0):
+    def send_buddy_msg(self, reply_content, tuin, msg_id, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
         rsp = ""
         try:
@@ -534,7 +540,7 @@ class QQBot(object):
                 return False
 
     # 发送临时消息
-    def send_sess_msg2(self, tuin, reply_content, msg_id, group_sig, service_type=0, fail_times=0):
+    def send_sess_msg2(self, reply_content, tuin, msg_id, group_sig, service_type=0, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
         rsp = ""
         try:
@@ -573,7 +579,7 @@ class QQBot(object):
                 return False
 
     # 主动发送临时消息
-    def send_sess_msg2_fromGroup(self, guin, tuin, reply_content, msg_id, service_type=0, fail_times=0):
+    def send_sess_msg2_fromGroup(self, reply_content, guin, tuin, msg_id, service_type=0, fail_times=0):
         group_sig = self._get_group_sig(guin, tuin, service_type)
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
         rsp = ""
@@ -612,3 +618,23 @@ class QQBot(object):
                 logging.warning(
                     "RUNTIMELOG send_sess_msg2_fromGroup: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
+
+    def reply_msg(self, msg, reply_content=None, return_function=False):
+        """
+        :type msg: QMessage类, 例如 GroupMsg, PrivateMsg, SessMsg
+        :type reply_content: string, 回复的内容.
+        :return: 服务器的响应内容. 如果 return_function 为 True, 则返回的是一个仅有 reply_content 参数的便捷回复函数.
+        """
+        import functools
+        assert isinstance(msg, QMessage)
+        if isinstance(msg, GroupMsg):
+            if return_function:
+                return functools.partial(self.send_qun_msg, guin=msg.group_code, msg_id=msg.msg_id+1)
+            return self.send_qun_msg(guin=msg.group_code, reply_content=reply_content, msg_id=msg.msg_id+1)
+        if isinstance(msg, PrivateMsg):
+            if return_function:
+                return functools.partial(self.send_buddy_msg, tuin=msg.from_uin, msg_id=msg.msg_id+1)
+            return self.send_buddy_msg(tuin=msg.from_uin, reply_content=reply_content, msg_id=msg.msg_id+1)
+        if isinstance(msg, SessMsg):
+            # 官方已废弃临时消息接口, 等官方重启后再完善此函数
+            pass

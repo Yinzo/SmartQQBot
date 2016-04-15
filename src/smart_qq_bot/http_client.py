@@ -6,7 +6,7 @@ import os
 from httplib import BadStatusLine
 
 from smart_qq_bot.config import SMART_QQ_REFER
-
+from smart_qq_bot.excpetions import ServerResponseEmpty
 
 class HttpClient(object):
     _cookie = cookielib.LWPCookieJar('cookie/cookie.data')
@@ -49,7 +49,7 @@ class HttpClient(object):
             try:
                 tmp_req = urllib2.urlopen(req, timeout=180)
             except BadStatusLine:
-                raise IOError("Server response error, check the network connections: %s" % url)
+                raise ServerResponseEmpty("Server response error, check the network connections: %s" % url)
             self._cookie.save('cookie/cookie.data', ignore_discard=True, ignore_expires=True)
             return tmp_req.read()
         except urllib2.HTTPError, e:

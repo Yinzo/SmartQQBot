@@ -15,3 +15,7 @@ class ConfigFileDoesNotExist(IOError):
 
 class ConfigKeyError(ValueError):
     pass
+
+
+class ServerResponseEmpty(IOError):
+    pass

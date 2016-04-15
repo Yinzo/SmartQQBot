@@ -76,7 +76,7 @@ def send_msg(msg, bot):
     else:
         response = satoru.match(msg.content)
         if response:
-            bot.send_qun_msg(msg.from_uin, response, msg_id=randint(1, 1000))
+            bot.reply_msg(msg, response)
 
 
 @on_private_message(name="satoru")

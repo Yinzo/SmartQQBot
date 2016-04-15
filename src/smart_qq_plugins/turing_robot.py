@@ -31,9 +31,4 @@ def turing_robot(msg, bot):
 
     response_json = response.json()
 
-    bot.send_qun_msg(msg.from_uin, response_json.get('text'), msg_id=randint(1, 1000))
-
-    if msg.poll_type is 'group_message':
-        bot.send_qun_msg(msg.from_uin, response_json.get('text'), msg_id=randint(1, 1000))
-    else:
-        bot.send_buddy_msg(msg.from_uin, response_json.get('text'), msg_id=randint(1, 1000))
+    bot.reply_msg(msg, response_json.get('text'))

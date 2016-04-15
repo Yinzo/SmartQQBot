@@ -63,9 +63,9 @@ def hello_bot(msg, bot):
         for handler in group_handlers:
             result = handler(msg.content)
             if result is not None:
-                return bot.send_qun_msg(msg.from_uin, result, msg_id)
+                return bot.reply_msg(msg, result)
     elif isinstance(msg, PrivateMsg):
         for handler in private_handlers:
             result = handler(msg.content)
             if result is not None:
-                return bot.send_buddy_msg(msg.from_uin, result, msg_id)
+                return bot.reply_msg(msg, result)

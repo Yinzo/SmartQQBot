@@ -35,7 +35,10 @@ def weather(msg, bot):
 
                 str_data = ""
                 str_data += json_result['currentCity'] + " PM:" + json_result['pm25'] + "\n"
-                str_data += json_result["index"][0]['des'] + "\n"
+                try:
+                    str_data += json_result["index"][0]['des'] + "\n"
+                except:
+                    pass
 
                 for data in json_result["weather_data"]:
                     str_data += data['date'] + " "

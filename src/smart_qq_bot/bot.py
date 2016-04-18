@@ -324,13 +324,18 @@ class QQBot(object):
         logging.debug("Pooling returns response:\n %s" % response)
         if response == "":
             return
-        ret = json.loads(response)
+        try:
+            ret = json.loads(response)
+        except ValueError:
+            logging.warning("RUNTIMELOG decode poll response error.")
+            logging.debug("RESPONSE {}".format(response))
+            return
 
         ret_code = ret['retcode']
 
         if ret_code in (103, ):
             logging.warning(
-                "Pooling received retcode: " + str(ret_code) + ": Check error.retrying.."
+                "Pooling received retcode: " + str(ret_code) + ": Check error. 请前往http://w.qq.com/ 手动登陆SmartQQ一次."
             )
         elif ret_code in (121,):
             logging.warning("Pooling error with retcode %s" % ret_code)
@@ -352,7 +357,7 @@ class QQBot(object):
         """
         将uin转换成用户QQ号
         :param tuin:
-        :return:str 用户昵称
+        :return:str 用户QQ号
         """
         uin_str = str(tuin)
         try:

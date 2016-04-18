@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import shutil
 
 from smart_qq_bot.config import DEFAULT_PLUGIN_CONFIG
 from smart_qq_bot.excpetions import (
@@ -47,11 +48,12 @@ class PluginManager(object):
                     "Config file [] does not exist." % config_file
                 )
         else:
-            if os.path.isfile(DEFAULT_PLUGIN_CONFIG):
-                with open(DEFAULT_PLUGIN_CONFIG, "r") as f:
-                    config = json.load(f)
-            else:
-                logging.warning("No plugin config file found.")
+            if not os.path.isfile(DEFAULT_PLUGIN_CONFIG):
+                shutil.copy(DEFAULT_PLUGIN_CONFIG + ".example", DEFAULT_PLUGIN_CONFIG)
+                logging.warning("No plugin config file found. Auto copied.")
+            with open(DEFAULT_PLUGIN_CONFIG, "r") as f:
+                config = json.load(f)
+
         if config is not None:
             for key in ("plugin_package", PLUGIN_ON):
                 if not isinstance(config.get("plugin_package", []), list):

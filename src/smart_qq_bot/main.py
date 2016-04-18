@@ -4,7 +4,6 @@ import socket
 import sys
 
 from smart_qq_bot.app import bot, plugin_manager
-from smart_qq_bot.config import init_logging
 from smart_qq_bot.handler import MessageObserver
 from smart_qq_bot.messages import mk_msg
 from smart_qq_bot.excpetions import ServerResponseEmpty
@@ -16,7 +15,8 @@ def patch():
 
 def run():
     patch()
-    init_logging(logging.INFO)
+
+    logging.info("Initializing...")
     plugin_manager.load_plugin()
     bot.login()
     observer = MessageObserver(bot)

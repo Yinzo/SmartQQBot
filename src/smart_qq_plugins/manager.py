@@ -40,7 +40,7 @@ def do_hello(text):
 
 def do_list_plugin(text):
     if re.match(cmd_list_plugin, text):
-        return "All: %s, Active: %s" % (
+        return "All: %s\n\nActive: %s" % (
             str(list_handlers()), str(list_active_handlers())
         )
 

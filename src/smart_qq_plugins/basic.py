@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import logging
 import random
 
+from smart_qq_bot.logger import logger
 from smart_qq_bot.signals import (
     on_all_message,
     on_group_message,
@@ -24,7 +24,7 @@ REPLY_SUFFIX = (
 def callout(msg, bot):
     if "智障机器人" in msg.content:
         reply = bot.reply_msg(msg, return_function=True)
-        logging.info("RUNTIMELOG " + str(msg.from_uin) + " calling me out, trying to reply....")
+        logger.info("RUNTIMELOG " + str(msg.from_uin) + " calling me out, trying to reply....")
         reply_content = "干嘛（‘·д·）" + random.choice(REPLY_SUFFIX)
         reply(reply_content)
 
@@ -43,6 +43,6 @@ def repeat(msg, bot):
 
     if len(recorder.msg_list) > 0 and recorder.msg_list[-1].content == msg.content:
         if str(msg.content).strip() not in ("", " ", "[图片]", "[表情]"):
-            logging.info("RUNTIMELOG " + str(msg.group_code) + " repeating, trying to reply " + str(msg.content))
+            logger.info("RUNTIMELOG " + str(msg.group_code) + " repeating, trying to reply " + str(msg.content))
             reply(msg.content)
     recorder.msg_list.append(msg)

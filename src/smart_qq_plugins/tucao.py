@@ -3,8 +3,8 @@ import re
 import os
 import random
 import cPickle
-import logging
 
+from smart_qq_bot.logger import logger
 from smart_qq_bot.signals import (
     on_all_message,
     on_group_message,
@@ -27,9 +27,9 @@ class TucaoCore(object):
             tucao_file_path = TUCAO_PATH + str(group_id) + ".tucao"
             with open(tucao_file_path, "w+") as tucao_file:
                 cPickle.dump(self.tucao_dict[str(group_id)], tucao_file)
-            logging.info("RUNTIMELOG tucao saved. Now tucao list:  {0}".format(str(self.tucao_dict)))
+            logger.info("RUNTIMELOG tucao saved. Now tucao list:  {0}".format(str(self.tucao_dict)))
         except Exception:
-            logging.error("RUNTIMELOG Fail to save tucao.")
+            logger.error("RUNTIMELOG Fail to save tucao.")
             raise IOError("Fail to save tucao.")
 
     def load(self, group_id):
@@ -49,10 +49,10 @@ class TucaoCore(object):
         with open(tucao_file_path, "r") as tucao_file:
             try:
                 self.tucao_dict[str(group_id)] = cPickle.load(tucao_file)
-                logging.info("RUNTIMELOG tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
+                logger.info("RUNTIMELOG tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))
             except EOFError:
                 self.tucao_dict[str(group_id)] = dict()
-                logging.info("RUNTIMELOG tucao file is empty.")
+                logger.info("RUNTIMELOG tucao file is empty.")
 
 
 
@@ -68,7 +68,7 @@ def tucao(msg, bot):
     if match:
         core.load(group_code)
 
-        logging.info("RUNTIMELOG tucao command detected.")
+        logger.info("RUNTIMELOG tucao command detected.")
         command = str(match.group(1)).decode('utf8')
         key = str(match.group(2)).decode('utf8')
         value = str(match.group(3)).decode('utf8')
@@ -94,7 +94,7 @@ def tucao(msg, bot):
         core.load(group_code)
         for key in core.tucao_dict[group_code].keys():
             if str(key) in msg.content and core.tucao_dict[group_code][key]:
-                logging.info("RUNTIMELOG tucao pattern detected, replying...")
+                logger.info("RUNTIMELOG tucao pattern detected, replying...")
                 reply(random.choice(core.tucao_dict[group_code][key]))
                 return True
     return False
@@ -112,14 +112,14 @@ def current_tucao_list(msg, bot):
         core.load(group_code)
 
         command = str(match.group(1))
-        logging.info("RUNTIMELOG command format detected, command: " + command)
+        logger.info("RUNTIMELOG command format detected, command: " + command)
 
         if command == "吐槽列表":
             result = ""
             for key in core.tucao_dict[group_code].keys():
                 result += "关键字：{0}\t\t回复：{1}\n".format(key, " / ".join(core.tucao_dict[group_code][key]))
             result = result[:-1]
-            logging.info("RUNTIMELOG Replying the list of tucao for group {}".format(group_code))
+            logger.info("RUNTIMELOG Replying the list of tucao for group {}".format(group_code))
             reply(result)
     return
 
@@ -135,7 +135,7 @@ def delete_tucao(msg, bot):
 
         command = str(match.group(1))
         arg1 = str(match.group(2))
-        logging.info("RUNTIMELOG command format detected, command:{0}, arg1:{1}".format(command, arg1))
+        logger.info("RUNTIMELOG command format detected, command:{0}, arg1:{1}".format(command, arg1))
         if command == "删除关键字" and unicode(arg1) in core.tucao_dict[group_code]:
             core.tucao_dict[group_code].pop(unicode(arg1))
             reply("已删除关键字:{0}".format(arg1))

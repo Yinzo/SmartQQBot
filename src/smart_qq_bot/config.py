@@ -13,11 +13,14 @@ QR_CODE_PATH = "./v.jpg"
 DEFAULT_PLUGIN_CONFIG = "config/plugin.json"
 
 
-def init_logging(log_level=logging.INFO):
+def init_logging(logger, log_level=logging.INFO):
+    assert isinstance(logger, logging.Logger)
+
     log_format = '[%(levelname)s] %(asctime)s  %(filename)s line %(lineno)d: %(message)s'
     date_fmt = '%a, %d %b %Y %H:%M:%S'
-    logging.basicConfig(
-        format=log_format,
-        datefmt=date_fmt,
-        level=log_level,
-    )
+    formatter = logging.Formatter(log_format, date_fmt)
+    ch = logging.StreamHandler()
+    ch.setLevel(log_level)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+

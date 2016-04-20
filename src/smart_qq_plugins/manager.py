@@ -8,7 +8,6 @@ from smart_qq_bot.handler import (
     inactivate,
 )
 from smart_qq_bot.messages import GroupMsg, PrivateMsg
-
 from smart_qq_bot.signals import on_all_message
 
 

@@ -1,9 +1,10 @@
 # coding: utf-8
 import json
-import logging
 import os
 from random import randint
 import re
+
+from smart_qq_bot.logger import logger
 from smart_qq_bot.messages import PrivateMsg
 from smart_qq_bot.signals import on_group_message, on_private_message
 
@@ -46,7 +47,7 @@ class Satoru(object):
             del self.data[key]
 
         self.save()
-        logging.info("key [%s] removed" % key)
+        logger.info("key [%s] removed" % key)
 
     def match(self, key):
         if key in self.data:
@@ -57,7 +58,7 @@ class Satoru(object):
     def save(self):
         with open(self.data_file, "w") as f:
             json.dump(self.data, f)
-        logging.info("Satoru's data file saved.")
+        logger.info("Satoru's data file saved.")
 
 
 satoru = Satoru("satoru.json")

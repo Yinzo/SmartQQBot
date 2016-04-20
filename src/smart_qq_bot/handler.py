@@ -1,10 +1,10 @@
 # coding: utf-8
 from collections import defaultdict, namedtuple
 from Queue import Queue
-import logging
 from threading import Thread
-from smart_qq_bot.bot import QQBot
 
+from smart_qq_bot.bot import QQBot
+from smart_qq_bot.logger import logger
 from smart_qq_bot.excpetions import (
     MsgProxyNotImplementError,
     InvalidHandlerType,
@@ -73,12 +73,12 @@ def is_active(dispatcher_name):
 def inactivate(dispatcher_name):
     try:
         _active.remove(dispatcher_name)
-        logging.info(
+        logger.info(
             'Plugin %s inactivated.'
             % dispatcher_name
         )
     except KeyError:
-        logging.info(
+        logger.info(
             'Plugin name %s does not exist, failed to inactivate.'
             % dispatcher_name
         )
@@ -86,7 +86,7 @@ def inactivate(dispatcher_name):
 
 def activate(dispatcher_name):
     _active.add(dispatcher_name)
-    logging.info(
+    logger.info(
         'Plugin %s activated.'
         % dispatcher_name
     )
@@ -118,7 +118,7 @@ class Worker(Thread):
             try:
                 task.func(**task.kwargs)
             except Exception:
-                logging.exception(
+                logger.exception(
                     "Error occurs when running task from plugin [%s]."
                     % task.name
                 )

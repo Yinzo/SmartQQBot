@@ -2,8 +2,8 @@
 import urllib2
 import json
 import re
-import logging
 
+from smart_qq_bot.logger import logger
 from smart_qq_bot.signals import on_all_message
 
 # Code by:      john123951  /   john123951@126.com
@@ -17,10 +17,10 @@ def weather(msg, bot):
 
     match = re.match(ur'^(weather|天气) (\w+|[\u4e00-\u9fa5]+)', msg.content)
     if match:
-        logging.info("RUNTIMELOG 查询天气...")
+        logger.info("RUNTIMELOG 查询天气...")
         command = match.group(1)
         city = match.group(2)
-        logging.info("RUNTIMELOG 查询天气语句: " + msg.content)
+        logger.info("RUNTIMELOG 查询天气语句: " + msg.content)
         if command == 'weather' or command == u'天气':
             try:
                 city_name = urllib2.quote(city.encode('utf-8'))
@@ -30,7 +30,7 @@ def weather(msg, bot):
                 )
                 response = urllib2.urlopen(url_str)
                 data_html = response.read()
-                logging.info("RESPONSE " + data_html)
+                logger.info("RESPONSE " + data_html)
                 json_result = json.loads(data_html)['results'][0]
 
                 str_data = ""

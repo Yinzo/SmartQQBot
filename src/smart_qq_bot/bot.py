@@ -291,6 +291,7 @@ class QQBot(object):
                         break
                 time.sleep(4)
             user_info = self.get_self_info2()
+            self.get_online_buddies2()
             try:
                 self.username = user_info['nick']
                 logger.info(
@@ -398,6 +399,33 @@ class QQBot(object):
                 return {}
             self._self_info = rsp_json["result"]
         return self._self_info
+
+    # 获取在线好友列表
+    def get_online_buddies2(self):
+        """
+        获取在线好友列表
+        get_online_buddies2
+        :return:list
+        """
+        try:
+            logging.info("RUNTIMELOG Requesting the online buddies.")
+            online_buddies = json.loads(self.client.get(
+                    'http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq={0}&clientid={1}&psessionid={2}&t={3}'
+                        .format(
+                            self.vfwebqq,
+                            self.client_id,
+                            self.psessionid,
+                            self.client.get_timestamp()),
+            ))
+            logging.debug("RESPONSE get_online_buddies2 html:    " + str(online_buddies))
+            if online_buddies['retcode'] != 0:
+                raise TypeError('get_online_buddies2 result error')
+            online_buddies = online_buddies['result']
+            return online_buddies
+
+        except:
+            logging.warning("RUNTIMELOG get_online_buddies2 fail")
+            return None
 
     # 获取好友详情信息
     def get_friend_info2(self, tuin):

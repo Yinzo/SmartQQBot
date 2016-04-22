@@ -3,6 +3,7 @@ SmartQQBot
 
 + 使用文档见[User Guide](resources/UserGuide.md)
 + 二次开发[Developers Guide](resources/DevelopersGuide.md)
++ 贡献文档[Contribution Guide](resources/ContributionGuide.md)
 + API 文档[API Reference](resources/API.md)
 
 ## 依赖

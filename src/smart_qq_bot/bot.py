@@ -290,20 +290,21 @@ class QQBot(object):
                     if self._login_by_cookie():
                         break
                 time.sleep(4)
-            user_info = self.get_self_info2()
-            self.get_online_buddies2()
-            try:
-                self.username = user_info['nick']
-                logger.info(
-                    "User information got: user name is [%s]" % self.username
-                )
-            except KeyError:
-                logger.exception(
-                    "User info access failed, check your login and response:\n%s"
-                    % user_info
-                )
-                exit(1)
-            logger.info("RUNTIMELOG QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
+        user_info = self.get_self_info2()
+        self.get_online_buddies2()
+        try:
+            self.username = user_info['nick']
+            logger.info(
+                "User information got: user name is [%s]" % self.username
+            )
+        except KeyError:
+            logger.exception(
+                "User info access failed, check your login and response:\n%s"
+                % user_info
+            )
+            exit(1)
+        logger.info("RUNTIMELOG QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
+        self._self_info = user_info
 
     def check_msg(self):
 
@@ -487,19 +488,49 @@ class QQBot(object):
             return {}
         return rsp_json["result"]
 
-    # 获取群信息（对于易变的信息，请在外层做缓存处理）
-    def get_group_info_ext2(self, gcode):
+    # 获取群列表
+    def get_group_name_list_mask2(self):
+        """
+        获取群列表
+        get_group_name_list_mask2
+        :return:list
+        """
+        logger.info("RUNTIMELOG Requesting the group list.")
+
+        response = self.client.post(
+            'http://s.web2.qq.com/api/get_group_name_list_mask2',
+            {
+                'r': json.dumps(
+                    {
+                        "vfwebqq": self.vfwebqq,
+                        "hash": self._hash_digest(self._self_info['uin'], self.ptwebqq),
+                    }
+                )
+            },
+        )
+        try:
+            response = json.loads(response)
+        except ValueError:
+            logger.warning("RUNTIMELOG The response of group list request can't be load as json")
+        logger.debug("RESPONSE get_group_name_list_mask2 html:    " + str(response))
+        if response['retcode'] != 0:
+            raise TypeError('get_online_buddies2 result error')
+        return response['result']
+
+
+    # 获取指定群成员信息（对于易变的信息，请在外层做缓存处理）
+    def get_group_info_ext2(self, group_code):
         """
         获取群信息
         get_group_info_ext2
         {"retcode":0,"result":{"stats":[],"minfo":[{"nick":" 信","province":"山东","gender":"male","uin":3964575484,"country":"中国","city":""},{"nick":"崔震","province":"","gender":"unknown","uin":2081397472,"country":"","city":""},{"nick":"云端的猫","province":"山东","gender":"male","uin":3123065696,"country":"中国","city":"青岛"},{"nick":"要有光","province":"山东","gender":"male","uin":2609717081,"country":"中国","city":"青岛"},{"nick":"小莎机器人","province":"广东","gender":"female","uin":495456232,"country":"中国","city":"深圳"}],"ginfo":{"face":0,"memo":"http://hujj009.ys168.com\r\n0086+区(没0)+电话\r\n0086+手机\r\nhttp://john123951.xinwen365.net/qq/index.htm","class":395,"fingermemo":"","code":3943922314,"createtime":1079268574,"flag":16778241,"level":0,"name":"ぁQQぁ","gid":3931577475,"owner":3964575484,"members":[{"muin":3964575484,"mflag":192},{"muin":2081397472,"mflag":65},{"muin":3123065696,"mflag":128},{"muin":2609717081,"mflag":0},{"muin":495456232,"mflag":0}],"option":2},"cards":[{"muin":3964575484,"card":"●s.Εx2(22222)□"},{"muin":495456232,"card":"小莎机器人"}],"vipinfo":[{"vip_level":0,"u":3964575484,"is_vip":0},{"vip_level":0,"u":2081397472,"is_vip":0},{"vip_level":0,"u":3123065696,"is_vip":0},{"vip_level":0,"u":2609717081,"is_vip":0},{"vip_level":0,"u":495456232,"is_vip":0}]}}
         :return:dict
         """
-        if gcode == 0:
+        if group_code == 0:
             return {}
         try:
             url = "http://s.web2.qq.com/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%s" % (
-                gcode, self.vfwebqq, int(time.time() * 100))
+                group_code, self.vfwebqq, int(time.time() * 100))
             response = self.client.get(url)
             rsp_json = json.loads(response)
             if rsp_json["retcode"] != 0:

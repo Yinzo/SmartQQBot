@@ -30,7 +30,7 @@ def weather(msg, bot):
                 )
                 response = urllib2.urlopen(url_str)
                 data_html = response.read()
-                logger.info("RESPONSE " + data_html)
+                logger.debug("RESPONSE " + data_html)
                 json_result = json.loads(data_html)['results'][0]
 
                 str_data = ""

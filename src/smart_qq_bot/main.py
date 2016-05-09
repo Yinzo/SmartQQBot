@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import argparse
 import logging
 import socket
 import sys
@@ -9,17 +10,18 @@ from smart_qq_bot.handler import MessageObserver
 from smart_qq_bot.messages import mk_msg
 from smart_qq_bot.excpetions import ServerResponseEmpty
 
+
 def patch():
     reload(sys)
     sys.setdefaultencoding("utf-8")
 
 
-def run():
+def main_loop(no_gui=False):
     patch()
     logger.setLevel(logging.INFO)
     logger.info("Initializing...")
     plugin_manager.load_plugin()
-    bot.login()
+    bot.login(no_gui)
     observer = MessageObserver(bot)
     while True:
         try:
@@ -34,6 +36,19 @@ def run():
             logger.warning("Message pooling timeout, retrying...")
         except Exception:
             logger.exception("Exception occurs when checking msg.")
+
+
+def run():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        default=False,
+        help="Whether display QRCode with tk and PIL."
+    )
+    args = parser.parse_args()
+    main_loop(**vars(args))
+
 
 if __name__ == "__main__":
     run()

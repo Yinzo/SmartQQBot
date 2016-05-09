@@ -6,6 +6,7 @@ import os
 import time
 import re
 import json
+from Tkinter import Label
 from threading import Thread
 
 from smart_qq_bot.logger import logger
@@ -40,12 +41,19 @@ class QRLoginFailed(UserWarning):
 
 
 def show_qr(path):
+    from Tkinter import Tk
     try:
-        from PIL import Image
-        img = Image.open(path)
-        img.show()
+        from PIL import ImageTk, Image
     except ImportError:
         raise SystemError('缺少PIL模块, 可使用sudo pip install PIL尝试安装')
+
+    root = Tk()
+    img = ImageTk.PhotoImage(
+        Image.open(path)
+    )
+    panel = Label(root, image=img)
+    panel.pack(side="bottom", fill="both", expand="yes")
+    root.mainloop()
 
 
 def find_first_result(html, regxp, error, raise_exception=False):
@@ -170,7 +178,7 @@ class QQBot(object):
         logger.info("Login by cookie succeed. account: %s" % self.account)
         return True
 
-    def _login_by_qrcode(self):
+    def _login_by_qrcode(self, no_gui):
         logger.info("RUNTIMELOG Trying to login by qrcode.")
         logger.info("RUNTIMELOG Requesting the qrcode login pages...")
         qr_validation_url = 'https://ssl.ptlogin2.qq.com/ptqrlogin?' \
@@ -225,9 +233,10 @@ class QQBot(object):
                 'https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
                 self.qrcode_path
             )
-            thread = Thread(target=show_qr, args=(self.qrcode_path, ))
-            thread.setDaemon(True)
-            thread.start()
+            if not no_gui:
+                thread = Thread(target=show_qr, args=(self.qrcode_path, ))
+                thread.setDaemon(True)
+                thread.start()
 
             while True:
                 ret_code, redirect_url = self._get_qr_login_status(
@@ -280,13 +289,13 @@ class QQBot(object):
             redirect_url = redirect_info[0]
         return ret_code, redirect_url
 
-    def login(self):
+    def login(self, no_gui=False):
         try:
             self._login_by_cookie()
         except CookieLoginFailed:
             logger.info("Cookie login failed.")
             while True:
-                if self._login_by_qrcode():
+                if self._login_by_qrcode(no_gui):
                     if self._login_by_cookie():
                         break
                 time.sleep(4)

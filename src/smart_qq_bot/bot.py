@@ -141,7 +141,10 @@ class QQBot(object):
 
     def _login_by_cookie(self):
         logger.info("Try cookie login...")
+
+        self.client.load_cookie()
         self.ptwebqq = self.client.get_cookie('ptwebqq')
+
         response = self.client.post(
             'http://d1.web2.qq.com/channel/login2',
             {
@@ -153,6 +156,7 @@ class QQBot(object):
             },
             SMART_QQ_REFER
         )
+
         ret = json.loads(response)
         if ret['retcode'] != 0:
             raise CookieLoginFailed("Login step 1 failed with response:\n %s " % ret)

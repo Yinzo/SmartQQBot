@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import argparse
 import logging
+import os
 import socket
 import sys
 
+from smart_qq_bot.config import COOKIE_FILE
 from smart_qq_bot.logger import logger
 from smart_qq_bot.app import bot, plugin_manager
 from smart_qq_bot.handler import MessageObserver
@@ -16,11 +18,19 @@ def patch():
     sys.setdefaultencoding("utf-8")
 
 
-def main_loop(no_gui=False):
+def clean_cookie():
+    if os.path.isfile(COOKIE_FILE):
+        os.remove(COOKIE_FILE)
+    logger.info("Cookie file removed.")
+
+
+def main_loop(no_gui=False, new_user=False):
     patch()
     logger.setLevel(logging.INFO)
     logger.info("Initializing...")
     plugin_manager.load_plugin()
+    if new_user:
+        clean_cookie()
     bot.login(no_gui)
     observer = MessageObserver(bot)
     while True:
@@ -45,6 +55,12 @@ def run():
         action="store_true",
         default=False,
         help="Whether display QRCode with tk and PIL."
+    )
+    parser.add_argument(
+        "--new-user",
+        action="store_true",
+        default=False,
+        help="Logout old user first(by clean the cookie file.)"
     )
     args = parser.parse_args()
     main_loop(**vars(args))

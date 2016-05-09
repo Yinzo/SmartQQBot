@@ -5,11 +5,15 @@ import time
 import os
 from httplib import BadStatusLine
 
-from smart_qq_bot.config import SMART_QQ_REFER
+from smart_qq_bot.config import (
+    SMART_QQ_REFER,
+    COOKIE_FILE,
+)
 from smart_qq_bot.excpetions import ServerResponseEmpty
 
+
 class HttpClient(object):
-    _cookie = cookielib.LWPCookieJar('cookie/cookie.data')
+    _cookie = cookielib.LWPCookieJar(COOKIE_FILE)
     _req = urllib2.build_opener(urllib2.HTTPCookieProcessor(_cookie))
     _req.addheaders = [
         ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
@@ -20,9 +24,13 @@ class HttpClient(object):
     ]
     urllib2.install_opener(_req)
 
-    def __init__(self):
+    def __init__(self, load_cookie=False):
         if not os.path.isdir("./cookie"):
             os.mkdir("./cookie")
+        if load_cookie:
+            self.load_cookie()
+
+    def load_cookie(self):
         try:
             self._cookie.load(ignore_discard=True, ignore_expires=True)
         except Exception:
@@ -55,12 +63,6 @@ class HttpClient(object):
         except urllib2.HTTPError, e:
             return e.read()
 
-
-    def download(self, url, file):
-        output = open(file, 'wb')
-        output.write(urllib2.urlopen(url).read())
-        output.close()
-
     def get_cookie(self, key):
         for c in self._cookie:
             if c.name == key:
@@ -75,4 +77,10 @@ class HttpClient(object):
             rest={'HttpOnly': None}, rfc2109=False
         )
         self._cookie.set_cookie(ck)
-        self._cookie.save(ignore_discard=True,ignore_expires=True)
+        self._cookie.save(ignore_discard=True, ignore_expires=True)
+
+    @staticmethod
+    def download(url, file):
+        output = open(file, 'wb')
+        output.write(urllib2.urlopen(url).read())
+        output.close()

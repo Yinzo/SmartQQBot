@@ -12,6 +12,8 @@ QR_CODE_PATH = "./v.jpg"
 
 DEFAULT_PLUGIN_CONFIG = "config/plugin.json"
 
+COOKIE_FILE = 'cookie/cookie.data'
+
 
 def init_logging(logger, log_level=logging.DEBUG):
     assert isinstance(logger, logging.Logger)

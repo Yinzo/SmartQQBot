@@ -156,8 +156,11 @@ class QQBot(object):
             },
             SMART_QQ_REFER
         )
-
-        ret = json.loads(response)
+        try:
+            ret = json.loads(response)
+        except ValueError:
+            logger.warning("Cookies login fail, response decode error.")
+            return
         if ret['retcode'] != 0:
             raise CookieLoginFailed("Login step 1 failed with response:\n %s " % ret)
 
@@ -525,6 +528,7 @@ class QQBot(object):
             response = json.loads(response)
         except ValueError:
             logger.warning("RUNTIMELOG The response of group list request can't be load as json")
+            return
         logger.debug("RESPONSE get_group_name_list_mask2 html:    " + str(response))
         if response['retcode'] != 0:
             raise TypeError('get_online_buddies2 result error')

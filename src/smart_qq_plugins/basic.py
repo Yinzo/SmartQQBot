@@ -46,3 +46,9 @@ def repeat(msg, bot):
             logger.info("RUNTIMELOG " + str(msg.group_code) + " repeating, trying to reply " + str(msg.content))
             reply(msg.content)
     recorder.msg_list.append(msg)
+
+@on_group_message(name='nick_call')
+def test(msg, bot):
+    if "我是谁" in msg.content:
+        profile = bot.get_group_member_info(msg.group_code, msg.send_uin)
+        bot.reply_msg(msg, "你是{}!".format(profile['nick']))

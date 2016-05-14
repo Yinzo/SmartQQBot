@@ -408,13 +408,18 @@ class QQBot(object):
         {"retcode":0,"result":{"birthday":{"month":1,"year":1989,"day":30},"face":555,"phone":"","occupation":"","allow":1,"college":"","uin":2609717081,"blood":0,"constel":1,"lnick":"","vfwebqq":"68b5ff5e862ac589de4fc69ee58f3a5a9709180367cba3122a7d5194cfd43781ada3ac814868b474","homepage":"","vip_info":0,"city":"青岛","country":"中国","personal":"","shengxiao":5,"nick":"要有光","email":"","province":"山东","account":2609717081,"gender":"male","mobile":""}}
         :return:dict
         """
-        if not self._self_info:
-            url = "http://s.web2.qq.com/api/get_self_info2"
+        try_times = 0
+        while self._self_info is {}:
+            url = "http://s.web2.qq.com/api/get_self_info2?t={}".format(time.time())
             response = self.client.get(url)
+            logger.debug("get_self_info2 response:{}".format(response))
             rsp_json = json.loads(response)
             if rsp_json["retcode"] != 0:
-                return {}
-            self._self_info = rsp_json["result"]
+                try_times += 1
+                logger.warning("get_self_info2 fail. {}".format(try_times))
+                if try_times >=5:
+                    return {}
+        self._self_info = rsp_json["result"]
         return self._self_info
 
     # 获取在线好友列表

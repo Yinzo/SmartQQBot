@@ -310,7 +310,6 @@ class QQBot(object):
                         break
                 time.sleep(4)
         user_info = self.get_self_info2()
-        self._self_info = user_info
         self.get_online_buddies2()
         self.get_group_name_list_mask2()
         try:

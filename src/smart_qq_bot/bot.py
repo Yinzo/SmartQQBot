@@ -321,7 +321,6 @@ class QQBot(object):
             )
             exit(1)
         logger.info("RUNTIMELOG QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
-        self._self_info = user_info
 
     def check_msg(self):
 
@@ -404,17 +403,23 @@ class QQBot(object):
     # 获取自己的信息
     def get_self_info2(self):
         """
-        获取自己的信息
+        获取自己的信息, 并存入self._self_info
         get_self_info2
         {"retcode":0,"result":{"birthday":{"month":1,"year":1989,"day":30},"face":555,"phone":"","occupation":"","allow":1,"college":"","uin":2609717081,"blood":0,"constel":1,"lnick":"","vfwebqq":"68b5ff5e862ac589de4fc69ee58f3a5a9709180367cba3122a7d5194cfd43781ada3ac814868b474","homepage":"","vip_info":0,"city":"青岛","country":"中国","personal":"","shengxiao":5,"nick":"要有光","email":"","province":"山东","account":2609717081,"gender":"male","mobile":""}}
         :return:dict
         """
-        if not self._self_info:
-            url = "http://s.web2.qq.com/api/get_self_info2"
+        try_times = 0
+
+        while len(self._self_info) is 0:
+            url = "http://s.web2.qq.com/api/get_self_info2?t={}".format(time.time())
             response = self.client.get(url)
+            logger.debug("get_self_info2 response:{}".format(response))
             rsp_json = json.loads(response)
             if rsp_json["retcode"] != 0:
-                return {}
+                try_times += 1
+                logger.warning("get_self_info2 fail. {}".format(try_times))
+                if try_times >=5:
+                    return {}
             self._self_info = rsp_json["result"]
         return self._self_info
 
@@ -425,25 +430,28 @@ class QQBot(object):
         get_online_buddies2
         :return:list
         """
+        logger.info("RUNTIMELOG Requesting the online buddies.")
+        response = self.client.get(
+            'http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq={0}&clientid={1}&psessionid={2}&t={3}'.format(
+                self.vfwebqq,
+                self.client_id,
+                self.psessionid,
+                self.client.get_timestamp(),
+            )
+        ) # {"result":[],"retcode":0}
+        logger.debug("RESPONSE get_online_buddies2 html:{}".format(response))
         try:
-            logger.info("RUNTIMELOG Requesting the online buddies.")
-            online_buddies = json.loads(self.client.get(
-                    'http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq={0}&clientid={1}&psessionid={2}&t={3}'
-                        .format(
-                            self.vfwebqq,
-                            self.client_id,
-                            self.psessionid,
-                            self.client.get_timestamp()),
-            ))
-            logger.debug("RESPONSE get_online_buddies2 html:    " + str(online_buddies))
-            if online_buddies['retcode'] != 0:
-                raise TypeError('get_online_buddies2 result error')
-            online_buddies = online_buddies['result']
-            return online_buddies
+            online_buddies = json.loads(response)
+        except ValueError:
+            logger.warning("get_online_buddies2 response decode as json fail.")
 
-        except:
-            logger.warning("RUNTIMELOG get_online_buddies2 fail")
-            return None
+        if online_buddies['retcode'] != 0:
+            logger.warning('get_online_buddies2 retcode is not 0. returning.')
+            return {}
+
+        online_buddies = online_buddies['result']
+        return online_buddies
+
 
     # 获取好友详情信息
     def get_friend_info2(self, tuin):

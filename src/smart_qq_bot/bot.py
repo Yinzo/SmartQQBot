@@ -7,6 +7,7 @@ import time
 import re
 import json
 from Tkinter import Label
+from random import randint
 from threading import Thread
 
 from smart_qq_bot.logger import logger
@@ -706,16 +707,17 @@ class QQBot(object):
         :type reply_content: string, 回复的内容.
         :return: 服务器的响应内容. 如果 return_function 为 True, 则返回的是一个仅有 reply_content 参数的便捷回复函数.
         """
+        msg_id = randint(1, 100000)
         import functools
         assert isinstance(msg, QMessage)
         if isinstance(msg, GroupMsg):
             if return_function:
-                return functools.partial(self.send_qun_msg, guin=msg.group_code, msg_id=msg.msg_id+1)
-            return self.send_qun_msg(guin=msg.group_code, reply_content=reply_content, msg_id=msg.msg_id+1)
+                return functools.partial(self.send_qun_msg, guin=msg.group_code, msg_id=msg_id)
+            return self.send_qun_msg(guin=msg.group_code, reply_content=reply_content, msg_id=msg_id)
         if isinstance(msg, PrivateMsg):
             if return_function:
-                return functools.partial(self.send_buddy_msg, tuin=msg.from_uin, msg_id=msg.msg_id+1)
-            return self.send_buddy_msg(tuin=msg.from_uin, reply_content=reply_content, msg_id=msg.msg_id+1)
+                return functools.partial(self.send_buddy_msg, tuin=msg.from_uin, msg_id=msg_id)
+            return self.send_buddy_msg(tuin=msg.from_uin, reply_content=reply_content, msg_id=msg_id)
         if isinstance(msg, SessMsg):
             # 官方已废弃临时消息接口, 等官方重启后再完善此函数
             pass

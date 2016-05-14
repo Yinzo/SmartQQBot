@@ -81,6 +81,9 @@ class QQBot(object):
 
         # cache
         self.friend_list = {}
+        self.group_code_list = {}
+        self.group_info = {}
+
         self._group_sig_list = {}
         self._self_info = {}
 
@@ -309,6 +312,7 @@ class QQBot(object):
                 time.sleep(4)
         user_info = self.get_self_info2()
         self.get_online_buddies2()
+        self.get_group_name_list_mask2()
         try:
             self.username = user_info['nick']
             logger.info(
@@ -339,7 +343,7 @@ class QQBot(object):
             },
             SMART_QQ_REFER
         )
-        logger.debug("Pooling returns response:\n %s" % response)
+        logger.debug("Pooling returns response: %s" % response)
         if response == "":
             return
         try:
@@ -516,9 +520,27 @@ class QQBot(object):
     # 获取群列表
     def get_group_name_list_mask2(self):
         """
-        获取群列表
+        获取群列表, 并存入cache, 其中code为group_code
         get_group_name_list_mask2
         :return:list
+        {
+            u 'gmarklist': [],
+            u 'gmasklist': [],
+            u 'gnamelist': [
+                {
+                    u 'code': 1131597161, # 这是真实group_code
+                    u 'flag': 184550417,
+                    u 'gid': 1802239929,  # 这是msg.group_code, 即假group_code
+                    u 'name': u '测试'
+                },
+                {
+                    u 'code': 1131597161,
+                    u 'flag': 184550417,
+                    u 'gid': 1802239929,
+                    u 'name': u '测试'
+                }
+            ]
+        }
         """
         logger.info("RUNTIMELOG Requesting the group list.")
 
@@ -541,7 +563,24 @@ class QQBot(object):
         logger.debug("RESPONSE get_group_name_list_mask2 html:    " + str(response))
         if response['retcode'] != 0:
             raise TypeError('get_online_buddies2 result error')
+        for group in response['result']['gnamelist']:
+            self.group_code_list[str(group['gid'])] = group
         return response['result']
+
+    # 通过假group_code获取真group_code
+    def get_true_group_code(self, fake_group_code):
+        """
+        :type fake_group_code: int
+        """
+        fake_group_code = str(fake_group_code)
+        logger.debug("正在查询group_code:{}对应的真实group_code".format(fake_group_code))
+        if fake_group_code not in self.group_code_list:
+            logger.info("尝试更新群列表信息")
+            self.get_group_name_list_mask2() # 先尝试更新群列表
+            if fake_group_code not in self.group_code_list:
+                logger.warning("没有所查询的group_code, 请检查group_code是否错误")
+                return 0
+        return self.group_code_list[fake_group_code]['code']
 
 
     # 获取指定群成员信息（对于易变的信息，请在外层做缓存处理）
@@ -549,22 +588,50 @@ class QQBot(object):
         """
         获取群信息
         get_group_info_ext2
+        :group_code: int, can be "ture" of "fake" group_code
         {"retcode":0,"result":{"stats":[],"minfo":[{"nick":" 信","province":"山东","gender":"male","uin":3964575484,"country":"中国","city":""},{"nick":"崔震","province":"","gender":"unknown","uin":2081397472,"country":"","city":""},{"nick":"云端的猫","province":"山东","gender":"male","uin":3123065696,"country":"中国","city":"青岛"},{"nick":"要有光","province":"山东","gender":"male","uin":2609717081,"country":"中国","city":"青岛"},{"nick":"小莎机器人","province":"广东","gender":"female","uin":495456232,"country":"中国","city":"深圳"}],"ginfo":{"face":0,"memo":"http://hujj009.ys168.com\r\n0086+区(没0)+电话\r\n0086+手机\r\nhttp://john123951.xinwen365.net/qq/index.htm","class":395,"fingermemo":"","code":3943922314,"createtime":1079268574,"flag":16778241,"level":0,"name":"ぁQQぁ","gid":3931577475,"owner":3964575484,"members":[{"muin":3964575484,"mflag":192},{"muin":2081397472,"mflag":65},{"muin":3123065696,"mflag":128},{"muin":2609717081,"mflag":0},{"muin":495456232,"mflag":0}],"option":2},"cards":[{"muin":3964575484,"card":"●s.Εx2(22222)□"},{"muin":495456232,"card":"小莎机器人"}],"vipinfo":[{"vip_level":0,"u":3964575484,"is_vip":0},{"vip_level":0,"u":2081397472,"is_vip":0},{"vip_level":0,"u":3123065696,"is_vip":0},{"vip_level":0,"u":2609717081,"is_vip":0},{"vip_level":0,"u":495456232,"is_vip":0}]}}
         :return:dict
         """
         if group_code == 0:
-            return {}
+            return
         try:
             url = "http://s.web2.qq.com/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%s" % (
                 group_code, self.vfwebqq, int(time.time() * 100))
             response = self.client.get(url)
             rsp_json = json.loads(response)
-            if rsp_json["retcode"] != 0:
-                return {}
-            return rsp_json["result"]
+            logger.debug("get_group_info_ext2 info response: {}".format(rsp_json))
+            retcode = rsp_json["retcode"]
+            if retcode == 0:
+                result = rsp_json["result"]
+            elif retcode == 6:
+                logger.debug("get_group_info_ext2 retcode is 6, trying to get true code.")
+                result = self.get_group_info_ext2(self.get_true_group_code(group_code))
+            else:
+                logger.warning("group_code error.")
+                return
+            self.group_info[str(group_code)] = result    # 缓存群成员信息, 此处会把真假group_code都加入cache
+            return result
         except Exception as ex:
             logger.warning("RUNTIMELOG get_group_info_ext2. Error: " + str(ex))
-            return {}
+            return
+
+    def get_group_member_info(self, group_code, uin):
+        """
+        :type group_code:   int, can be "ture" of "fake" group_code
+        :type uin:  int
+        :return:    dict
+        """
+        group_code = str(group_code)
+        if group_code not in self.group_info:
+            logger.info("group_code not in cache, try to request info")
+            result = self.get_group_info_ext2(group_code)
+            if result is False:
+                logger.warning("没有所查询的group_code信息")
+                return
+
+        for member in self.group_info[group_code]['minfo']:
+            if member['uin'] == uin:
+                return member
 
     # 发送群消息
     def send_qun_msg(self, reply_content, guin, msg_id, fail_times=0):

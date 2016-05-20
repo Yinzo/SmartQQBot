@@ -42,19 +42,25 @@ class QRLoginFailed(UserWarning):
 
 
 def show_qr(path):
+    import platform
     from Tkinter import Tk
     try:
         from PIL import ImageTk, Image
     except ImportError:
         raise SystemError('缺少PIL模块, 可使用sudo pip install PIL尝试安装')
 
-    root = Tk()
-    img = ImageTk.PhotoImage(
-        Image.open(path)
-    )
-    panel = Label(root, image=img)
-    panel.pack(side="bottom", fill="both", expand="yes")
-    root.mainloop()
+    system = platform.system()
+    if system == 'Darwin': # 如果是Mac OS X
+        img = Image.open(path)
+        img.show()
+    else:
+        root = Tk()
+        img = ImageTk.PhotoImage(
+            Image.open(path)
+        )
+        panel = Label(root, image=img)
+        panel.pack(side="bottom", fill="both", expand="yes")
+        root.mainloop()
 
 
 def find_first_result(html, regxp, error, raise_exception=False):
@@ -424,7 +430,11 @@ class QQBot(object):
                 logger.warning("get_self_info2 fail. {}".format(try_times))
                 if try_times >=5:
                     return {}
-            self._self_info = rsp_json["result"]
+            try:
+                self._self_info = rsp_json["result"]
+            except KeyError:
+                logger.warning("get_self_info2 failed. Retrying.")
+                continue
         return self._self_info
 
     # 获取在线好友列表

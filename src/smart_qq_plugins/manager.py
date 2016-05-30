@@ -7,9 +7,9 @@ from smart_qq_bot.handler import (
     activate,
     inactivate,
 )
+from smart_qq_bot.logger import logger
 from smart_qq_bot.messages import GroupMsg, PrivateMsg
-from smart_qq_bot.signals import on_all_message
-
+from smart_qq_bot.signals import on_all_message, on_bot_inited
 
 cmd_hello = re.compile(r"!hello")
 cmd_list_plugin = re.compile(r"!list_plugin")
@@ -42,6 +42,11 @@ def do_list_plugin(text):
         return "All: %s\n\nActive: %s" % (
             str(list_handlers()), str(list_active_handlers())
         )
+
+
+@on_bot_inited("PluginManager")
+def manager_init(bot):
+    logger.info("Plugin Manager is available now:)")
 
 
 @on_all_message(name="PluginManger")

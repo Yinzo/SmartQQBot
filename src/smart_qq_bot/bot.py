@@ -6,7 +6,6 @@ import os
 import time
 import re
 import json
-from Tkinter import Label
 from random import randint
 from threading import Thread
 
@@ -43,7 +42,10 @@ class QRLoginFailed(UserWarning):
 
 def show_qr(path):
     import platform
-    from Tkinter import Tk
+    try:
+        from Tkinter import Tk, Label
+    except ImportError:
+        raise SystemError('缺少Tkinter模块, 可使用sudo pip install Tkinter尝试安装')
     try:
         from PIL import ImageTk, Image
     except ImportError:

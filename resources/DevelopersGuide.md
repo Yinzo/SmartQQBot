@@ -17,8 +17,16 @@ QQBot提供的二次开发接口主要是针对插件，基础框架的贡献请
 
 ```python
 # coding: utf-8
+from random import randint
+
 from smart_qq_bot.messages import GroupMsg, PrivateMsg
-from smart_qq_bot.signals import on_all_message
+from smart_qq_bot.signals import on_all_message, on_bot_inited
+from smart_qq_bot.logger import logger
+
+
+@on_bot_inited("PluginManager")
+def manager_init(bot):
+    logger.info("Plugin Manager is available now:)")
 
 @on_all_message(name="SamplePlugin")
 def sample_plugin(msg, bot):
@@ -30,10 +38,10 @@ def sample_plugin(msg, bot):
     
     # 发送一条群消息
     if isinstance(msg, GroupMsg):
-        bot.send_qun_msg(msg.from_uin, result, msg_id)
+        bot.send_qun_msg(msg.from_uin, "msg", msg_id)
     # 发送一条私聊消息
     elif isinstance(msg, PrivateMsg):
-        bot.send_buddy_msg(msg.from_uin, result, msg_id)
+        bot.send_buddy_msg(msg.from_uin, "msg", msg_id)
 ```
 
 2. 在plugin.json中，`plugin_on`字段中，填入新插件名字，文件可能是这样

@@ -11,6 +11,7 @@ from smart_qq_bot.app import bot, plugin_manager
 from smart_qq_bot.handler import MessageObserver
 from smart_qq_bot.messages import mk_msg
 from smart_qq_bot.excpetions import ServerResponseEmpty
+from smart_qq_bot.signals import bot_inited_registry
 
 
 def patch():
@@ -36,6 +37,13 @@ def main_loop(no_gui=False, new_user=False, debug=False):
         clean_cookie()
     bot.login(no_gui)
     observer = MessageObserver(bot)
+    for name, func in bot_inited_registry.iteritems():
+        try:
+            func(bot)
+        except Exception:
+            logging.exception(
+                "Error occurs while loading plugin [%s]." % name
+            )
     while True:
         try:
             msg_list = bot.check_msg()

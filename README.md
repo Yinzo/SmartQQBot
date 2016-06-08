@@ -11,7 +11,7 @@ SmartQQBot
 + `PIL` or `Pillow`
 
 ## 快速开始
-+ 安装Python \> 2.6
++ 安装Python \> 2.6, 暂不支持Python 3.x
 + 安装依赖（`pip install Pillow`或者在命令行运行python setup.py develop）
 + 命令行运行 `python run.py`
 + 等待弹出二维码进行扫描登陆, 或手动打开脚本所在目录的v.jpg进行扫描。
@@ -55,6 +55,7 @@ SmartQQBot
 注: 插件名称为你的PythonPackage或者插件文件的名字, 插件默认启用了satoru和manager
 
 ## 已知问题
++ 由于WebQQ协议的限制, 机器人回复消息有可能会被屏蔽, 暂时还没有较好的解决方案。
 + <s>加载多个插件后, 可以接受消息, 但无法正确发送(resolved)</s>
 
 ## RoadMap
@@ -64,7 +65,6 @@ SmartQQBot
 
 ## ChangeLog
 
-+ 16.04.13 : 移植唤出与吐槽功能
 + 16.04.xx : 支持插件的激活和关闭
 
 ## Contributors

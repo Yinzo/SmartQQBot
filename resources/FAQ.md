@@ -7,8 +7,14 @@ FAQ
 python run.py --new-user
 ```
 
-## 我要怎么让它不自动弹出二维码，或者使用在没有GUI的环境？
+## 我要怎么让它不自动弹出二维码, 或者使用在没有GUI的环境？
 
 ```bash
 python run.py --no-gui
+```
+
+## 我要怎么让程序进入DEBUG模式, 显示更详细的服务器响应内容呢?
+
+```bash
+python run.py --debug
 ```

@@ -20,6 +20,7 @@ REPLY_SUFFIX = (
     '||',
 )
 
+
 @on_all_message(name='callout')
 def callout(msg, bot):
     if "智障机器人" in msg.content:
@@ -36,6 +37,7 @@ class Recorder(object):
 
 recorder = Recorder()
 
+
 @on_group_message(name='repeat')
 def repeat(msg, bot):
     global recorder
@@ -47,8 +49,9 @@ def repeat(msg, bot):
             reply(msg.content)
     recorder.msg_list.append(msg)
 
+
 @on_group_message(name='nick_call')
-def test(msg, bot):
-    if "我是谁" in msg.content:
+def nick_call(msg, bot):
+    if "我是谁" == msg.content:
         profile = bot.get_group_member_info(msg.group_code, msg.send_uin)
         bot.reply_msg(msg, "你是{}!".format(profile['nick']))

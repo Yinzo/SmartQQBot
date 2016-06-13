@@ -63,10 +63,11 @@ def tucao(msg, bot):
     global core
     reply = bot.reply_msg(msg, return_function=True)
     group_code = str(msg.group_code)
+    group_id = bot.get_group_info(group_code=group_code).get('id')
 
     match = re.match(r'^(?:!|！)(learn|delete)(?:\s?){(.+)}(?:\s?){(.+)}', msg.content)
     if match:
-        core.load(group_code)
+        core.load(group_id)
 
         logger.info("RUNTIMELOG tucao command detected.")
         command = str(match.group(1)).decode('utf8')
@@ -75,23 +76,23 @@ def tucao(msg, bot):
 
         if command == 'learn':
             if group_code not in core.tucao_dict:
-                core.load(group_code)
+                core.load(group_id)
             if key in core.tucao_dict[group_code] and value not in core.tucao_dict[group_code][key]:
                 core.tucao_dict[group_code][key].append(value)
             else:
                 core.tucao_dict[group_code][key] = [value]
             reply("学习成功！快对我说" + str(key) + "试试吧！")
-            core.save(group_code)
+            core.save(group_id)
             return True
 
         elif command == 'delete':
             if key in core.tucao_dict[group_code] and core.tucao_dict[group_code][key].count(value):
                 core.tucao_dict[group_code][key].remove(value)
                 reply("呜呜呜我再也不说" + str(value) + "了")
-                core.save(group_code)
+                core.save(group_id)
                 return True
     else:
-        core.load(group_code)
+        core.load(group_id)
         for key in core.tucao_dict[group_code].keys():
             if str(key) in msg.content and core.tucao_dict[group_code][key]:
                 logger.info("RUNTIMELOG tucao pattern detected, replying...")
@@ -106,10 +107,11 @@ def current_tucao_list(msg, bot):
     global core
     reply = bot.reply_msg(msg, return_function=True)
     group_code = str(msg.group_code)
+    group_id = bot.get_group_info(group_code=group_code).get('id')
 
     match = re.match(r'^(?:!|！)([^\s\{\}]+)\s*$', msg.content)
     if match:
-        core.load(group_code)
+        core.load(group_id)
 
         command = str(match.group(1))
         logger.info("RUNTIMELOG command format detected, command: " + command)
@@ -128,10 +130,11 @@ def delete_tucao(msg, bot):
     global core
     reply = bot.reply_msg(msg, return_function=True)
     group_code = str(msg.group_code)
+    group_id = bot.get_group_info(group_code=group_code).get('id')
 
     match = re.match(r'^(?:!|！)([^\s\{\}]+)(?:\s?)\{([^\s\{\}]+)\}\s*$', msg.content)
     if match:
-        core.load(group_code)
+        core.load(group_id)
 
         command = str(match.group(1))
         arg1 = str(match.group(2))
@@ -139,6 +142,6 @@ def delete_tucao(msg, bot):
         if command == "删除关键字" and unicode(arg1) in core.tucao_dict[group_code]:
             core.tucao_dict[group_code].pop(unicode(arg1))
             reply("已删除关键字:{0}".format(arg1))
-            core.save(group_code)
+            core.save(group_id)
             return True
     return False

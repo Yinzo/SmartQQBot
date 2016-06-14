@@ -38,10 +38,10 @@ def sample_plugin(msg, bot):
     
     # 发送一条群消息
     if isinstance(msg, GroupMsg):
-        bot.send_qun_msg(msg.from_uin, "msg", msg_id)
+        bot.send_group_msg("msg", msg.from_uin, msg_id)
     # 发送一条私聊消息
     elif isinstance(msg, PrivateMsg):
-        bot.send_buddy_msg(msg.from_uin, "msg", msg_id)
+        bot.send_friend_msg("msg", msg.from_uin, msg_id)
 ```
 
 2. 在plugin.json中，`plugin_on`字段中，填入新插件名字，文件可能是这样

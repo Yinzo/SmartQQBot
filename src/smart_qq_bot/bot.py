@@ -636,6 +636,7 @@ class QQBot(object):
         """
         if group_code or group_id:
             if group_code:
+                assert isinstance(group_code, str), "group_code类型错误, 应该为str"
                 t_group_code = self.get_true_group_code(group_code)
                 if t_group_code not in self.group_code_list:
                     self.get_group_list_with_group_code()
@@ -658,6 +659,7 @@ class QQBot(object):
                         group_name=group_code_info['name']
                     ))
             elif group_id:
+                assert isinstance(group_id, str), "group_id类型错误, 应该为str"
                 if group_id not in self.group_id_list:
                     self.get_group_list_with_group_id()
                 group_id_info = self.group_id_list.get(group_id)
@@ -756,7 +758,7 @@ class QQBot(object):
                 logger.warning("RUNTIMELOG send_qun_msg: Response Error.Wait for 2s and Retrying." + str(fail_times))
                 logger.debug("RESPONSE send_qun_msg rsp:" + str(rsp))
                 time.sleep(2)
-                self.send_group_msg(group_code, reply_content, msg_id, fail_times + 1)
+                self.send_group_msg(reply_content, group_code, msg_id, fail_times + 1)
             else:
                 logger.warning("RUNTIMELOG send_qun_msg: Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
@@ -787,7 +789,7 @@ class QQBot(object):
                 logger.warning("RUNTIMELOG Response Error.Wait for 2s and Retrying." + str(fail_times))
                 logger.debug("RESPONSE " + str(rsp))
                 time.sleep(2)
-                self.send_friend_msg(uin, reply_content, msg_id, fail_times + 1)
+                self.send_friend_msg(reply_content, uin, msg_id, fail_times + 1)
             else:
                 logger.warning("RUNTIMELOG Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
@@ -805,11 +807,11 @@ class QQBot(object):
         if isinstance(msg, GroupMsg):
             if return_function:
                 return functools.partial(self.send_group_msg, group_code=msg.group_code, msg_id=msg_id)
-            return self.send_group_msg(group_code=msg.group_code, reply_content=reply_content, msg_id=msg_id)
+            return self.send_group_msg(reply_content=reply_content, group_code=msg.group_code, msg_id=msg_id)
         if isinstance(msg, PrivateMsg):
             if return_function:
                 return functools.partial(self.send_friend_msg, uin=msg.from_uin, msg_id=msg_id)
-            return self.send_friend_msg(uin=msg.from_uin, reply_content=reply_content, msg_id=msg_id)
+            return self.send_friend_msg(reply_content=reply_content, uin=msg.from_uin, msg_id=msg_id)
         if isinstance(msg, SessMsg):
             # 官方已废弃临时消息接口, 等官方重启后再完善此函数
             pass

@@ -11,7 +11,7 @@ from smart_qq_bot.logger import logger
 from smart_qq_bot.messages import GroupMsg, PrivateMsg
 from smart_qq_bot.signals import on_all_message, on_bot_inited
 
-cmd_hello = re.compile(r"!hello")
+cmd_hello = re.compile(r"KFRobot")
 cmd_list_plugin = re.compile(r"!list_plugin")
 cmd_inactivate = re.compile(r"!inactivate \{(.*?)\}")
 cmd_activate = re.compile(r"!activate \{(.*?)\}")
@@ -34,8 +34,7 @@ def do_inactivate(text):
 
 def do_hello(text):
     if re.match(cmd_hello, text):
-        return "大头沙皮!"
-
+        return "KFRobot here!"
 
 def do_list_plugin(text):
     if re.match(cmd_list_plugin, text):

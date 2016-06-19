@@ -598,10 +598,15 @@ class QQBot(object):
         logger.debug("get_group_list response: {}".format(response))
         rsp_json = json.loads(response)
         if rsp_json['ec'] == 0:
-            group_id_list = rsp_json.get('join')
-            for group in group_id_list:
-                self.group_id_list[str(group['gc'])] = group
-            return group_id_list
+            group_id_list = list()
+            group_id_list.extend(rsp_json.get('join') or [])
+            group_id_list.extend(rsp_json.get('manage') or [])
+            if group_id_list:
+                for group in group_id_list:
+                    self.group_id_list[str(group['gc'])] = group
+                return group_id_list
+            else:
+                logger.debug("seems this account didn't join any group: {}".format(response))
         else:
             logger.warning("get_group_list code unknown: {}".format(response))
             return None

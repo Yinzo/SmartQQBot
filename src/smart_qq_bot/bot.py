@@ -606,7 +606,8 @@ class QQBot(object):
                     self.group_id_list[str(group['gc'])] = group
                 return group_id_list
             else:
-                logger.debug("seems this account didn't join any group: {}".format(response))
+                logger.warning("seems this account didn't join any group: {}".format(response))
+                return []
         else:
             logger.warning("get_group_list code unknown: {}".format(response))
             return None

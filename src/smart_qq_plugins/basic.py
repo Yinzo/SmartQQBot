@@ -34,6 +34,7 @@ def callout(msg, bot):
 class Recorder(object):
     def __init__(self):
         self.msg_list = list()
+        self.last_reply = ""
 
 recorder = Recorder()
 
@@ -43,10 +44,11 @@ def repeat(msg, bot):
     global recorder
     reply = bot.reply_msg(msg, return_function=True)
 
-    if len(recorder.msg_list) > 0 and recorder.msg_list[-1].content == msg.content:
+    if len(recorder.msg_list) > 0 and recorder.msg_list[-1].content == msg.content and recorder.last_reply != msg.content:
         if str(msg.content).strip() not in ("", " ", "[图片]", "[表情]"):
             logger.info("RUNTIMELOG " + str(msg.group_code) + " repeating, trying to reply " + str(msg.content))
             reply(msg.content)
+            recorder.last_reply = msg.content
     recorder.msg_list.append(msg)
 
 

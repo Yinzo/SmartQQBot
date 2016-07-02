@@ -569,6 +569,7 @@ class QQBot(object):
             raise TypeError('get_online_buddies2 result error')
         for group in response['result']['gnamelist']:
             self.group_code_list[str(group['gid'])] = group
+            self.group_code_list[str(group['code'])] = group
 
         return response['result']['gnamelist']
 
@@ -650,15 +651,15 @@ class QQBot(object):
 
                 group_id_list = self.get_group_list_with_group_id()
                 result = {
-                    'name':         group_code_info['name'],
-                    'id':           "",
-                    'group_code':   group_code_info['code']
+                    'name':         group_code_info['name'] or "",
+                    'id':           0,
+                    'group_code':   group_code_info['code'] or 0
                 }
                 group_id_list = filter(lambda x:x['gn'] == group_code_info['name'], group_id_list)
                 if len(group_id_list) == 1:
                     result['id'] = group_id_list[0].get('gc')
                     return result
-                else:
+                elif len(group_id_list) > 1:
                     raise KeyError('QQ{qq}的群列表中含有{count}个同名群:"{group_name}"'.format(
                         qq=self.account,
                         count=len(group_id_list),
@@ -671,8 +672,8 @@ class QQBot(object):
                 group_id_info = self.group_id_list.get(group_id)
                 group_code_list = self.get_group_list_with_group_code()
                 result = {
-                    'name': group_id_info['gn'],
-                    'id': group_id_info['gc'],
+                    'name': group_id_info['gn'] or "",
+                    'id': group_id_info['gc'] or 0,
                     'group_code': 0
                 }
                 group_code_list = filter(lambda x:x['name'] == group_id_info['gn'], group_code_list)

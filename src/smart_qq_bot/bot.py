@@ -699,16 +699,16 @@ class QQBot(object):
         if group_code == 0:
             return
         try:
-            url = "http://s.web2.qq.com/api/get_group_member_info_ext2?gcode=%s&vfwebqq=%s&t=%s" % (
+            url = "http://s.web2.qq.com/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%s" % (
                 group_code, self.vfwebqq, int(time.time() * 100))
             response = self.client.get(url)
             rsp_json = json.loads(response)
-            logger.debug("get_group_member_info_ext2 info response: {}".format(rsp_json))
+            logger.debug("get_group_member_info_list info response: {}".format(rsp_json))
             retcode = rsp_json["retcode"]
             if retcode == 0:
                 result = rsp_json["result"]
             elif retcode == 6:
-                logger.debug("get_group_member_info_ext2 retcode is 6, trying to get true code.")
+                logger.debug("get_group_member_info_list retcode is 6, trying to get true code.")
                 result = self.get_group_member_info_list(self.get_true_group_code(group_code))
             else:
                 logger.warning("group_code error.")
@@ -716,7 +716,7 @@ class QQBot(object):
             self.group_member_info[str(group_code)] = result    # 缓存群成员信息, 此处会把真假group_code都加入cache
             return result
         except Exception as ex:
-            logger.warning("RUNTIMELOG get_group_member_info_ext2. Error: " + str(ex))
+            logger.warning("RUNTIMELOG get_group_member_info_list. Error: " + str(ex))
             return
 
     def get_group_member_info(self, group_code, uin):

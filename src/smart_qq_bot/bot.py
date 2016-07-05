@@ -645,9 +645,9 @@ class QQBot(object):
             if group_code:
                 assert isinstance(group_code, str), "group_code类型错误, 应该为str"
                 t_group_code = self.get_true_group_code(group_code)
-                if t_group_code not in self.group_code_list:
+                if t_group_code not in self.group_code_list and group_code not in self.group_code_list:
                     self.get_group_list_with_group_code()
-                group_code_info = self.group_code_list.get(t_group_code)
+                group_code_info = self.group_code_list.get(t_group_code) or self.group_code_list.get(group_code)
 
                 group_id_list = self.get_group_list_with_group_id()
                 result = {
@@ -725,6 +725,14 @@ class QQBot(object):
         :type group_code:   int, can be "ture" of "fake" group_code
         :type uin:  int
         :return:    dict
+        {
+            u 'province': u '',
+            u 'city': u '',
+            u 'country': u '',
+            u 'uin': 2927049915,
+            u 'nick': u 'Yinzo',
+            u 'gender': u 'male'
+        }
         """
         group_code = str(group_code)
         if group_code not in self.group_member_info:

@@ -28,6 +28,7 @@ SmartQQBot
 + 群消息, 私聊消息, 通知消息接收和发送
 
 ### 基础功能
+注: 插件默认只启用了basic、satoru和manager, 如需其他功能请自行开启
 
 + 唤出功能(callout), 聊天内容中检测关键词`智障机器人`, 若发言中包含该词, 将自动回复`干嘛（‘·д·）`, 此功能一般用于检测机器人状态与调戏
 + 复读功能(repeat), 检测到群聊中***连续两个***回复内容相同, 将自动复读该内容1次。
@@ -52,7 +53,7 @@ SmartQQBot
 2. 复制plugin.json.example为plugin.json
 3. 修改启用的插件列表plugin_on
 
-注: 插件名称为你的PythonPackage或者插件文件的名字, 插件默认启用了satoru和manager
+注: 插件名称为你的PythonPackage或者插件文件的名字
 
 ## 已知问题
 + 由于WebQQ协议的限制, 机器人回复消息有可能会被屏蔽, 暂时还没有较好的解决方案。
@@ -61,11 +62,6 @@ SmartQQBot
 ## RoadMap
 
 + 支持每个插件的单独配置文件
-+ 优化发消息和Bot类（delayed）
-
-## ChangeLog
-
-+ 16.04.xx : 支持插件的激活和关闭
 
 ## Contributors
 + [Yinzo](https://github.com/Yinzo)

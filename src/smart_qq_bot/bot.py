@@ -602,6 +602,7 @@ class QQBot(object):
             group_id_list = list()
             group_id_list.extend(rsp_json.get('join') or [])
             group_id_list.extend(rsp_json.get('manage') or [])
+            group_id_list.extend(rsp_json.get('create') or [])
             if group_id_list:
                 for group in group_id_list:
                     self.group_id_list[str(group['gc'])] = group
@@ -655,7 +656,8 @@ class QQBot(object):
                     'id':           0,
                     'group_code':   group_code_info['code'] or 0
                 }
-                group_id_list = filter(lambda x:x['gn'] == group_code_info['name'], group_id_list)
+                name = group_code_info['name'].replace(' ', '&nbsp;')
+                group_id_list = filter(lambda x:x['gn'] == name, group_id_list)
                 if len(group_id_list) == 1:
                     result['id'] = group_id_list[0].get('gc')
                     return result

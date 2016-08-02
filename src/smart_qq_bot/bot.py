@@ -277,7 +277,7 @@ class QQBot(object):
             ),
             init_url
         )
-        ret_code = int(find_first_result(login_result, r"\d+?", None))
+        ret_code = int(find_first_result(login_result, r"\d+", None))
         redirect_info = re.findall(r"(http.*?)\'", login_result)
         if redirect_info:
             logger.debug("redirect_info match is: %s" % redirect_info)

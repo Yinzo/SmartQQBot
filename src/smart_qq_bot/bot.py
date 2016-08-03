@@ -214,7 +214,7 @@ class QQBot(object):
             True
         )
 
-        star_time = date_to_millis(datetime.datetime.utcnow())
+        start_time = date_to_millis(datetime.datetime.utcnow())
 
         error_times = 0
         ret_code = None
@@ -235,7 +235,7 @@ class QQBot(object):
 
             while True:
                 ret_code, redirect_url = self._get_qr_login_status(
-                    qr_validation_url, appid, star_time, mibao_css, js_ver,
+                    qr_validation_url, appid, start_time, mibao_css, js_ver,
                     sign, init_url
                 )
 
@@ -277,7 +277,7 @@ class QQBot(object):
             ),
             init_url
         )
-        ret_code = int(find_first_result(login_result, r"\d+?", None))
+        ret_code = int(find_first_result(login_result, r"\d+", None))
         redirect_info = re.findall(r"(http.*?)\'", login_result)
         if redirect_info:
             logger.debug("redirect_info match is: %s" % redirect_info)
@@ -517,7 +517,7 @@ class QQBot(object):
         def _hash_digest(uin, ptwebqq):
             """
             计算hash，貌似TX的这个算法会经常变化，暂时不使用
-            get_group_code_list 会依赖此数据
+            get_group_list_with_group_code 会依赖此数据
             提取自http://pub.idqqimg.com/smartqq/js/mq.js
             :param uin:
             :param ptwebqq:

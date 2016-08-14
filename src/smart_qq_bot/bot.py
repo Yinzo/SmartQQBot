@@ -17,6 +17,7 @@ from smart_qq_bot.messages import (
     GroupMsg,
     PrivateMsg,
     SessMsg,
+    DiscussMsg,
 )
 
 QR_CODE_STATUS = {
@@ -90,6 +91,7 @@ class QQBot(object):
         self.group_code_list = {}
         self.group_id_list = {}
         self.group_member_info = {}
+        self.discuss_info = {}
 
         self._group_sig_list = {}
         self._self_info = {}
@@ -748,6 +750,59 @@ class QQBot(object):
             if member['uin'] == uin:
                 return member
 
+    def get_discuss_info(self, did):
+        """
+        获取指定讨论组的成员信息
+        :did: str
+        {u'result': {u'info': {u'did': 2966596468, u'discu_name': u'', u'mem_list': [{u'ruin': 466331599, u'mem_uin': 466331599}, {u'ruin': 493658515, u'mem_uin': 556813270}, {u'ruin': 824566900, u'mem_uin': 2606746705}]}, u'mem_status': [], u'mem_info': [{u'nick': u'\u54a6', u'uin': 466331599}, {u'nick': u'Auro', u'uin': 556813270}, {u'nick': u'-', u'uin': 2606746705}]}, u'retcode': 0}
+        :return:dict
+        """
+        if did == 0:
+            return
+        try:
+            did = str(did)
+            url = "http://d1.web2.qq.com/channel/get_discu_info?did={did}&psessionid={psessionid}&vfwebqq={vfwebqq}&clientid={clientid}&t={t}".format(
+                did=did, psessionid=self.psessionid ,vfwebqq=self.vfwebqq, clientid=self.client_id,
+                t=int(time.time() * 100)
+            )
+            response = self.client.get(url)
+            rsp_json = json.loads(response)
+            logger.debug("get_discuss_info response: {}".format(rsp_json))
+            retcode = rsp_json["retcode"]
+            if retcode == 0:
+                result = rsp_json["result"]
+            else:
+                logger.warning("get_discuss_info error.")
+                return
+            self.discuss_info[str(did)] = result  # 缓存群成员信息, 此处会把真假group_code都加入cache
+            return result
+        except Exception as ex:
+            logger.warning("get_discuss_info error: " + str(ex))
+            return
+
+    def get_discuss_member_info(self, did, uin):
+        """
+        获取讨论组中某一指定成员的信息
+        :type did:   str
+        :type uin:  int
+        :return:    dict
+        {
+            "nick": "Yinzo",
+            "uin": 3642699982
+        }
+        """
+        did = str(did)
+        if did not in self.discuss_info.keys():
+            logger.info("did(discuss_id) not in cache, try to request info")
+            result = self.get_discuss_info(did)
+            if result is False:
+                logger.warning("没有所查询的discuss_id信息")
+                return
+
+        for member in self.discuss_info[did]['mem_info']:
+            if member['uin'] == int(uin):
+                return member
+
     # 发送群消息
     def send_group_msg(self, reply_content, group_code, msg_id, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
@@ -811,6 +866,38 @@ class QQBot(object):
                 logger.warning("RUNTIMELOG Response Error over 5 times.Exit.reply content:" + str(reply_content))
                 return False
 
+    # 发送讨论组消息
+    def send_discuss_msg(self, reply_content, did, msg_id, fail_times=0):
+        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
+        rsp = ""
+        try:
+            logger.info("Starting send discuss group message: %s" % reply_content)
+            req_url = "http://d1.web2.qq.com/channel/send_discu_msg2"
+            data = (
+                ('r',
+                 '{{"did":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":{1},"msg_id":{2},"psessionid":"{3}"}}'.format(
+                         did, self.client_id, msg_id, self.psessionid, fix_content)),
+                ('clientid', self.client_id),
+                ('psessionid', self.psessionid)
+            )
+            rsp = self.client.post(req_url, data, SMART_QQ_REFER)
+            rsp_json = json.loads(rsp)
+            if 'retcode' in rsp_json and rsp_json['retcode'] not in MESSAGE_SENT:
+                raise ValueError("RUNTIMELOG reply discuss group error" + str(rsp_json['retcode']))
+            logger.info("send_discuss_msg: Reply '{}' successfully.".format(reply_content))
+            logger.debug("send_discuss_msg: Reply response: " + str(rsp))
+            return rsp_json
+        except:
+            logger.warning("send_discuss_msg fail")
+            if fail_times < 5:
+                logger.warning("send_discuss_msg: Response Error.Wait for 2s and Retrying." + str(fail_times))
+                logger.debug("send_discuss_msg response:" + str(rsp))
+                time.sleep(2)
+                self.send_group_msg(reply_content, did, msg_id, fail_times + 1)
+            else:
+                logger.warning("RUNTIMELOG send_qun_msg: Response Error over 5 times.Exit.reply content:" + str(reply_content))
+                return False
+
 
     def reply_msg(self, msg, reply_content=None, return_function=False):
         """
@@ -825,10 +912,14 @@ class QQBot(object):
             if return_function:
                 return functools.partial(self.send_group_msg, group_code=msg.group_code, msg_id=msg_id)
             return self.send_group_msg(reply_content=reply_content, group_code=msg.group_code, msg_id=msg_id)
-        if isinstance(msg, PrivateMsg):
+        elif isinstance(msg, PrivateMsg):
             if return_function:
                 return functools.partial(self.send_friend_msg, uin=msg.from_uin, msg_id=msg_id)
             return self.send_friend_msg(reply_content=reply_content, uin=msg.from_uin, msg_id=msg_id)
-        if isinstance(msg, SessMsg):
+        elif isinstance(msg, SessMsg):
             # 官方已废弃临时消息接口, 等官方重启后再完善此函数
             pass
+        elif isinstance(msg, DiscussMsg):
+            if return_function:
+                return functools.partial(self.send_discuss_msg, did=msg.did, msg_id=msg_id)
+            return self.send_discuss_msg(reply_content=reply_content, did=msg.did, msg_id=msg_id)

@@ -5,6 +5,7 @@ GROUP_MSG = "group_message"
 SESS_MSG = "sess_message"
 INPUT_NOTIFY_MSG = "input_notify"
 KICK_MSG = "kick_message"
+DISCUSS_MSG = "discu_message"
 
 # Msg type in message content
 OFF_PIC_PART = "offpic"
@@ -16,7 +17,8 @@ C_FACE_PLACEHOLDER = "[表情]"
 
 class QMessage(object):
 
-    def __init__(self, msg_dict):
+    def __init__(self, msg_dict, bot_instance):
+        self.bot = bot_instance
         self.meta = msg_dict
 
         self.poll_type = msg_dict['poll_type']
@@ -67,8 +69,8 @@ class SessMsg(QMessage):
     临时会话消息
     """
 
-    def __init__(self, msg_dict):
-        super(SessMsg, self).__init__(msg_dict)
+    def __init__(self, msg_dict, bot_instance):
+        super(SessMsg, self).__init__(msg_dict, bot_instance)
         self.service_type = msg_dict['value']['service_type']
         self.id = msg_dict['value']['id']
         self.ruin = msg_dict['value']['ruin']
@@ -76,19 +78,67 @@ class SessMsg(QMessage):
 
 
 class PrivateMsg(QMessage):
-    def __init__(self, msg_dict):
-        super(PrivateMsg, self).__init__(msg_dict)
+    def __init__(self, msg_dict, bot_instance):
+        super(PrivateMsg, self).__init__(msg_dict, bot_instance)
         self.to_uin = msg_dict['value']['to_uin']
         self.from_uin = msg_dict['value']['from_uin']
 
 
 class GroupMsg(QMessage):
 
-    def __init__(self, msg_dict):
-        super(GroupMsg, self).__init__(msg_dict)
+    def __init__(self, msg_dict, bot_instance):
+        super(GroupMsg, self).__init__(msg_dict, bot_instance)
         self.group_code = msg_dict['value']['group_code']
         self.send_uin = msg_dict['value']['send_uin']
         self.from_uin = msg_dict['value']['from_uin']
+
+    @property
+    def src_group_name(self):
+        info = self.bot.get_group_info(str(self.group_code))
+        group_name = info.get('name')
+        return group_name
+
+    @property
+    def src_group_id(self):
+        info = self.bot.get_group_info(str(self.group_code))
+        group_id = info.get('id')
+        return group_id
+
+    @property
+    def src_sender_name(self):
+        info = self.bot.get_group_member_info(str(self.group_code), self.from_uin)
+        name = info.get('nick')
+        return name
+
+    @property
+    def src_sender_id(self):
+        raise NotImplementedError("SmartQQ协议暂不支持查询群消息发送者QQ号")
+
+class DiscussMsg(QMessage):
+    """
+    讨论组消息
+    """
+    def __init__(self, msg_dict, bot_instance):
+        super(DiscussMsg, self).__init__(msg_dict, bot_instance)
+        self.did = msg_dict['value']['did']
+        self.send_uin = msg_dict['value']['send_uin']
+        self.from_uin = msg_dict['value']['from_uin']
+
+    @property
+    def src_discuss_name(self):
+        info = self.bot.get_discuss_info(str(self.did))
+        discuss_name = info.get('info').get('discu_name')
+        return discuss_name or '未命名讨论组'
+
+    @property
+    def src_sender_name(self):
+        info = self.bot.get_discuss_member_info(str(self.did), self.send_uin)
+        name = info.get('nick')
+        return name
+
+    @property
+    def src_sender_id(self):
+        raise NotImplementedError("SmartQQ协议暂不支持查询讨论组消息发送者QQ号")
 
 MSG_TYPE_MAP = {
     GROUP_MSG: GroupMsg,
@@ -96,8 +146,8 @@ MSG_TYPE_MAP = {
     KICK_MSG: QMessage,
     SESS_MSG: SessMsg,
     PRIVATE_MSG: PrivateMsg,
+    DISCUSS_MSG: DiscussMsg,
 }
 
-
-def mk_msg(msg_dict):
-    return MSG_TYPE_MAP[msg_dict['poll_type']](msg_dict)
+def mk_msg(msg_dict, bot_instance):
+    return MSG_TYPE_MAP[msg_dict['poll_type']](msg_dict, bot_instance)

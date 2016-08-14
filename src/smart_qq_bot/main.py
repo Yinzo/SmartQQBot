@@ -49,7 +49,7 @@ def main_loop(no_gui=False, new_user=False, debug=False):
             msg_list = bot.check_msg()
             if msg_list is not None:
                 observer.handle_msg_list(
-                    [mk_msg(msg) for msg in msg_list]
+                    [mk_msg(msg, bot) for msg in msg_list]
                 )
         except ServerResponseEmpty:
             continue

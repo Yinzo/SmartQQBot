@@ -6,6 +6,7 @@ from smart_qq_bot.signals import (
     on_all_message,
     on_group_message,
     on_private_message,
+    on_discuss_message,
 )
 
 # =====唤出插件=====
@@ -52,8 +53,24 @@ def repeat(msg, bot):
     recorder.msg_list.append(msg)
 
 
-@on_group_message(name='nick_call')
-def nick_call(msg, bot):
+@on_group_message(name='three_questions')
+def three_questions(msg, bot):
     if "我是谁" == msg.content:
-        profile = bot.get_group_member_info(msg.group_code, msg.send_uin)
-        bot.reply_msg(msg, "你是{}!".format(profile['nick']))
+        bot.reply_msg(msg, "你是{}!".format(msg.src_sender_name))
+
+    elif "我在哪" == msg.content:
+        bot.reply_msg(msg, "你在{name}({id})!".format(name=msg.src_group_name, id=msg.src_group_id))
+
+    elif msg.content in ("我在干什么", "我在做什么"):
+        bot.reply_msg(msg, "你在调戏我!!")
+
+@on_discuss_message(name='discuss_three_questions')
+def discuss_three_questions(msg, bot):
+    if "我是谁" == msg.content:
+        bot.reply_msg(msg, "你是{}!".format(msg.src_sender_name))
+
+    elif "我在哪" == msg.content:
+        bot.reply_msg(msg, "你在{name}!".format(name=msg.src_discuss_name))
+
+    elif msg.content in ("我在干什么", "我在做什么"):
+        bot.reply_msg(msg, "你在调戏我!!")

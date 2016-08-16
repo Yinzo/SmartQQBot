@@ -88,7 +88,9 @@ class QQBot(object):
 
         # cache
         self.friend_uin_list = {}
+        self._get_group_list = {}
         self.group_code_list = {}
+        self._group_code_match = {}
         self.group_id_list = {}
         self.group_member_info = {}
         self.discuss_info = {}
@@ -595,10 +597,14 @@ class QQBot(object):
             }
         ]
         """
-        url = "http://qun.qq.com/cgi-bin/qun_mgr/get_group_list"
-        data = {'bkn': self.bkn}
-        response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
-        logger.debug("get_group_list response: {}".format(response))
+        if self._get_group_list:
+            response = self._get_group_list
+        else:
+            url = "http://qun.qq.com/cgi-bin/qun_mgr/get_group_list"
+            data = {'bkn': self.bkn}
+            response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
+            self._get_group_list = response
+            logger.debug("get_group_list response: {}".format(response))
         rsp_json = json.loads(response)
         if rsp_json['ec'] == 0:
             group_id_list = list()
@@ -622,15 +628,20 @@ class QQBot(object):
         :type fake_group_code: str
         :return str
         """
-        fake_group_code = str(fake_group_code)
-        logger.debug("正在查询group_code:{}对应的真实group_code".format(fake_group_code))
-        if fake_group_code not in self.group_code_list:
-            logger.info("尝试更新群列表信息")
-            self.get_group_list_with_group_code()  # 先尝试更新群列表
+        if self._group_code_match.get(str(fake_group_code)):
+            return self._group_code_match.get(str(fake_group_code))
+        else:
+            fake_group_code = str(fake_group_code)
+            logger.debug("正在查询group_code:{}对应的真实group_code".format(fake_group_code))
             if fake_group_code not in self.group_code_list:
-                logger.warning("没有所查询的group_code, 请检查group_code是否错误")
-                return 0
-        return str(self.group_code_list[fake_group_code]['code'])
+                logger.info("尝试更新群列表信息")
+                self.get_group_list_with_group_code()  # 先尝试更新群列表
+                if fake_group_code not in self.group_code_list:
+                    logger.warning("没有所查询的group_code, 请检查group_code是否错误")
+                    return 0
+            true_group_code = str(self.group_code_list[fake_group_code]['code'])
+            self._group_code_match[str(fake_group_code)] = true_group_code
+            return true_group_code
 
     def get_group_info(self, group_code=None, group_id=None):
         """
@@ -734,8 +745,9 @@ class QQBot(object):
             u 'city': u '',
             u 'country': u '',
             u 'uin': 2927049915,
-            u 'nick': u 'Yinzo',
-            u 'gender': u 'male'
+            u 'nick': u 'Auro',
+            u 'gender': u 'male',
+            u 'card': u 'Yinzo'
         }
         """
         group_code = str(group_code)
@@ -746,9 +758,62 @@ class QQBot(object):
                 logger.warning("没有所查询的group_code信息")
                 return
 
+        result_dict = {}
         for member in self.group_member_info[group_code]['minfo']:
             if member['uin'] == uin:
-                return member
+                result_dict = member
+                break
+
+        for card_dict in self.group_member_info[group_code]['cards']:
+            if card_dict['muin'] == uin:
+                result_dict[u'card'] = card_dict['card']
+                break
+
+        return result_dict
+
+
+    def search_group_members(self, group_id):
+        """
+        获取群成员详细信息的的列表, uin为真实QQ号, 并存入cache
+        :type group_id: str
+        :return:list
+
+        return list sample
+        [
+            {
+              "card": "群名片",
+              "flag": 0,
+              "g": 255,
+              "join_time": 1385383309,
+              "last_speak_time": 1471325570,
+              "lv": {
+                "level": 6,
+                "point": 5490
+              },
+              "nick": "昵称",
+              "qage": 0,
+              "role": 0,
+              "tags": "-1",
+              "uin": 493658555
+            }
+        ]
+        """
+        url = "http://qun.qq.com/cgi-bin/qun_mgr/search_group_members"
+        data = {
+            'bkn':  self.bkn,
+            'gc':   str(group_id),
+            'st':   0,
+            'end':  2000,
+            'sort': 0,
+        }
+        response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
+        logger.debug("search_group_members response: {}".format(response))
+        rsp_json = json.loads(response)
+        if rsp_json['ec'] == 0:
+            return rsp_json.get('mems')
+        else:
+            logger.warning("search_group_members code unknown: {}".format(response))
+            return None
 
     def get_discuss_info(self, did):
         """
@@ -762,7 +827,7 @@ class QQBot(object):
         try:
             did = str(did)
             url = "http://d1.web2.qq.com/channel/get_discu_info?did={did}&psessionid={psessionid}&vfwebqq={vfwebqq}&clientid={clientid}&t={t}".format(
-                did=did, psessionid=self.psessionid ,vfwebqq=self.vfwebqq, clientid=self.client_id,
+                did=did, psessionid=self.psessionid, vfwebqq=self.vfwebqq, clientid=self.client_id,
                 t=int(time.time() * 100)
             )
             response = self.client.get(url)

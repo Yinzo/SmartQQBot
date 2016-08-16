@@ -53,10 +53,10 @@ def repeat(msg, bot):
     recorder.msg_list.append(msg)
 
 
-@on_group_message(name='three_questions')
-def three_questions(msg, bot):
+@on_group_message(name='nick_call')
+def nick_call(msg, bot):
     if "我是谁" == msg.content:
-        bot.reply_msg(msg, "你是{}!".format(msg.src_sender_name))
+        bot.reply_msg(msg, "你是{}({})!".format(msg.src_sender_card or msg.src_sender_name, msg.src_sender_id))
 
     elif "我在哪" == msg.content:
         bot.reply_msg(msg, "你在{name}({id})!".format(name=msg.src_group_name, id=msg.src_group_id))

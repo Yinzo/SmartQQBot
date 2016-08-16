@@ -105,14 +105,45 @@ class GroupMsg(QMessage):
         return group_id
 
     @property
+    def src_sender_card(self):
+        """
+        获取发送者群名片
+        """
+        info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
+        card = info.get('card')
+        return card
+
+    @property
     def src_sender_name(self):
-        info = self.bot.get_group_member_info(str(self.group_code), self.from_uin)
+        """
+        获取发送者昵称
+        """
+        info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
         name = info.get('nick')
         return name
 
     @property
     def src_sender_id(self):
-        raise NotImplementedError("SmartQQ协议暂不支持查询群消息发送者QQ号")
+        """
+        获取发送者真实QQ号
+        """
+        result_list = []
+        member_list = self.bot.search_group_members(self.src_group_id)
+        target_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
+        for info in member_list:
+            if info.get('nick') == target_info.get('nick'):
+                if info.get('card') and target_info.get('card'):
+                    if info.get('card') == target_info.get('card'):
+                        result_list.append(str(info.get('uin')))
+                    else:
+                        break
+                else:
+                    result_list.append(str(info.get('uin')))
+        if len(result_list) > 1:
+            raise IndexError('群内含有同名账号,获取真实QQ号失败')
+        if len(result_list) == 0:
+            return ""
+        return result_list[0]
 
 class DiscussMsg(QMessage):
     """

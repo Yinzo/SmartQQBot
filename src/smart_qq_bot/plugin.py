@@ -45,14 +45,19 @@ class PluginManager(object):
                     config = json.load(f)
             else:
                 raise ConfigFileDoesNotExist(
-                    "Config file [] does not exist." % config_file
+                    "Config file {} does not exist.".format(config_file)
                 )
-        else:
+        elif os.path.isfile(DEFAULT_PLUGIN_CONFIG + ".example"):
             if not os.path.isfile(DEFAULT_PLUGIN_CONFIG):
                 shutil.copy(DEFAULT_PLUGIN_CONFIG + ".example", DEFAULT_PLUGIN_CONFIG)
                 logger.warning("No plugin config file found. Auto copied.")
             with open(DEFAULT_PLUGIN_CONFIG, "r") as f:
                 config = json.load(f)
+        else:
+            # 缺少配置文件以及example文件
+            exception_str = "Config file does not exist, please check the config path."
+            logger.exception(exception_str)
+            raise ConfigFileDoesNotExist(exception_str)
 
         if config is not None:
             for key in ("plugin_package", PLUGIN_ON):

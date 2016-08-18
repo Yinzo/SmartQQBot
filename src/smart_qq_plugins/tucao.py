@@ -2,7 +2,8 @@
 import re
 import os
 import random
-import cPickle
+from six.moves import cPickle
+import six
 
 from smart_qq_bot.logger import logger
 from smart_qq_bot.signals import (
@@ -37,7 +38,7 @@ class TucaoCore(object):
         :type group_id: int, 用于读取指定群的吐槽存档
         """
         global TUCAO_PATH
-        if str(group_id) in self.tucao_dict.keys():
+        if str(group_id) in set(self.tucao_dict.keys()):
             return
 
         tucao_file_path = TUCAO_PATH + str(group_id) + ".tucao"
@@ -93,12 +94,13 @@ def tucao(msg, bot):
                 return True
     else:
         core.load(group_id)
-        for key in core.tucao_dict[group_id].keys():
+        for key in list(core.tucao_dict[group_id].keys()):
             if str(key) in msg.content and core.tucao_dict[group_id][key]:
                 logger.info("RUNTIMELOG tucao pattern detected, replying...")
                 reply(random.choice(core.tucao_dict[group_id][key]))
                 return True
     return False
+
 
 @on_group_message(name='current_tucao')
 def current_tucao_list(msg, bot):
@@ -118,12 +120,13 @@ def current_tucao_list(msg, bot):
 
         if command == "吐槽列表":
             result = ""
-            for key in core.tucao_dict[group_id].keys():
+            for key in list(core.tucao_dict[group_id].keys()):
                 result += "关键字：{0}\t\t回复：{1}\n".format(key, " / ".join(core.tucao_dict[group_id][key]))
             result = result[:-1]
             logger.info("RUNTIMELOG Replying the list of tucao for group {}".format(group_id))
             reply(result)
     return
+
 
 @on_group_message(name='delete_tucao')
 def delete_tucao(msg, bot):
@@ -139,8 +142,10 @@ def delete_tucao(msg, bot):
         command = str(match.group(1))
         arg1 = str(match.group(2))
         logger.info("RUNTIMELOG command format detected, command:{0}, arg1:{1}".format(command, arg1))
-        if command == "删除关键字" and unicode(arg1) in core.tucao_dict[group_id]:
-            core.tucao_dict[group_id].pop(unicode(arg1))
+        if command == "删除关键字" and six.text_type(arg1) in core.tucao_dict[group_id]:
+            core.tucao_dict[group_id].pop(
+                six.text_type(arg1)
+            )
             reply("已删除关键字:{0}".format(arg1))
             core.save(group_id)
             return True

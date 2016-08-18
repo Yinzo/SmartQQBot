@@ -1,4 +1,4 @@
-import cookielib
+from six.moves import http_cookiejar as cookielib
 import time
 import os
 

@@ -44,7 +44,7 @@ class QRLoginFailed(UserWarning):
 def show_qr(path):
     import platform
     try:
-        from Tkinter import Tk, Label
+        from six.moves.tkinter import Tk, Label
     except ImportError:
         raise SystemError('缺少Tkinter模块, 可使用sudo pip install Tkinter尝试安装')
     try:
@@ -672,7 +672,7 @@ class QQBot(object):
                     'group_code':   group_code_info['code'] or 0
                 }
                 name = group_code_info['name'].replace(' ', '&nbsp;')
-                group_id_list = filter(lambda x:x['gn'] == name, group_id_list)
+                group_id_list = [x for x in group_id_list if x['gn'] == name]
                 if len(group_id_list) == 1:
                     result['id'] = group_id_list[0].get('gc')
                     return result
@@ -693,7 +693,10 @@ class QQBot(object):
                     'id': group_id_info['gc'] or 0,
                     'group_code': 0
                 }
-                group_code_list = filter(lambda x:x['name'] == group_id_info['gn'], group_code_list)
+                group_code_list = [
+                    x for x in group_code_list
+                    if x['name'] == group_id_info['gn']
+                ]
                 if len(group_code_list) == 1:
                     result['group_code'] = group_code_list[0].get('code')
                     return result
@@ -768,7 +771,7 @@ class QQBot(object):
 
         for card_dict in self.group_member_info[group_code]['cards']:
             if card_dict['muin'] == uin:
-                result_dict[u'card'] = card_dict['card']
+                result_dict['card'] = card_dict['card']
                 break
 
         return result_dict
@@ -821,8 +824,8 @@ class QQBot(object):
         """
         获取指定讨论组的成员信息
         :did: str
-        {u'result': {u'info': {u'did': 2966596468, u'discu_name': u'', u'mem_list': [{u'ruin': 466331599, u'mem_uin': 466331599}, {u'ruin': 493658515, u'mem_uin': 556813270}, {u'ruin': 824566900, u'mem_uin': 2606746705}]}, u'mem_status': [], u'mem_info': [{u'nick': u'\u54a6', u'uin': 466331599}, {u'nick': u'Auro', u'uin': 556813270}, {u'nick': u'-', u'uin': 2606746705}]}, u'retcode': 0}
-        :return:dict
+        {u'result': {u'info': {u'did': 2966596468, u'discu_name': u'', u'mem_list': [{u'ruin': 466331599, u'mem_uin': 466331599}, {u'ruin': 493658515, u'mem_uin': 556813270}, {u'ruin': 824566900, u'mem_uin': 2606746705}]}, u'mem_status': [], u'mem_info': [{u'nick': u'\\u54a6', u'uin': 466331599}, {u'nick': u'Auro', u'uin': 556813270}, {u'nick': u'-', u'uin': 2606746705}]}, u'retcode': 0}
+        :rtype: dict
         """
         if did == 0:
             return
@@ -859,7 +862,7 @@ class QQBot(object):
         }
         """
         did = str(did)
-        if did not in self.discuss_info.keys():
+        if did not in set(self.discuss_info.keys()):
             logger.info("did(discuss_id) not in cache, try to request info")
             result = self.get_discuss_info(did)
             if result is False:

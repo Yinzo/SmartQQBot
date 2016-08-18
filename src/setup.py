@@ -5,6 +5,7 @@ from setuptools import setup, find_packages
 
 install_requires = (
     "Pillow",
+    "six>=1.0.0",
     "requests>=2.0.0"
 )
 

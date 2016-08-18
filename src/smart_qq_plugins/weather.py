@@ -1,7 +1,14 @@
 # coding:utf-8
-import urllib2
+
 import json
 import re
+
+import six
+from six.moves.urllib import (
+    request,
+    error,
+    parse,
+)
 
 from smart_qq_bot.logger import logger
 from smart_qq_bot.signals import on_all_message
@@ -11,24 +18,28 @@ from smart_qq_bot.signals import on_all_message
 
 KEY = '31662bc776555612e3639dbca1ad1fd5'
 
+
 @on_all_message(name='weather')
 def weather(msg, bot):
     global query
 
-    match = re.match(ur'^(weather|天气) (\w+|[\u4e00-\u9fa5]+)', msg.content)
+    match = re.match(
+        six.text_type('^(weather|天气) (.*)'),
+        msg.content
+    )
     if match:
         logger.info("RUNTIMELOG 查询天气...")
         command = match.group(1)
         city = match.group(2)
         logger.info("RUNTIMELOG 查询天气语句: " + msg.content)
-        if command == 'weather' or command == u'天气':
+        if command == 'weather' or command == six.text_type('天气'):
             try:
-                city_name = urllib2.quote(city.encode('utf-8'))
+                city_name = parse.quote(city.encode('utf-8'))
                 url_str = "http://api.map.baidu.com/telematics/v3/weather?location={city}&ak={key}&output=json".format(
                     city=city_name,
                     key=KEY
                 )
-                response = urllib2.urlopen(url_str)
+                response = request.urlopen(url_str)
                 data_html = response.read()
                 logger.debug("RESPONSE " + data_html)
                 json_result = json.loads(data_html)['results'][0]
@@ -47,7 +58,7 @@ def weather(msg, bot):
                     str_data += data['temperature']
                     str_data += '\n'
             except:
-                str_data = "Not found city"
+                str_data = "City not found :("
 
             bot.reply_msg(msg, str_data)
             return True

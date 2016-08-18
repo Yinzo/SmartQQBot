@@ -1,15 +1,20 @@
 import cookielib
-import urllib
-import urllib2
 import time
 import os
-from httplib import BadStatusLine
+
+import requests
+from requests import exceptions as excps
+
 
 from smart_qq_bot.config import (
     SMART_QQ_REFER,
     COOKIE_FILE,
 )
-from smart_qq_bot.excpetions import ServerResponseEmpty
+from smart_qq_bot.logger import logger
+
+
+def _get_cookiejar(cookie_file):
+    return cookielib.LWPCookieJar(cookie_file)
 
 
 class HttpClient(object):
@@ -19,30 +24,35 @@ class HttpClient(object):
     def __init__(self, load_cookie=False, cookie_file=COOKIE_FILE):
         if not os.path.isdir("./cookie"):
             os.mkdir("./cookie")
-        self._cookie = self.get_cookiejar(cookie_file)
-        self._opener = self.get_opener()
+        self._cookie_file = cookie_file
+        self._cookies = _get_cookiejar(cookie_file)
         if load_cookie:
             self.load_cookie()
+        self.session = requests.session()
+        self.session.cookies = self._cookies
 
-    def get_cookiejar(self, cookie_file):
-        return cookielib.LWPCookieJar(cookie_file)
-
-    def get_opener(self):
-        _req = urllib2.build_opener(urllib2.HTTPCookieProcessor(self._cookie))
-        _req.addheaders = [
-            ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'),
-            ('User-Agent',
-             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) "
-             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36"),
-            ('Referer', 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1')
-        ]
-        return _req
+    @staticmethod
+    def _get_headers(headers):
+        """
+        :type headers: dict
+        :rtype: dict
+        """
+        _headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'User-Agent': "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36",
+            'Referer': 'http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1',
+        }
+        _headers.update(headers)
+        return _headers
 
     def load_cookie(self):
         try:
-            self._cookie.load(ignore_discard=True, ignore_expires=True)
-        except Exception:
-            self._cookie.save(ignore_discard=True, ignore_expires=True)
+            self._cookies.load(ignore_discard=True, ignore_expires=True)
+        except :
+            logger.warn("Failed to load cookie file {0}".format(self._cookie_file))
+        finally:
+            self._cookies.save(ignore_discard=True, ignore_expires=True)
 
     @staticmethod
     def get_timestamp():
@@ -50,45 +60,44 @@ class HttpClient(object):
 
     def get(self, url, refer=None):
         try:
-            req = urllib2.Request(url)
-            req.add_header('Referer', refer or SMART_QQ_REFER)
-            tmp_req = self._opener.open(req)
-            self._cookie.save(COOKIE_FILE, ignore_discard=True,ignore_expires=True)
-            return tmp_req.read()
-        except urllib2.HTTPError, e:
-            return e.read()
+            resp = self.session.get(
+                url,
+                headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
+            )
+        except (excps.ConnectTimeout, excps.HTTPError):
+            error_msg = "Failed to send finish request to `{0}`".format(
+                url
+            )
+            logger.exception(error_msg)
+            return error_msg
+        else:
+            self._cookies.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
+            return resp.text
 
     def post(self, url, data, refer=None):
         try:
-            req = urllib2.Request(url, urllib.urlencode(data))
-            req.add_header('Referer', refer or SMART_QQ_REFER)
-            try:
-                tmp_req = self._opener.open(req, timeout=180)
-            except BadStatusLine:
-                raise ServerResponseEmpty("Server response error, check the network connections: %s" % url)
-            self._cookie.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
-            return tmp_req.read()
-        except urllib2.HTTPError, e:
-            return e.read()
+            resp = self.session.post(
+                url,
+                data,
+                headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
+            )
+        except Exception:
+            error_msg = "Failed to send request to `{0}`".format(
+                url
+            )
+            logger.exception(error_msg)
+            return error_msg
+        else:
+            self._cookies.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
+            return resp.text
 
     def get_cookie(self, key):
-        for c in self._cookie:
+        for c in self._cookies:
             if c.name == key:
                 return c.value
         return ''
 
-    def set_cookie(self, key, val, domain):
-        ck = cookielib.Cookie(
-            version=0, name=key, value=val, port=None, port_specified=False, domain=domain,
-            domain_specified=False, domain_initial_dot=False, path='/', path_specified=True,
-            secure=False, expires=None, discard=True, comment=None, comment_url=None,
-            rest={'HttpOnly': None}, rfc2109=False
-        )
-        self._cookie.set_cookie(ck)
-        self._cookie.save(ignore_discard=True, ignore_expires=True)
-
-    # @staticmethod
-    def download(self, url, file):
-        output = open(file, 'wb')
-        output.write(self._opener.open(url).read())
-        output.close()
+    def download(self, url, fname):
+        with open(fname, "wb") as o_file:
+            resp = self.session.get(url, stream=True)
+            o_file.write(resp.raw.read())

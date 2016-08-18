@@ -148,26 +148,28 @@ class QQBot(object):
             },
             SMART_QQ_REFER
         )
+
         try:
             ret = json.loads(response)
         except ValueError:
-            logger.warning("Cookies login fail, response decode error.")
-            return
+            return logger.exception(
+                "Cookies login fail, response decode error:{0}".format(response)
+            )
         if ret['retcode'] != 0:
             raise CookieLoginFailed("Login step 1 failed with response:\n %s " % ret)
 
         response2 = self.client.get(
-                "http://s.web2.qq.com/api/getvfwebqq?ptwebqq={0}&clientid={1}&psessionid={2}&t={3}".format(
-                        self.ptwebqq,
-                        self.client_id,
-                        self.psessionid,
-                        self.client.get_timestamp()
-                ))
+            "http://s.web2.qq.com/api/getvfwebqq?ptwebqq={0}&clientid={1}&psessionid={2}&t={3}".format(
+                self.ptwebqq,
+                self.client_id,
+                self.psessionid,
+                self.client.get_timestamp()
+            )
+        )
         ret2 = json.loads(response2)
-
         if ret2['retcode'] != 0:
             raise CookieLoginFailed(
-                "Login step 2 failed with response:\n %s " % ret
+                "Login step 2 failed with response:\n %s " % ret2
             )
 
         self.psessionid = ret['result']['psessionid']
@@ -292,7 +294,7 @@ class QQBot(object):
         try:
             self._login_by_cookie()
         except CookieLoginFailed:
-            logger.info("Cookie login failed.")
+            logger.exception(CookieLoginFailed)
             while True:
                 if self._login_by_qrcode(no_gui):
                     if self._login_by_cookie():

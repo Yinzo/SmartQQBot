@@ -4,7 +4,8 @@ from setuptools import setup, find_packages
 
 
 install_requires = (
-    "Pillow"
+    "Pillow",
+    "requests>=2.0.0"
 )
 
 here = os.path.abspath(os.path.dirname(__file__))

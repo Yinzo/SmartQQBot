@@ -1,7 +1,10 @@
 # coding: utf-8
 from collections import defaultdict, namedtuple
-from Queue import Queue
 from threading import Thread
+
+from six import iteritems
+from six.moves.queue import Queue
+from six.moves import range
 
 from smart_qq_bot.bot import QQBot
 from smart_qq_bot.logger import logger
@@ -25,7 +28,7 @@ _active = set()
 
 RAW_TYPE = "raw_message"
 
-MSG_TYPES = MSG_TYPE_MAP.keys()
+MSG_TYPES = list(MSG_TYPE_MAP.keys())
 MSG_TYPES.append(RAW_TYPE)
 
 
@@ -55,7 +58,7 @@ def register(func, msg_type=None, dispatcher_name=None, active_by_default=True):
 
 def list_handlers():
     handler_list = []
-    for _, handlers in _registry.iteritems():
+    for _, handlers in iteritems(_registry):
         handler_list.extend(
             [handler.name for handler in handlers]
         )
@@ -97,13 +100,17 @@ class Worker(Thread):
     def __init__(
             self, queue, group=None,
             target=None, name=None, args=(),
-            kwargs=None, verbose=None,
+            kwargs=None,
     ):
         """
         :type queue: Queue
         """
         super(Worker, self).__init__(
-            group, target, name, args, kwargs, verbose
+            group=group,
+            target=target,
+            name=name,
+            args=args,
+            kwargs=kwargs,
         )
         self.queue = queue
         self._stopped = False
@@ -142,7 +149,7 @@ class MessageObserver(object):
             )
         self.bot = bot
         self.handler_queue = Queue()
-        self.workers = [Worker(self.handler_queue) for i in xrange(workers)]
+        self.workers = [Worker(self.handler_queue) for i in range(workers)]
         for worker in self.workers:
             worker.setDaemon(True)
             worker.start()

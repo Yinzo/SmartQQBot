@@ -1,4 +1,6 @@
 # coding: utf-8
+import six
+
 
 PRIVATE_MSG = "message"
 GROUP_MSG = "group_message"
@@ -40,7 +42,7 @@ class QMessage(object):
     def content(self):
         text = ""
         for msg_part in self._content:
-            if isinstance(msg_part, (str, unicode)):
+            if isinstance(msg_part, six.string_types):
                 text += msg_part
             elif len(msg_part) > 1:
                 if str(msg_part[0]) == OFF_PIC_PART:
@@ -57,11 +59,11 @@ class QMessage(object):
     def __str__(self):
         return "<class {cls}: {content}>".format(
             cls=self.__class__.__name__,
-            content=self.poll_type + " " + str(self._content)
+            content=self.poll_type + " " + six.text_type(self._content)
         )
 
     def __unicode__(self):
-        return unicode(self.__str__())
+        return six.text_type(self.__str__())
 
 
 class SessMsg(QMessage):

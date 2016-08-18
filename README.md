@@ -9,9 +9,10 @@ SmartQQBot
 
 ## 依赖
 + `PIL` or `Pillow`
++ `six` and `requests`
 
 ## 快速开始
-+ 安装Python \> 2.6, 暂不支持Python 3.x
++ 安装Python \> 2.6 / Python \>= 3(tested on 3.4)
 + 安装依赖（`pip install Pillow`或者在命令行运行python setup.py develop）
 + 命令行运行 `python run.py`
 + 等待弹出二维码进行扫描登陆, 或手动打开脚本所在目录的v.jpg进行扫描。
@@ -58,6 +59,10 @@ SmartQQBot
 ## 已知问题
 + 由于WebQQ协议的限制, 机器人回复消息有可能会被屏蔽, 暂时还没有较好的解决方案。
 + <s>加载多个插件后, 可以接受消息, 但无法正确发送(resolved)</s>
++ 天气插件在Python3暂时无法正确运行，会提示“City not found”
+
+## ChangeLog
++ 2016.8.18 支持Python3
 
 ## RoadMap
 

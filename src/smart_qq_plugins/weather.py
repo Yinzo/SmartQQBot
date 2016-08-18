@@ -41,8 +41,8 @@ def weather(msg, bot):
                 )
                 response = request.urlopen(url_str)
                 data_html = response.read()
-                logger.debug("RESPONSE " + data_html)
-                json_result = json.loads(data_html)['results'][0]
+                logger.debug("RESPONSE {}".format(data_html))
+                json_result = json.loads(data_html.decode('utf-8'))['results'][0]
 
                 str_data = ""
                 str_data += json_result['currentCity'] + " PM:" + json_result['pm25'] + "\n"
@@ -57,7 +57,8 @@ def weather(msg, bot):
                     str_data += data['wind'] + " "
                     str_data += data['temperature']
                     str_data += '\n'
-            except:
+            except Exception as ex:
+                logger.debug(ex)
                 str_data = "City not found :("
 
             bot.reply_msg(msg, str_data)

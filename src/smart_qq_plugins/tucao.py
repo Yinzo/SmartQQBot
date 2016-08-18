@@ -47,7 +47,7 @@ class TucaoCore(object):
         if not os.path.exists(tucao_file_path):
             with open(tucao_file_path, "w") as tmp:
                 tmp.close()
-        with open(tucao_file_path, "r") as tucao_file:
+        with open(tucao_file_path, "rb") as tucao_file:
             try:
                 self.tucao_dict[str(group_id)] = cPickle.load(tucao_file)
                 logger.info("RUNTIMELOG tucao loaded. Now tucao list:  {0}".format(str(self.tucao_dict)))

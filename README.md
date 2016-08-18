@@ -13,11 +13,11 @@ SmartQQBot
 
 ## 快速开始
 + 安装Python \> 2.6 / Python \>= 3(tested on 3.4)
-+ 安装依赖（`pip install Pillow`或者在命令行运行python setup.py develop）
++ 手动安装依赖`pip install Pillow six requests` 或者在命令行运行`python setup.py develop`
 + 命令行运行 `python run.py`
 + 等待弹出二维码进行扫描登陆, 或手动打开脚本所在目录的v.jpg进行扫描。
-+ 控制台不在输出登录确认的log的时候就登录成功了
-+ 首次登陆过后, 以后的登陆会尝试使用保存的cookie进行自动登录（失败后会一直loop）
++ 控制台不再输出登录确认的log的时候就登录成功了
++ 首次登陆过后, 以后的登陆会尝试使用保存的cookie进行自动登录（失败后会自动弹出二维码进行二维码登陆）
 + 配置插件之后, 才能使用QQBot的调教功能（参见下方插件配置）
 
 **若使用上有疑惑, 欢迎加群473413233讨论**
@@ -26,7 +26,9 @@ SmartQQBot
 
 + 二维码登录
 + 插件支持, 支持原生Python Package, 支持插件热 启用/关闭
-+ 群消息, 私聊消息, 通知消息接收和发送
++ 群消息, 讨论组消息, 私聊消息, 通知消息接收和发送
++ 支持获取群号群名、群成员名称、真实QQ号等信息
++ 同时支持Python2/3
 
 ### 基础功能
 注: 插件默认只启用了basic、satoru和manager, 如需其他功能请自行开启
@@ -50,16 +52,16 @@ SmartQQBot
 ## 插件配置
 ### 如何载入插件
 
-1. 将插件放置到smart\_qq\_plugins目录下
-2. 复制plugin.json.example为plugin.json
-3. 修改启用的插件列表plugin_on
+1. 确认插件文件已放在src\\smart\_qq\_plugins目录中
+2. 如果src\\config\\目录中没有plugin.json, 手动复制plugin.json.example并改名为plugin.json
+3. 打开plugin.json, 修改其中启用的插件列表plugin_on, 将需要启动的插件名称追加到列表中
 
 注: 插件名称为你的PythonPackage或者插件文件的名字
 
 ## 已知问题
 + 由于WebQQ协议的限制, 机器人回复消息有可能会被屏蔽, 暂时还没有较好的解决方案。
 + <s>加载多个插件后, 可以接受消息, 但无法正确发送(resolved)</s>
-+ 天气插件在Python3暂时无法正确运行，会提示“City not found”
++ <s>天气插件在Python3暂时无法正确运行，会提示“City not found”</s>
 
 ## ChangeLog
 + 2016.8.18 支持Python3

@@ -29,12 +29,25 @@ def clean_cookie():
     logger.info("Cookie file removed.")
 
 
-def main_loop(no_gui=False, new_user=False, debug=False):
+def run_http_daemon(host="0.0.0.0", port=8888):
+    from threading import Thread
+    from smart_qq_bot.httpserver import run_server
+    daemon = Thread(
+        target=run_server,
+        kwargs={"host": host, "port": port}
+    )
+    daemon.setDaemon(True)
+    daemon.start()
+
+
+def main_loop(no_gui=False, new_user=False, debug=False, http=False):
     patch()
     if debug:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
+    if http:
+        run_http_daemon()
     logger.info("Initializing...")
     plugin_manager.load_plugin()
     if new_user:
@@ -70,6 +83,12 @@ def run():
         action="store_true",
         default=False,
         help="Whether display QRCode with tk and PIL."
+    )
+    parser.add_argument(
+        "--http",
+        action="store_true",
+        default=False,
+        help="Whether launch a bottle server to serve qrcode."
     )
     parser.add_argument(
         "--new-user",

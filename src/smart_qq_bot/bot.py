@@ -106,6 +106,11 @@ class QQBot(object):
         self.qrcode_path = QR_CODE_PATH
         self.username = ''
         self.account = 0
+        self._last_pool_success = None
+
+    @property
+    def login_out_dated(self):
+        return not self._last_pool_success
 
     @property
     def bkn(self):
@@ -309,6 +314,7 @@ class QQBot(object):
             logger.info(
                 "User information got: user name is [%s]" % self.username
             )
+            self._last_pool_success = True
         except KeyError:
             logger.exception(
                 "User info access failed, check your login and response:\n%s"
@@ -346,24 +352,26 @@ class QQBot(object):
 
         ret_code = ret['retcode']
 
-        if ret_code in (103, ):
-            logger.warning(
-                "Pooling received retcode: " + str(ret_code) + ": Check error. 请前往http://w.qq.com/ 手动登陆SmartQQ一次."
-            )
-        elif ret_code in (121,):
-            logger.warning("Pooling error with retcode %s" % ret_code)
-        elif ret_code == 0:
-            if 'result' not in ret or len(ret['result']) == 0:
-                logger.info("Pooling ends, no new message received.")
-            else:
-                return ret['result']
-        elif ret_code == 100006:
-            logger.error("Pooling request error, response is: %s" % ret)
-        elif ret_code == 116:
-            self.ptwebqq = ret['p']
-            logger.debug("ptwebqq updated in this pooling")
+        if ret_code in (0, 116):
+            self._last_pool_success = True
+            if ret_code == 0:
+                if 'result' not in ret or len(ret['result']) == 0:
+                    logger.info("Pooling ends, no new message received.")
+                else:
+                    return ret['result']
+            elif ret_code == 116:
+                self.ptwebqq = ret['p']
+                logger.debug("ptwebqq updated in this pooling")
         else:
-            logger.warning("Pooling returns unknown retcode %s" % ret_code)
+            self._last_pool_success = False
+            if ret_code in (103, ):
+                logger.warning("Pooling received retcode: " + str(ret_code))
+            elif ret_code in (121,):
+                logger.warning("Pooling error with retcode %s" % ret_code)
+            elif ret_code == 100006:
+                logger.error("Pooling request error, response is: %s" % ret)
+            else:
+                logger.warning("Pooling returns unknown retcode %s" % ret_code)
         return None
 
     def uin_to_account(self, tuin):
@@ -775,7 +783,6 @@ class QQBot(object):
                 break
 
         return result_dict
-
 
     def search_group_members(self, group_id):
         """

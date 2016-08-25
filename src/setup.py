@@ -9,6 +9,12 @@ install_requires = (
     "requests>=2.0.0"
 )
 
+extras_require = {
+    "web": [
+        "bottle>=0.12.0"
+    ]
+}
+
 here = os.path.abspath(os.path.dirname(__file__))
 
 setup(
@@ -22,6 +28,7 @@ setup(
     license='GPL V3',
     author='Yinzo',
     install_requires=install_requires,
+    extras_require=extras_require,
     author_email='http://yinz.me/',
     description='A SmartBot(from qq bot) bot client.'
 )

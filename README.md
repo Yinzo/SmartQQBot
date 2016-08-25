@@ -5,15 +5,17 @@ SmartQQBot
 + 二次开发[Developers Guide](resources/DevelopersGuide.md)
 + 贡献文档[Contribution Guide](resources/ContributionGuide.md)
 + API 文档[API Reference](resources/API.md)
-+ 常见问题[FAQ](resources/FAQ.md)
++ 常见问题[FAQ](resources/FAQ.md)(no-gui登录, debug模式, etc)
 
 ## 依赖
 + `PIL` or `Pillow`
 + `six` and `requests`
++ `bottle` （可选）
 
 ## 快速开始
 + 安装Python \> 2.6 / Python \>= 3(tested on 3.4)
 + 手动安装依赖`pip install Pillow six requests` 或者在命令行运行`python setup.py develop`
++ 如果需要启用web界面登录，请`pip install bottle`
 + 命令行运行 `python run.py`
 + 等待弹出二维码进行扫描登陆, 或手动打开脚本所在目录的v.jpg进行扫描。
 + 控制台不再输出登录确认的log的时候就登录成功了
@@ -24,7 +26,7 @@ SmartQQBot
 
 ## 特性
 
-+ 二维码登录
++ 二维码登录（支持本地扫码和浏览器扫码)
 + 插件支持, 支持原生Python Package, 支持插件热 启用/关闭
 + 群消息, 讨论组消息, 私聊消息, 通知消息接收和发送
 + 支持获取群号群名、群成员名称、真实QQ号等信息
@@ -64,7 +66,8 @@ SmartQQBot
 + <s>天气插件在Python3暂时无法正确运行，会提示“City not found”</s>
 
 ## ChangeLog
-+ 2016.8.18 支持Python3
++ 2016.08.25 支持Web界面登录，查看当前登录是否过期， 重新登录
++ 2016.08.18 支持Python3
 
 ## RoadMap
 

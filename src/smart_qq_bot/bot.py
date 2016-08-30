@@ -882,6 +882,14 @@ class QQBot(object):
 
     # 发送群消息
     def send_group_msg(self, reply_content, group_code, msg_id, fail_times=0):
+        chunk_length = 500
+        for i in range(0, len(reply_content), chunk_length):
+            reply_content_partial = reply_content[0+i:chunk_length+i]
+            ret = self.send_group_msg_partial(reply_content_partial, group_code, msg_id, fail_times)
+        return ret;
+
+    # 发送部分群消息
+    def send_group_msg_partial(self, reply_content, group_code, msg_id, fail_times=0):
         fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
         rsp = ""
         try:

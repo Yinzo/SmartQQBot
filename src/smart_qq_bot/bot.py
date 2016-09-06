@@ -895,13 +895,13 @@ class QQBot(object):
         try:
             logger.info("Starting send group message: %s" % reply_content)
             req_url = "http://d1.web2.qq.com/channel/send_qun_msg2"
-            data = (
-                ('r',
+            data = {
+                'r':
                  '{{"group_uin":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":{1},"msg_id":{2},"psessionid":"{3}"}}'.format(
-                         group_code, self.client_id, msg_id, self.psessionid, fix_content)),
-                ('clientid', self.client_id),
-                ('psessionid', self.psessionid)
-            )
+                         group_code, self.client_id, msg_id, self.psessionid, fix_content),
+                'clientid': self.client_id,
+                'psessionid': self.psessionid
+            }
             rsp = self.client.post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] not in MESSAGE_SENT:
@@ -927,13 +927,13 @@ class QQBot(object):
         rsp = ""
         try:
             req_url = "http://d1.web2.qq.com/channel/send_buddy_msg2"
-            data = (
-                ('r',
+            data = {
+                'r':
                  '{{"to":{0}, "face":594, "content":"[\\"{4}\\", [\\"font\\", {{\\"name\\":\\"Arial\\", \\"size\\":\\"10\\", \\"style\\":[0, 0, 0], \\"color\\":\\"000000\\"}}]]", "clientid":{1}, "msg_id":{2}, "psessionid":"{3}"}}'.format(
-                         uin, self.client_id, msg_id, self.psessionid, fix_content)),
-                ('clientid', self.client_id),
-                ('psessionid', self.psessionid)
-            )
+                         uin, self.client_id, msg_id, self.psessionid, fix_content),
+                'clientid': self.client_id,
+                'psessionid': self.psessionid
+            }
             rsp = self.client.post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
             if 'errCode' in rsp_json and rsp_json['errCode'] != 0:
@@ -958,13 +958,13 @@ class QQBot(object):
         try:
             logger.info("Starting send discuss group message: %s" % reply_content)
             req_url = "http://d1.web2.qq.com/channel/send_discu_msg2"
-            data = (
-                ('r',
+            data = {
+                'r':
                  '{{"did":{0}, "face":564,"content":"[\\"{4}\\",[\\"font\\",{{\\"name\\":\\"Arial\\",\\"size\\":\\"10\\",\\"style\\":[0,0,0],\\"color\\":\\"000000\\"}}]]","clientid":{1},"msg_id":{2},"psessionid":"{3}"}}'.format(
-                         did, self.client_id, msg_id, self.psessionid, fix_content)),
-                ('clientid', self.client_id),
-                ('psessionid', self.psessionid)
-            )
+                         did, self.client_id, msg_id, self.psessionid, fix_content),
+                'clientid': self.client_id,
+                'psessionid': self.psessionid
+            }
             rsp = self.client.post(req_url, data, SMART_QQ_REFER)
             rsp_json = json.loads(rsp)
             if 'retcode' in rsp_json and rsp_json['retcode'] not in MESSAGE_SENT:

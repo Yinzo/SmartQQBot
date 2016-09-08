@@ -772,14 +772,14 @@ class QQBot(object):
                 return
 
         result_dict = {}
-        for member in self.group_member_info[group_code]['minfo']:
-            if member['uin'] == uin:
+        for member in self.group_member_info[group_code].get('minfo') or []:
+            if member.get('uin') == uin:
                 result_dict = member
                 break
 
-        for card_dict in self.group_member_info[group_code]['cards']:
-            if card_dict['muin'] == uin:
-                result_dict['card'] = card_dict['card']
+        for card_dict in self.group_member_info[group_code].get('cards') or []:
+            if card_dict.get('muin') == uin:
+                result_dict['card'] = card_dict.get('card')
                 break
 
         return result_dict

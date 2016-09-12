@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from six.moves import http_cookiejar as cookielib
 import time
 import os
@@ -9,6 +10,7 @@ from requests import exceptions as excps
 from smart_qq_bot.config import (
     SMART_QQ_REFER,
     COOKIE_FILE,
+    SSL_VERIFY,
 )
 from smart_qq_bot.logger import logger
 
@@ -63,6 +65,7 @@ class HttpClient(object):
             resp = self.session.get(
                 url,
                 headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
+                verify=SSL_VERIFY,
             )
         except (excps.ConnectTimeout, excps.HTTPError):
             error_msg = "Failed to send finish request to `{0}`".format(
@@ -70,6 +73,8 @@ class HttpClient(object):
             )
             logger.exception(error_msg)
             return error_msg
+        except requests.exceptions.SSLError:
+            logger.exception("SSL连接验证失败，请检查您所在的网络环境。如果需要禁用SSL验证，请修改config.py中的SSL_VERIFY为False")
         else:
             self._cookies.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
             return resp.text
@@ -80,8 +85,11 @@ class HttpClient(object):
                 url,
                 data,
                 headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
+                verify=SSL_VERIFY,
             )
-        except Exception:
+        except requests.exceptions.SSLError:
+            logger.exception("SSL连接验证失败，请检查您所在的网络环境。如果需要禁用SSL验证，请修改config.py中的SSL_VERIFY为False")
+        except (excps.ConnectTimeout, excps.HTTPError):
             error_msg = "Failed to send request to `{0}`".format(
                 url
             )
@@ -99,5 +107,15 @@ class HttpClient(object):
 
     def download(self, url, fname):
         with open(fname, "wb") as o_file:
-            resp = self.session.get(url, stream=True)
-            o_file.write(resp.raw.read())
+            try:
+                resp = self.session.get(url, stream=True, verify=SSL_VERIFY)
+            except requests.exceptions.SSLError:
+                logger.exception("SSL连接验证失败，请检查您所在的网络环境。如果需要禁用SSL验证，请修改config.py中的SSL_VERIFY为False")
+            except (excps.ConnectTimeout, excps.HTTPError):
+                error_msg = "Failed to send request to `{0}`".format(
+                    url
+                )
+                logger.exception(error_msg)
+                return error_msg
+            else:
+                o_file.write(resp.raw.read())

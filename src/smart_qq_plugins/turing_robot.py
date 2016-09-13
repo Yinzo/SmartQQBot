@@ -4,15 +4,12 @@ import requests
 
 from smart_qq_bot.signals import on_all_message
 
-# 使用前请先前往 http://apistore.baidu.com/apiworks/servicedetail/736.html
-# 申请 API 谢谢
+# 使用前请先前往 http://www.tuling123.com/register/index.jhtml
+# 申请 API key 谢谢
 # 另外需要 requests 支持
-url = "http://apis.baidu.com/turing/turing/turing"
-headers = {
-    'apikey': "",
-    'cache-control': "no-cache"
-}
-
+# 修改成调用图灵官方接口
+url = 'http://www.tuling123.com/openapi/api'
+apikey = ''
 
 @on_all_message
 def turing_robot(msg, bot):
@@ -22,13 +19,11 @@ def turing_robot(msg, bot):
     """
 
     querystring = {
-        "key": "",
+        "key": apikey,
         "info": msg.content,
-        "userid": ""
     }
 
-    response = requests.request("GET", url, headers=headers, params=querystring)
+    response = requests.request("GET", url, params=querystring)
 
     response_json = response.json()
-
     bot.reply_msg(msg, response_json.get('text'))

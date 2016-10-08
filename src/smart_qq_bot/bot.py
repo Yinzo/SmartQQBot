@@ -679,8 +679,11 @@ class QQBot(object):
                     'id':           0,
                     'group_code':   group_code_info['code'] or 0
                 }
-                name = group_code_info['name'].replace(' ', '&nbsp;')
-                group_id_list = [x for x in group_id_list if x['gn'] == name]
+                group_id_list = filter(lambda x:x['gn'] == group_code_info['name'], group_id_list)
+                if len(group_id_list) == 0:
+                	import cgi
+                	group_id_list = self.get_group_list_with_group_id()
+                	group_id_list = filter(lambda x:x['gn'] == cgi.escape(group_code_info['name']), group_id_list)
                 if len(group_id_list) == 1:
                     result['id'] = group_id_list[0].get('gc')
                     return result

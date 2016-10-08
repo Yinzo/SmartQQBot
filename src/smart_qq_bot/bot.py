@@ -6,6 +6,7 @@ import os
 import time
 import re
 import json
+import cgi
 from random import randint
 from threading import Thread
 
@@ -679,7 +680,7 @@ class QQBot(object):
                     'id':           0,
                     'group_code':   group_code_info['code'] or 0
                 }
-                name = group_code_info['name'].replace(' ', '&nbsp;')
+                name = cgi.escape(group_code_info['name']).replace(' ', '&nbsp;')
                 group_id_list = [x for x in group_id_list if x['gn'] == name]
                 if len(group_id_list) == 1:
                     result['id'] = group_id_list[0].get('gc')

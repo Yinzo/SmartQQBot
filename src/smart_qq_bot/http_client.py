@@ -24,8 +24,8 @@ class HttpClient(object):
     # urllib2.install_opener(_req)
 
     def __init__(self, load_cookie=False, cookie_file=COOKIE_FILE):
-        if not os.path.isdir("./cookie"):
-            os.mkdir("./cookie")
+        if not os.path.isdir(os.path.dirname(cookie_file)):
+            os.mkdir(os.path.dirname(cookie_file))
         self._cookie_file = cookie_file
         self._cookies = _get_cookiejar(cookie_file)
         if load_cookie:

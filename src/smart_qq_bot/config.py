@@ -13,7 +13,7 @@ QR_CODE_PATH = "./" + QR_CODE_FNAME
 
 DEFAULT_PLUGIN_CONFIG = "config/plugin.json"
 
-COOKIE_FILE = 'cookie/cookie.data'
+COOKIE_FILE = '../cookie/cookie.data'
 
 SSL_VERIFY = True
 

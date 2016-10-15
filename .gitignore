@@ -10,7 +10,7 @@
 *.cmd
 *.log
 v.jpg
-cookie.data
+cookie
 
 # Mr.Conf
 *.json

@@ -6,8 +6,7 @@ from setuptools import setup, find_packages
 install_requires = (
     "Pillow",
     "six>=1.10.0",
-    "requests>=2.10.0",
-    "zlib"
+    "requests>=2.10.0"
 )
 
 extras_require = {

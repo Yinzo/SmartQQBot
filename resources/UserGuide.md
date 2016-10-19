@@ -40,12 +40,18 @@ Satoru是一个可以简单学习的吐槽机器人，可以根据你交给他�
 
 在私聊消息里，对机器人账号发一条 `!list_plugin` ,可以看见类似下面的回复
 `All: ['satoru', 'satoru', 'PluginManger'], Active: set(['satoru', 'PluginManger'])`
-，其中，Active是当前激活的插件，你可以选择是否开启这个插件。
+，其中，Active是当前激活的功能，你可以选择是否开启这个功能。
 
-### 开启/关闭 插件
+### 开启/关闭 功能
 
-1. 在私聊消息里，发送 `!activate {plugin_name}`， 可以激活一个插件，已经激活的插件不会被重复激活
-2. 在私聊消息里，发送 `!inactivate {plugin_name}`, 可以关闭一个插件（不要关闭PluginManager）
+1. 在私聊消息里，发送 `!activate {function_name}`， 可以激活一个功能，已经激活的功能不会被重复激活
+2. 在私聊消息里，发送 `!inactivate {function_name}`, 可以关闭一个功能（不要关闭PluginManager）
 
-操作成功后，你会收到 `Plugin [satoru] activated successfully` 
-或者 `Plugin [satoru] inactivated successfully`
+操作成功后，你会收到 `Function [satoru[learn]] activated successfully` 
+或者 `Function [satoru[learn]] inactivated successfully`
+
+## 使用天气插件 (weather)
+
+### 查询指定城市天气
+
+在聊天内（群聊、私聊、讨论组），使用以下类似格式发送消息 `天气 广州` 或者 `waether 广州`，即可查询对应城市天气

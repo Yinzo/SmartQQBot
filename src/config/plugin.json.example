@@ -3,6 +3,6 @@
   "plugin_on": [
       "basic",
       "manager",
-      "satoru"
+      "weather"
   ]
 }

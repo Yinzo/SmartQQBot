@@ -64,7 +64,7 @@ class Satoru(object):
 satoru = Satoru("satoru.json")
 
 
-@on_group_message(name="satoru")
+@on_group_message(name="satoru[learn]")
 def send_msg(msg, bot):
     """
     :type bot: smart_qq_bot.bot.QQBot
@@ -80,7 +80,7 @@ def send_msg(msg, bot):
             bot.reply_msg(msg, response)
 
 
-@on_private_message(name="satoru")
+@on_private_message(name="satoru[remove]")
 def remove(msg, bot):
     result = satoru.is_remove(msg.content)
     if result:

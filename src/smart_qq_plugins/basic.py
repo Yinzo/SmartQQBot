@@ -22,7 +22,7 @@ REPLY_SUFFIX = (
 )
 
 
-@on_all_message(name='callout')
+@on_all_message(name='basic[callout]')
 def callout(msg, bot):
     if "智障机器人" in msg.content:
         reply = bot.reply_msg(msg, return_function=True)
@@ -40,7 +40,7 @@ class Recorder(object):
 recorder = Recorder()
 
 
-@on_group_message(name='repeat')
+@on_group_message(name='basic[repeat]')
 def repeat(msg, bot):
     global recorder
     reply = bot.reply_msg(msg, return_function=True)
@@ -53,7 +53,7 @@ def repeat(msg, bot):
     recorder.msg_list.append(msg)
 
 
-@on_group_message(name='nick_call')
+@on_group_message(name='basic[三个问题]')
 def nick_call(msg, bot):
     if "我是谁" == msg.content:
         bot.reply_msg(msg, "你是{}({})!".format(msg.src_sender_card or msg.src_sender_name, msg.src_sender_id))
@@ -64,7 +64,8 @@ def nick_call(msg, bot):
     elif msg.content in ("我在干什么", "我在做什么"):
         bot.reply_msg(msg, "你在调戏我!!")
 
-@on_discuss_message(name='discuss_three_questions')
+
+@on_discuss_message(name='basic[讨论组三个问题]')
 def discuss_three_questions(msg, bot):
     if "我是谁" == msg.content:
         bot.reply_msg(msg, "你是{}!".format(msg.src_sender_name))

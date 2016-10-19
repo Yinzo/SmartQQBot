@@ -19,7 +19,7 @@ from smart_qq_bot.signals import on_all_message
 KEY = '31662bc776555612e3639dbca1ad1fd5'
 
 
-@on_all_message(name='weather')
+@on_all_message(name='weather[天气查询]')
 def weather(msg, bot):
     global query
 

@@ -1,5 +1,4 @@
 # coding: utf-8
-from random import randint
 import re
 from smart_qq_bot.handler import (
     list_handlers,
@@ -8,8 +7,7 @@ from smart_qq_bot.handler import (
     inactivate,
 )
 from smart_qq_bot.logger import logger
-from smart_qq_bot.messages import GroupMsg, PrivateMsg
-from smart_qq_bot.signals import on_all_message, on_bot_inited
+from smart_qq_bot.signals import on_all_message, on_bot_inited, on_private_message
 
 cmd_hello = re.compile(r"!hello")
 cmd_list_plugin = re.compile(r"!list_plugin")
@@ -21,7 +19,7 @@ def do_activate(text):
     result = re.findall(cmd_activate, text)
     if result:
         activate(result[0])
-        return "Plugin [%s] activated successfully" % result[0]
+        return "Function [%s] activated successfully" % result[0]
 
 
 def do_inactivate(text):
@@ -29,7 +27,7 @@ def do_inactivate(text):
     result = re.findall(cmd_inactivate, text)
     if result:
         inactivate(result[0])
-        return "Plugin [%s] inactivated successfully" % result[0]
+        return "Function [%s] inactivated successfully" % result[0]
 
 
 def do_hello(text):
@@ -49,27 +47,19 @@ def manager_init(bot):
     logger.info("Plugin Manager is available now:)")
 
 
-@on_all_message(name="PluginManger")
+@on_all_message(name="PluginManger[hello]")
 def hello_bot(msg, bot):
-    """
-    :type bot: smart_qq_bot.bot.QQBot
-    :type msg: smart_qq_bot.messages.GroupMsg
-    """
-    msg_id = randint(1, 10000)
+    result = do_hello(msg.content)
+    if result is not None:
+        return bot.reply_msg(msg, result)
 
-    group_handlers = (
-        do_hello,
-    )
+
+@on_private_message(name="PluginManager[manage_tools]")
+def manage_tool(msg, bot):
     private_handlers = (
         do_inactivate, do_activate, do_list_plugin
     )
-    if isinstance(msg, GroupMsg):
-        for handler in group_handlers:
-            result = handler(msg.content)
-            if result is not None:
-                return bot.reply_msg(msg, result)
-    elif isinstance(msg, PrivateMsg):
-        for handler in private_handlers:
-            result = handler(msg.content)
-            if result is not None:
-                return bot.reply_msg(msg, result)
+    for handler in private_handlers:
+        result = handler(msg.content)
+        if result is not None:
+            return bot.reply_msg(msg, result)

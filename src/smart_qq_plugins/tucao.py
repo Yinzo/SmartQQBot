@@ -59,7 +59,7 @@ class TucaoCore(object):
 
 core = TucaoCore()
 
-@on_group_message(name='tucao')
+@on_group_message(name='tucao[学习遗忘]')
 def tucao(msg, bot):
     global core
     reply = bot.reply_msg(msg, return_function=True)
@@ -102,7 +102,7 @@ def tucao(msg, bot):
     return False
 
 
-@on_group_message(name='current_tucao')
+@on_group_message(name='tucao[吐槽列表]')
 def current_tucao_list(msg, bot):
     # webqq接受的消息会以空格结尾
 
@@ -128,7 +128,7 @@ def current_tucao_list(msg, bot):
     return
 
 
-@on_group_message(name='delete_tucao')
+@on_group_message(name='tucao[删除关键字]')
 def delete_tucao(msg, bot):
     global core
     reply = bot.reply_msg(msg, return_function=True)

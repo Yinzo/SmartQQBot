@@ -155,12 +155,18 @@ class QQBot(object):
             SMART_QQ_REFER
         )
 
-        try:
-            ret = json.loads(response)
-        except ValueError:
-            return logger.exception(
-                "Cookies login fail, response decode error:{0}".format(response)
-            )
+        retry_times = 5
+        while True:
+            try:
+                ret = json.loads(response)
+                break
+            except ValueError:
+                retry_times -= 1
+                logger.exception(
+                    "Cookies login fail, response decode error:{0}".format(response)
+                )
+                if retry_times == 0:
+                    raise CookieLoginFailed("Cookies login fail, response decode error too many times")
         if ret['retcode'] != 0:
             raise CookieLoginFailed("Login step 1 failed with response:\n %s " % ret)
 

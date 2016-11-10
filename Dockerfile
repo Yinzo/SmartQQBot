@@ -33,7 +33,7 @@ RUN apk update && \
 #install app
 WORKDIR /app/src
 COPY src $WORKDIR
-#VOLUME [/app/cookie]
+#VOLUME [/app/src/cookie]
 #forwarding port
 EXPOSE 8888
 #set default command

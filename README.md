@@ -24,8 +24,8 @@ SmartQQBot
 
 ## docker 使用  
 + docker build --force-rm --rm -q -t yourtag -f Dockerfile .  
-+ docker run -dit --name qq -P -v yourcookiepath:/app/cookie yourtag  
-+ docker run -dit --name qq -P -v yourcookiepath:/app/cookie yourtag --new-user #新建用户  
++ docker run -dit --name qq -P -v yourcookiepath:/app/src/cookie yourtag  
++ docker run -dit --name qq -P -v yourcookiepath:/app/src/cookie yourtag --new-user #新建用户  
 
 **若使用上有疑惑, 欢迎加群473413233讨论**
 

@@ -22,6 +22,11 @@ SmartQQBot
 + 首次登陆过后, 以后的登陆会尝试使用保存的cookie进行自动登录（失败后会自动弹出二维码进行二维码登陆）
 + 配置插件之后, 才能使用QQBot的调教功能（参见下方插件配置）
 
+## docker 使用  
++ docker build --force-rm --rm -q -t yourtag -f Dockerfile .  
++ docker run -dit --name qq -P -v yourcookiepath:/app/src/cookie yourtag  --no-gui --http
++ docker run -dit --name qq -P -v yourcookiepath:/app/src/cookie yourtag --no-gui --http --new-user #新建用户  
+
 **若使用上有疑惑, 欢迎加群473413233讨论**
 
 ## 特性

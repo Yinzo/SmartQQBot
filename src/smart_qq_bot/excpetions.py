@@ -19,3 +19,6 @@ class ConfigKeyError(ValueError):
 
 class ServerResponseEmpty(IOError):
     pass
+
+class NeedRelogin(SystemExit):
+    pass

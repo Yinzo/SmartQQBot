@@ -13,6 +13,7 @@ from threading import Thread
 from smart_qq_bot.logger import logger
 from smart_qq_bot.config import QR_CODE_PATH, SMART_QQ_REFER
 from smart_qq_bot.http_client import HttpClient
+from smart_qq_bot.excpetions import NeedRelogin
 from smart_qq_bot.messages import (
     QMessage,
     GroupMsg,
@@ -377,6 +378,8 @@ class QQBot(object):
                 logger.warning("Pooling error with retcode %s" % ret_code)
             elif ret_code == 100006:
                 logger.error("Pooling request error, response is: %s" % ret)
+            elif ret_code == 100012:
+                raise NeedRelogin("Login is expired. Please relogin by qrcode")
             else:
                 logger.warning("Pooling returns unknown retcode %s" % ret_code)
         return None
@@ -587,7 +590,7 @@ class QQBot(object):
             return
         logger.debug("RESPONSE get_group_name_list_mask2 html:    " + str(response))
         if response['retcode'] != 0:
-            raise TypeError('get_online_buddies2 result error')
+            raise TypeError('get_group_list_with_group_code result error')
         for group in response['result']['gnamelist']:
             self.group_code_list[str(group['gid'])] = group
             self.group_code_list[str(group['code'])] = group

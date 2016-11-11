@@ -13,7 +13,7 @@ from smart_qq_bot.logger import logger
 from smart_qq_bot.app import bot, plugin_manager
 from smart_qq_bot.handler import MessageObserver
 from smart_qq_bot.messages import mk_msg
-from smart_qq_bot.excpetions import ServerResponseEmpty
+from smart_qq_bot.excpetions import ServerResponseEmpty, NeedRelogin
 from smart_qq_bot.signals import bot_inited_registry
 
 
@@ -72,6 +72,8 @@ def main_loop(no_gui=False, new_user=False, debug=False, http=False):
             continue
         except (socket.timeout, IOError):
             logger.warning("Message pooling timeout, retrying...")
+        except NeedRelogin:
+            exit(0)
         except Exception:
             logger.exception("Exception occurs when checking msg.")
 

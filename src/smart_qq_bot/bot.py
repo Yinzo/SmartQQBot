@@ -432,6 +432,7 @@ class QQBot(object):
                 logger.warning("get_self_info2 fail. {}".format(try_times))
                 if try_times >= 5:
                     return {}
+                continue
             try:
                 self._self_info = rsp_json["result"]
             except KeyError:

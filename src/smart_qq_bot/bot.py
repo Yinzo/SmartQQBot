@@ -446,28 +446,28 @@ class QQBot(object):
         get_online_buddies2
         :return:list
         """
-        logger.info("RUNTIMELOG Requesting the online buddies.")
-        response = self.client.get(
-            'http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq={0}&clientid={1}&psessionid={2}&t={3}'.format(
-                self.vfwebqq,
-                self.client_id,
-                self.psessionid,
-                self.client.get_timestamp(),
-            )
-        )  # {"result":[],"retcode":0}
-        logger.debug("RESPONSE get_online_buddies2 html:{}".format(response))
-        try:
-            online_buddies = json.loads(response)
-        except ValueError:
-            logger.warning("get_online_buddies2 response decode as json fail.")
-            return None
-
-        if online_buddies['retcode'] != 0:
-            logger.warning('get_online_buddies2 retcode is not 0. returning.')
-            return None
-
-        online_buddies = online_buddies['result']
-        return online_buddies
+        retry_times = 10
+        while retry_times:
+            logger.info("RUNTIMELOG Requesting the online buddies.")
+            response = self.client.get(
+                'http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq={0}&clientid={1}&psessionid={2}&t={3}'.format(
+                    self.vfwebqq,
+                    self.client_id,
+                    self.psessionid,
+                    self.client.get_timestamp(),
+                )
+            )  # {"result":[],"retcode":0}
+            logger.debug("RESPONSE get_online_buddies2 html:{}".format(response))
+            try:
+                online_buddies = json.loads(response)
+            except ValueError:
+                logger.warning("get_online_buddies2 response decode as json fail.")
+                return None
+            if online_buddies['retcode'] != 0:
+                logger.warning('get_online_buddies2 retcode is not 0. returning.')
+                return None
+            online_buddies = online_buddies['result']
+            return online_buddies
 
     def get_friend_info(self, tuin):
         """

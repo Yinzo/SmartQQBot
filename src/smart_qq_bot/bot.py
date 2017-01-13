@@ -30,6 +30,7 @@ QR_CODE_STATUS = {
 }
 
 MESSAGE_SENT = {
+    100100,
     1202,
     0,
 }

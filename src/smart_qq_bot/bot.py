@@ -201,7 +201,8 @@ class QQBot(object):
                             '&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10' \
                             '&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=' \
                             '&fp=loginerroralert&action=0-0-{1}&mibao_css={2}' \
-                            '&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}'
+                            '&t=undefined&g=1&js_type=0&js_ver={3}&login_sig={4}' \
+                            '&ptqrtoken={5}'
 
         init_url = "https://ui.ptlogin2.qq.com/cgi-bin/login?" \
                    "daid=164&target=self&style=16&mibao_css=m_webqq" \
@@ -248,6 +249,7 @@ class QQBot(object):
                 'https://ssl.ptlogin2.qq.com/ptqrshow?appid={0}&e=0&l=L&s=8&d=72&v=4'.format(appid),
                 self.qrcode_path
             )
+            qrsig = self.client.get_cookie('qrsig')
             if not no_gui:
                 thread = Thread(target=show_qr, args=(self.qrcode_path, ))
                 thread.setDaemon(True)
@@ -256,7 +258,7 @@ class QQBot(object):
             while True:
                 ret_code, redirect_url = self._get_qr_login_status(
                     qr_validation_url, appid, start_time, mibao_css, js_ver,
-                    sign, init_url
+                    sign, init_url, qrsig
                 )
 
                 if ret_code in (
@@ -282,9 +284,15 @@ class QQBot(object):
             logger.debug("QR Login redirect_url response: %s" % html)
             return True
 
+    def _hash_for_qrsig(self, qrsig):
+        e = 0
+        for i in qrsig:
+            e += (e << 5) + ord(i)
+        return 2147483647 & e;
+
     def _get_qr_login_status(
             self, qr_validation_url, appid, star_time,
-            mibao_css, js_ver, sign, init_url
+            mibao_css, js_ver, sign, init_url, qrsig
     ):
         redirect_url = None
         login_result = self.client.get(
@@ -293,7 +301,8 @@ class QQBot(object):
                 date_to_millis(datetime.datetime.utcnow()) - star_time,
                 mibao_css,
                 js_ver,
-                sign
+                sign,
+                self._hash_for_qrsig(qrsig)
             ),
             init_url
         )

@@ -118,4 +118,5 @@ class HttpClient(object):
                 logger.exception(error_msg)
                 return error_msg
             else:
+                self._cookies.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
                 o_file.write(resp.raw.read())

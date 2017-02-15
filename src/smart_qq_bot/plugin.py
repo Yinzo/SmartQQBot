@@ -40,6 +40,7 @@ class PluginManager(object):
     def _load_config(self, config_file):
         config = None
         if config_file is not None:
+            # 指定了特定配置文件
             if os.path.isfile(config_file):
                 with open(config_file, "r") as f:
                     config = json.load(f)
@@ -47,10 +48,15 @@ class PluginManager(object):
                 raise ConfigFileDoesNotExist(
                     "Config file {} does not exist.".format(config_file)
                 )
+        elif os.path.isfile(DEFAULT_PLUGIN_CONFIG):
+            # 存在配置文件
+            with open(DEFAULT_PLUGIN_CONFIG, "r") as f:
+                config = json.load(f)
+
         elif os.path.isfile(DEFAULT_PLUGIN_CONFIG + ".example"):
-            if not os.path.isfile(DEFAULT_PLUGIN_CONFIG):
-                shutil.copy(DEFAULT_PLUGIN_CONFIG + ".example", DEFAULT_PLUGIN_CONFIG)
-                logger.warning("No plugin config file found. Auto copied.")
+            # 不存在配置文件但有example文件
+            shutil.copy(DEFAULT_PLUGIN_CONFIG + ".example", DEFAULT_PLUGIN_CONFIG)
+            logger.warning("No plugin config file found. Auto copied.")
             with open(DEFAULT_PLUGIN_CONFIG, "r") as f:
                 config = json.load(f)
         else:

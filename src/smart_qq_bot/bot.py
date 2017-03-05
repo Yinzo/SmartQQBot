@@ -628,30 +628,39 @@ class QQBot(object):
             }
         ]
         """
-        if self._get_group_list:
-            response = self._get_group_list
-        else:
-            url = "http://qun.qq.com/cgi-bin/qun_mgr/get_group_list"
-            data = {'bkn': self.bkn}
-            response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
-            self._get_group_list = response
-            logger.debug("get_group_list response: {}".format(response))
-        rsp_json = json.loads(response)
-        if rsp_json['ec'] == 0:
-            group_id_list = list()
-            group_id_list.extend(rsp_json.get('join') or [])
-            group_id_list.extend(rsp_json.get('manage') or [])
-            group_id_list.extend(rsp_json.get('create') or [])
-            if group_id_list:
-                for group in group_id_list:
-                    self.group_id_list[str(group['gc'])] = group
-                return group_id_list
+        try_times = 0
+        while try_times < 3:
+
+            if self._get_group_list:
+                response = self._get_group_list
             else:
-                logger.warning("seems this account didn't join any group: {}".format(response))
-                return []
-        else:
-            logger.warning("get_group_list code unknown: {}".format(response))
-            return None
+                url = "http://qun.qq.com/cgi-bin/qun_mgr/get_group_list"
+                data = {'bkn': self.bkn}
+                response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
+                self._get_group_list = response
+                logger.debug("get_group_list response: {}".format(response))
+
+            try:
+                rsp_json = json.loads(response)
+            except ValueError:
+                try_times += 1
+                logger.debug("get_group_list_with_group_id fail. {}".format(try_times))
+                continue
+            if rsp_json.get('ec') == 0:
+                group_id_list = list()
+                group_id_list.extend(rsp_json.get('join') or [])
+                group_id_list.extend(rsp_json.get('manage') or [])
+                group_id_list.extend(rsp_json.get('create') or [])
+                if group_id_list:
+                    for group in group_id_list:
+                        self.group_id_list[str(group['gc'])] = group
+                    return group_id_list
+                else:
+                    logger.warning("seems this account didn't join any group: {}".format(response))
+                    return []
+            else:
+                logger.warning("get_group_list code unknown: {}".format(response))
+                return None
 
     def get_true_group_code(self, fake_group_code):
         """

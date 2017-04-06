@@ -636,15 +636,21 @@ class QQBot(object):
             else:
                 url = "http://qun.qq.com/cgi-bin/qun_mgr/get_group_list"
                 data = {'bkn': self.bkn}
-                response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
-                self._get_group_list = response
-                logger.debug("get_group_list response: {}".format(response))
+                try:
+                    response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
+                    self._get_group_list = response
+                    logger.debug("get_group_list response: {}".format(response))
+                except Exception as e:
+                    logger.debug(str(e))
+                    logger.warning("get_group_list_with_group_id API请求失败")
+                    try_times += 1
+                    continue
 
             try:
                 rsp_json = json.loads(response)
             except ValueError:
                 try_times += 1
-                logger.debug("get_group_list_with_group_id fail. {}".format(try_times))
+                logger.warning("get_group_list_with_group_id fail. {}".format(try_times))
                 continue
             if rsp_json.get('ec') == 0:
                 group_id_list = list()

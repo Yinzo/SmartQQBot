@@ -97,14 +97,16 @@ class GroupMsg(QMessage):
     @property
     def src_group_name(self):
         info = self.bot.get_group_info(str(self.group_code))
-        group_name = info.get('name')
-        return group_name
+        if info:
+            group_name = info.get('name')
+            return group_name
 
     @property
     def src_group_id(self):
         info = self.bot.get_group_info(str(self.group_code))
-        group_id = info.get('id')
-        return group_id
+        if info:
+            group_id = info.get('id')
+            return group_id
 
     @property
     def src_sender_card(self):
@@ -112,8 +114,9 @@ class GroupMsg(QMessage):
         获取发送者群名片
         """
         info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
-        card = info.get('card')
-        return card
+        if info:
+            card = info.get('card')
+            return card
 
     @property
     def src_sender_name(self):
@@ -121,8 +124,9 @@ class GroupMsg(QMessage):
         获取发送者昵称
         """
         info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
-        name = info.get('nick')
-        return name
+        if info:
+            name = info.get('nick')
+            return name
 
     @property
     def src_sender_id(self):

@@ -761,6 +761,7 @@ class QQBot(object):
         :return:dict
         """
         if group_code == 0:
+            logger.debug("get_group_member_info_list 输入为0，返回 None")
             return
         try:
             url = "http://s.web2.qq.com/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%s" % (
@@ -780,7 +781,7 @@ class QQBot(object):
             self.group_member_info[str(group_code)] = result    # 缓存群成员信息, 此处会把真假group_code都加入cache
             return result
         except Exception as ex:
-            logger.warning("RUNTIMELOG get_group_member_info_list. Error: " + str(ex))
+            logger.warning("get_group_member_info_list. Error: " + str(ex))
             return
 
     def get_group_member_info(self, group_code, uin):
@@ -803,7 +804,7 @@ class QQBot(object):
         if group_code not in self.group_member_info:
             logger.info("group_code not in cache, try to request info")
             result = self.get_group_member_info_list(group_code)
-            if result is False:
+            if not result:
                 logger.warning("没有所查询的group_code信息")
                 return
 

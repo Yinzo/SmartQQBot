@@ -924,9 +924,22 @@ class QQBot(object):
             ret = self.send_group_msg_partial(reply_content_partial, group_code, msg_id, fail_times)
         return ret;
 
+    def _quote(self, content):
+        return str(content.replace("\\", r"\\")
+                .replace("\r", r"\r")
+                .replace("\n", r"\n")
+                .replace('"', r'\"')
+                .replace("\t", r"\t")
+                )
+
+    injection_escape_regex = re.compile(r"and( *')", re.I);
+    def quote(self, content):
+        content = self.injection_escape_regex.sub(r'&\1', content)
+        return self._quote(self._quote(content))
+
     # 发送部分群消息
     def send_group_msg_partial(self, reply_content, group_code, msg_id, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
+        fix_content = self.quote(reply_content)
         rsp = ""
         try:
             logger.info("Starting send group message: %s" % reply_content)
@@ -959,7 +972,7 @@ class QQBot(object):
 
     # 发送私密消息
     def send_friend_msg(self, reply_content, uin, msg_id, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
+        fix_content = self.quote(reply_content)
         rsp = ""
         try:
             req_url = "http://d1.web2.qq.com/channel/send_buddy_msg2"
@@ -989,7 +1002,7 @@ class QQBot(object):
 
     # 发送讨论组消息
     def send_discuss_msg(self, reply_content, did, msg_id, fail_times=0):
-        fix_content = str(reply_content.replace("\\", "\\\\\\\\").replace("\n", "\\\\n").replace("\t", "\\\\t"))
+        fix_content = self.quote(reply_content)
         rsp = ""
         try:
             logger.info("Starting send discuss group message: %s" % reply_content)

@@ -316,8 +316,8 @@ class QQBot(object):
     def login(self, no_gui=False):
         try:
             self._login_by_cookie()
-        except CookieLoginFailed:
-            logger.exception(CookieLoginFailed)
+        except CookieLoginFailed as e:
+            logger.exception(e)
             while True:
                 if self._login_by_qrcode(no_gui):
                     if self._login_by_cookie():

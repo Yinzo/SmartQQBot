@@ -402,18 +402,17 @@ class QQBot(object):
         """
         uin_str = str(tuin)
         try:
-            logger.info("RUNTIMELOG Requesting the account by uin:    " + str(tuin))
-            info = json.loads(
-                self.client.get(
-                    'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}&t={2}'.format(
-                        uin_str,
-                        self.vfwebqq,
-                        self.client.get_timestamp()
-                    ),
-                    SMART_QQ_REFER
-                )
-            )
-            logger.debug("RESPONSE uin_to_account html:    " + str(info))
+            logger.info("Requesting the account by uin:\t" + str(tuin))
+            rsp = self.client.get(
+                        'http://s.web2.qq.com/api/get_friend_uin2?tuin={0}&type=1&vfwebqq={1}&t={2}'.format(
+                            uin_str,
+                            self.vfwebqq,
+                            self.client.get_timestamp()
+                        ),
+                        SMART_QQ_REFER
+                    )
+            logger.debug("uin_to_account html:\t" + str(rsp))
+            info = json.loads(rsp)
             if info['retcode'] != 0:
                 raise TypeError('uin_to_account retcode error')
             info = info['result']['account']

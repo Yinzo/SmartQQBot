@@ -4,6 +4,7 @@ import logging
 import os
 import socket
 import sys
+import threading
 
 from six import PY2
 from six import iteritems
@@ -54,9 +55,11 @@ def main_loop(no_gui=False, new_user=False, debug=False, http=False):
         clean_cookie()
     bot.login(no_gui)
     observer = MessageObserver(bot)
+
     for name, func in iteritems(bot_inited_registry):
         try:
-            func(bot)
+            t = threading.Thread(target=func, args=(bot,), daemon=True)
+            t.start()
         except Exception:
             logging.exception(
                 "Error occurs while loading plugin [%s]." % name

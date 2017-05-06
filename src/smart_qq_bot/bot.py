@@ -756,7 +756,7 @@ class QQBot(object):
         """
         获取指定群的成员信息
         :group_code: int, can be "ture" of "fake" group_code
-        {"retcode":0,"result":{"stats":[],"minfo":[{"nick":" 信","province":"山东","gender":"male","uin":3964575484,"country":"中国","city":""},{"nick":"崔震","province":"","gender":"unknown","uin":2081397472,"country":"","city":""},{"nick":"云端的猫","province":"山东","gender":"male","uin":3123065696,"country":"中国","city":"青岛"},{"nick":"要有光","province":"山东","gender":"male","uin":2609717081,"country":"中国","city":"青岛"},{"nick":"小莎机器人","province":"广东","gender":"female","uin":495456232,"country":"中国","city":"深圳"}],"ginfo":{"face":0,"memo":"http://hujj009.ys168.com\r\n0086+区(没0)+电话\r\n0086+手机\r\nhttp://john123951.xinwen365.net/qq/index.htm","class":395,"fingermemo":"","code":3943922314,"createtime":1079268574,"flag":16778241,"level":0,"name":"ぁQQぁ","gid":3931577475,"owner":3964575484,"members":[{"muin":3964575484,"mflag":192},{"muin":2081397472,"mflag":65},{"muin":3123065696,"mflag":128},{"muin":2609717081,"mflag":0},{"muin":495456232,"mflag":0}],"option":2},"cards":[{"muin":3964575484,"card":"●s.Εx2(22222)□"},{"muin":495456232,"card":"小莎机器人"}],"vipinfo":[{"vip_level":0,"u":3964575484,"is_vip":0},{"vip_level":0,"u":2081397472,"is_vip":0},{"vip_level":0,"u":3123065696,"is_vip":0},{"vip_level":0,"u":2609717081,"is_vip":0},{"vip_level":0,"u":495456232,"is_vip":0}]}}
+        {"result":{"cards":[{"card":"测试名片","muin":123456789}],"ginfo":{"class":27,"code":3281366860,"createtime":1457436527,"face":0,"fingermemo":"","flag":1090520065,"gid":3281366860,"level":0,"members":[{"mflag":0,"muin":1145751263},{"mflag":0,"muin":123456789},{"mflag":0,"muin":2123968182},{"mflag":1,"muin":271236123}],"memo":"","name":"测试群名","option":2,"owner":2123968182},"minfo":[{"city":"","country":"","gender":"male","nick":"测试2","province":"","uin":1145751263},{"city":"广州","country":"中国","gender":"male","nick":"测试1","province":"广东","uin":123456789},{"city":"广州","country":"中国","gender":"male","nick":"大","province":"广东","uin":2123968182},{"city":"","country":"中国","gender":"female","nick":"2","province":"","uin":271236123}],"stats":[],"vipinfo":[{"is_vip":0,"u":1145751263,"vip_level":0},{"is_vip":0,"u":123456789,"vip_level":0},{"is_vip":0,"u":2123968182,"vip_level":0},{"is_vip":0,"u":271236123,"vip_level":0}]},"retcode":0}
         :return:dict
         """
         if group_code == 0:
@@ -766,8 +766,8 @@ class QQBot(object):
             url = "http://s.web2.qq.com/api/get_group_info_ext2?gcode=%s&vfwebqq=%s&t=%s" % (
                 group_code, self.vfwebqq, int(time.time() * 100))
             response = self.client.get(url)
+            logger.debug("get_group_member_info_list info response: {}".format(response))
             rsp_json = json.loads(response)
-            logger.debug("get_group_member_info_list info response: {}".format(rsp_json))
             retcode = rsp_json["retcode"]
             if retcode == 0:
                 result = rsp_json["result"]
@@ -822,39 +822,33 @@ class QQBot(object):
 
     def search_group_members(self, group_id):
         """
-        获取群成员详细信息的的列表, uin为真实QQ号, 并存入cache
+        获取群成员详细信息的的列表, u为真实QQ号, 并存入cache
         :type group_id: str
         :return:list
 
         return list sample
         [
             {
-              "card": "群名片",
-              "flag": 0,
-              "g": 255,
-              "join_time": 1385383309,
-              "last_speak_time": 1471325570,
-              "lv": {
-                "level": 6,
-                "point": 5490
-              },
-              "nick": "昵称",
-              "qage": 0,
-              "role": 0,
-              "tags": "-1",
-              "uin": 493658555
+                  "b": 0,
+                  "g": 0,
+                  "n": "昵称",
+                  "u": 466331426
+            },
+            {
+                  "b": 0,
+                  "g": 0,
+                  "n": "昵称",
+                  "u": 493658565
             }
         ]
         """
-        url = "http://qun.qq.com/cgi-bin/qun_mgr/search_group_members"
+        url = "http://qinfo.clt.qq.com/cgi-bin/qun_info/get_group_members_new"
         data = {
             'bkn':  self.bkn,
             'gc':   str(group_id),
-            'st':   0,
-            'end':  2000,
-            'sort': 0,
+            'u':   self._self_info.get('uin'),
         }
-        response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
+        response = self.client.post(url, data=data, refer='http://qinfo.clt.qq.com/member.html')
         logger.debug("search_group_members response: {}".format(response))
         rsp_json = json.loads(response)
         if rsp_json['ec'] == 0:

@@ -137,16 +137,10 @@ class GroupMsg(QMessage):
         member_list = self.bot.search_group_members(self.src_group_id)
         target_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
         for info in member_list:
-            if info.get('nick') == target_info.get('nick'):
-                if info.get('card') and target_info.get('card'):
-                    if info.get('card') == target_info.get('card'):
-                        result_list.append(str(info.get('uin')))
-                    else:
-                        break
-                else:
-                    result_list.append(str(info.get('uin')))
+            if info.get('n') == target_info.get('nick'):
+                result_list.append(str(info.get('u')))
         if len(result_list) > 1:
-            raise IndexError('群内含有同名账号,获取真实QQ号失败')
+            raise IndexError('群内含有相同昵称的成员,获取真实QQ号失败')
         if len(result_list) == 0:
             return ""
         return result_list[0]

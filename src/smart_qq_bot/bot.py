@@ -398,13 +398,13 @@ class QQBot(object):
         try:
             ret = json.loads(response)
         except ValueError:
-            logger.warning("RUNTIMELOG decode poll response error.")
-            logger.debug("RESPONSE {}".format(response))
+            logger.warning("decode poll response error.")
+            logger.debug("{}".format(response))
             return
 
         ret_code = ret['retcode']
 
-        if ret_code in (0, 116):
+        if ret_code in (0, 116, 1202):
             self._last_pool_success = True
             if ret_code == 0:
                 if 'result' not in ret or len(ret['result']) == 0:

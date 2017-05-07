@@ -448,7 +448,10 @@ class QQBot(object):
                 )
             rsp = unescape_json_response(rsp)
             logger.debug("get_friend_list html:\t{}".format(str(rsp)))
-            qq_list = json.loads(rsp).get('result', {}).get('0', {}).get('mems')
+            friend_groups = json.loads(rsp).get('result', {})
+            qq_list = []
+            for member_list in friend_groups.values():
+                qq_list += member_list.get('mems', [])
 
             rsp = self.client.post(
                 'http://s.web2.qq.com/api/get_user_friends2',

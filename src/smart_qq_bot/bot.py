@@ -6,9 +6,20 @@ import os
 import time
 import re
 import json
-import cgi
 from random import randint
 from threading import Thread
+
+try:
+    from html import unescape as html_unescape
+except ImportError:
+    from HTMLParser import HTMLParser
+    html_parser = HTMLParser()
+    def html_unescape(s):
+        return html_parser.unescape(s)
+
+def unescape_json_response(s):
+    return html_unescape(s.replace('&#92;', r'\\').replace('&quot;', r'\"')).replace(u"\xa0", ' ')
+
 
 from smart_qq_bot.logger import logger
 from smart_qq_bot.config import QR_CODE_PATH, SMART_QQ_REFER
@@ -435,6 +446,7 @@ class QQBot(object):
                     data={'bkn': self.bkn},
                     refer='http://qun.qq.com/member.html',
                 )
+            rsp = unescape_json_response(rsp)
             logger.debug("get_friend_list html:\t{}".format(str(rsp)))
             qq_list = json.loads(rsp).get('result', {}).get('0', {}).get('mems')
 
@@ -702,6 +714,7 @@ class QQBot(object):
                 data = {'bkn': self.bkn}
                 try:
                     response = self.client.post(url, data=data, refer='http://qun.qq.com/member.html')
+                    response = unescape_json_response(response)
                     self._get_group_list = response
                     logger.debug("get_group_list response: {}".format(response))
                 except Exception as e:
@@ -779,7 +792,7 @@ class QQBot(object):
                     'id':           0,
                     'group_code':   group_code_info['code'] or 0
                 }
-                name = cgi.escape(group_code_info['name']).replace(' ', '&nbsp;')
+                name = group_code_info['name']
                 group_id_list = [x for x in group_id_list if x['gn'] == name]
                 if len(group_id_list) == 1:
                     result['id'] = group_id_list[0].get('gc')
@@ -915,6 +928,7 @@ class QQBot(object):
         }
         response = self.client.post(url, data=data, refer='http://qinfo.clt.qq.com/member.html')
         logger.debug("search_group_members response: {}".format(response))
+        response = unescape_json_response(response)
         rsp_json = json.loads(response)
         if rsp_json['ec'] == 0:
             return rsp_json.get('mems')

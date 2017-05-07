@@ -1005,9 +1005,9 @@ class QQBot(object):
                 .replace("\t", r"\t")
                 )
 
-    injection_escape_regex = re.compile(r"and( *')", re.I);
+    injection_escape_regex = re.compile(r"(\band|\bor|\bxor|(?:^| )&&|(?:^| )\|\|)( +not)?( *'| +[0-9]+ )", re.I);
     def quote(self, content):
-        content = self.injection_escape_regex.sub(r'&\1', content)
+        content = self.injection_escape_regex.sub(r'\1_\2\3', content)
         return self._quote(self._quote(content))
 
     # 发送部分群消息

@@ -58,7 +58,8 @@ def main_loop(no_gui=False, new_user=False, debug=False, http=False):
 
     for name, func in iteritems(bot_inited_registry):
         try:
-            t = threading.Thread(target=func, args=(bot,), daemon=True)
+            t = threading.Thread(target=func, args=(bot,))
+            t.daemon = True
             t.start()
         except Exception:
             logging.exception(

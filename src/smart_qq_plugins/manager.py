@@ -37,10 +37,10 @@ def do_hello(text):
 
 def do_list_plugin(text):
     if re.match(cmd_list_plugin, text):
-        return "All: %s\n\nActive: %s" % (
-            str(list_handlers()), str(list_active_handlers())
+        text = "All: %s\n\nActive: %s" % (
+            ", ".join(list(list_handlers())), ", ".join(list(list_active_handlers()))
         )
-
+        return text
 
 @on_bot_inited("PluginManager")
 def manager_init(bot):

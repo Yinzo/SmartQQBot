@@ -467,30 +467,35 @@ class QQBot(object):
             logger.debug("get_user_friends2 html:\t{}".format(str(rsp)))
             rsp = json.loads(rsp)
             uin_list = [[str(friend['nick']), str(friend['uin'])] for friend in rsp['result']['info']]
-            for friend in rsp['result'].get('marknames', []):
-                for idx, (nick, uin) in enumerate(uin_list):
-                    if str(uin) == str(friend['uin']):
-                        uin_list[idx][0] = friend['markname']
+            # for friend in rsp['result'].get('marknames', []):
+            #     for idx, (nick, uin) in enumerate(uin_list):
+            #         if str(uin) == str(friend['uin']):
+            #             uin_list[idx][0] = friend['markname']
 
             result_dict = {}
-            duplicated_name = set()
+            # duplicated_name = set()
             for friend in qq_list:
                 for tgt in uin_list:
-                    if friend['name'] == tgt[0]:
-                        if str(tgt[1]) not in result_dict:
-                            result_dict[str(tgt[1])] = str(friend['uin']) # 这个uin是真实qq号
-                        else:
-                            duplicated_name.add(tgt[0])
-                            result_dict[str(tgt[1])] = ""
+                    # tgt = [qq, uin]
+                    if str(tgt[0]) == str(friend['uin']):
+                        self.friend_uin_list[str(tgt[1])] = {'account': tgt[0], 'name': friend['name']}
+                        # result_dict[str(tgt[1])] = (tgt[0], friend['name'])
+                        break
+                    # if friend['name'] == tgt[0]:
+                    #     if str(tgt[1]) not in result_dict:
+                    #         result_dict[str(tgt[1])] = str(friend['uin']) # 这个uin是真实qq号
+                    #     else:
+                    #         duplicated_name.add(tgt[0])
+                    #         result_dict[str(tgt[1])] = ""
 
-            if len(duplicated_name) != 0:
-                logger.warning(
-                    "存在多个好友使用以下昵称，无法唯一确定这些好友的真实QQ号，请通过修改备注名以唯一确定：{}".format(
-                        " ".join(list(duplicated_name))
-                        )
-                    )
-            for uin, account in result_dict.items():
-                self.friend_uin_list[uin] = {'account': account}
+            # if len(duplicated_name) != 0:
+            #     logger.warning(
+            #         "存在多个好友使用以下昵称，无法唯一确定这些好友的真实QQ号，请通过修改备注名以唯一确定：{}".format(
+            #             " ".join(list(duplicated_name))
+            #             )
+            #         )
+            # for uin, (account, name) in result_dict.items():
+            #     self.friend_uin_list[uin] = {'account': account, 'name': name}
 
         except Exception as e:
             logger.warning("获取好友真实qq号失败, {}".format(e))

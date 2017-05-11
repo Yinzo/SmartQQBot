@@ -837,7 +837,6 @@ class QQBot(object):
         """
         获取指定群的成员信息
         :group_code: int, can be "ture" of "fake" group_code
-        {"result":{"cards":[{"card":"测试名片","muin":123456789}],"ginfo":{"class":27,"code":3281366860,"createtime":1457436527,"face":0,"fingermemo":"","flag":1090520065,"gid":3281366860,"level":0,"members":[{"mflag":0,"muin":1145751263},{"mflag":0,"muin":123456789},{"mflag":0,"muin":2123968182},{"mflag":1,"muin":271236123}],"memo":"","name":"测试群名","option":2,"owner":2123968182},"minfo":[{"city":"","country":"","gender":"male","nick":"测试2","province":"","uin":1145751263},{"city":"广州","country":"中国","gender":"male","nick":"测试1","province":"广东","uin":123456789},{"city":"广州","country":"中国","gender":"male","nick":"大","province":"广东","uin":2123968182},{"city":"","country":"中国","gender":"female","nick":"2","province":"","uin":271236123}],"stats":[],"vipinfo":[{"is_vip":0,"u":1145751263,"vip_level":0},{"is_vip":0,"u":123456789,"vip_level":0},{"is_vip":0,"u":2123968182,"vip_level":0},{"is_vip":0,"u":271236123,"vip_level":0}]},"retcode":0}
         :return:dict
         """
         if group_code == 0:
@@ -871,14 +870,13 @@ class QQBot(object):
         :type uin:  int
         :return:    dict
         {
-            u 'province': u '',
-            u 'city': u '',
-            u 'country': u '',
-            u 'uin': 2927049915,
-            u 'nick': u 'Auro',
-            u 'gender': u 'male',
-            u 'card': u 'Yinzo'
-        }
+            "city": "广州",
+            "country": "中国",
+            "gender": "male",
+            "nick": 493658555,
+            "province": "广东",
+            "uin": 2123489118
+          }
         """
         group_code = str(group_code)
         if group_code not in self.group_member_info:
@@ -934,7 +932,7 @@ class QQBot(object):
         response = unescape_json_response(response)
         rsp_json = json.loads(response)
         if rsp_json['ec'] == 0:
-            return rsp_json.get('mems')
+            return rsp_json.get('mems', [])
         else:
             logger.warning("search_group_members code unknown: {}".format(response))
             return None

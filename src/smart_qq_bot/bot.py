@@ -407,7 +407,7 @@ class QQBot(object):
         if response == "":
             return
         try:
-            ret = json.loads(response)
+            ret = json.loads(response.replace(r"\u0026lt;", "<").replace(r"\u0026gt;", ">"))
         except ValueError:
             logger.warning("decode poll response error.")
             logger.debug("{}".format(response))

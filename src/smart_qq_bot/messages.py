@@ -123,34 +123,39 @@ class GroupMsg(QMessage):
         """
         获取发送者昵称
         """
-        qq_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
-        name_info = self.bot.search_group_members(self.src_group_id)
+
+        info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
+        if info:
+            name = info.get('nick')
+            return name
+        # qq_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
+        # name_info = self.bot.search_group_members(self.src_group_id)
 
 
-        for tmp in name_info:
-            if str(tmp.get('u')) == str(qq_info.get('nick')): # qq_info.get('nick') 实际上是qq号
-                return tmp.get('n', "")
-        return ""
+        # for tmp in name_info:
+        #     if str(tmp.get('u')) == str(qq_info.get('nick')): # qq_info.get('nick') 实际上是qq号
+        #         return tmp.get('n', "")
+        # return ""
 
     @property
     def src_sender_id(self):
         """
         获取发送者真实QQ号
         """
-        # result_list = []
-        # member_list = self.bot.search_group_members(self.src_group_id)
-        # target_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
-        # for info in member_list:
-        #     if info.get('n') == target_info.get('nick'):
-        #         result_list.append(str(info.get('u')))
-        # if len(result_list) > 1:
-        #     raise IndexError('群内含有相同昵称的成员,获取真实QQ号失败')
-        # if len(result_list) == 0:
-        #     return ""
-        # return result_list[0]
-        qq_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
+        result_list = []
+        member_list = self.bot.search_group_members(self.src_group_id)
+        target_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
+        for info in member_list:
+            if info.get('n') == target_info.get('nick'):
+                result_list.append(str(info.get('u')))
+        if len(result_list) > 1:
+            raise IndexError('群内含有相同昵称的成员,获取真实QQ号失败')
+        if len(result_list) == 0:
+            return ""
+        return result_list[0]
+        # qq_info = self.bot.get_group_member_info(str(self.group_code), self.send_uin)
 
-        return str(qq_info.get('nick'))
+        # return str(qq_info.get('nick'))
 
 class DiscussMsg(QMessage):
     """

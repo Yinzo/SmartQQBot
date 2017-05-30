@@ -428,7 +428,10 @@ class QQBot(object):
         else:
             self._last_pool_success = False
             if ret_code in (103, ):
-                logger.warning("Pooling received retcode: " + str(ret_code))
+                logger.info("Pooling received retcode: {}, trying to load online friends".format(str(ret_code)))
+                result = self.get_online_friends_list()
+                if result is None:
+                    logger.warning("Session expired, need to relogin.")
             elif ret_code in (121,):
                 logger.warning("Pooling error with retcode %s" % ret_code)
             elif ret_code == 100006:

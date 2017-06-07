@@ -2,6 +2,9 @@
 from six.moves import http_cookiejar as cookielib
 import time
 import os
+import json
+def json_loads(text):
+    return json.loads(text)
 
 import requests
 from requests import exceptions as excps
@@ -60,44 +63,57 @@ class HttpClient(object):
     def get_timestamp():
         return str(int(time.time()*1000))
 
-    def get(self, url, refer=None):
-        try:
-            resp = self.session.get(
-                url,
-                headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
-                verify=SSL_VERIFY,
-            )
-        except (excps.ConnectTimeout, excps.HTTPError):
-            error_msg = "Failed to send finish request to `{0}`".format(
-                url
-            )
-            logger.exception(error_msg)
-            return error_msg
-        except requests.exceptions.SSLError:
-            logger.exception("SSL连接验证失败，请检查您所在的网络环境。如果需要禁用SSL验证，请修改config.py中的SSL_VERIFY为False")
-        else:
-            self._cookies.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
-            return resp.text
+    def load(self, url, data=None, refer=None, parser=json_loads, validator=None, retries=5):
+        while True:
+            try:
+                if data:
+                    logger.debug("POST {} with data {}".format(url, data))
+                    resp = self.session.post(
+                        url,
+                        data,
+                        headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
+                        verify=SSL_VERIFY,
+                    )
+                else:
+                    logger.debug("GET {}".format(url))
+                    resp = self.session.get(
+                        url,
+                        headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
+                        verify=SSL_VERIFY,
+                    )
+                self._cookies.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
+                resp = resp.text
+                logger.debug("response: {}".format(resp))
 
-    def post(self, url, data, refer=None):
-        try:
-            resp = self.session.post(
-                url,
-                data,
-                headers=self._get_headers({'Referer': refer or SMART_QQ_REFER}),
-                verify=SSL_VERIFY,
-            )
-        except requests.exceptions.SSLError:
-            logger.exception("SSL连接验证失败，请检查您所在的网络环境。如果需要禁用SSL验证，请修改config.py中的SSL_VERIFY为False")
-        except (excps.ConnectTimeout, excps.HTTPError):
-            error_msg = "Failed to send request to `{0}`".format(
-                url
-            )
-            logger.exception(error_msg)
-            return error_msg
-        else:
-            self._cookies.save(COOKIE_FILE, ignore_discard=True, ignore_expires=True)
-            return resp.text
+                if parser:
+                    resp = parser(resp)
+                if validator:
+                    validator(resp)
+                return resp
+            except requests.exceptions.SSLError:
+                logger.exception("SSL连接验证失败，请检查您所在的网络环境。如果需要禁用SSL验证，请修改config.py中的SSL_VERIFY为False")
+                raise
+            except Exception as e:
+                logger.exception(e)
+                retries -= 1
+                if retries == 0:
+                    raise
+
+            logger.error("request failed, retrying in 2 seconds")
+            time.sleep(2)
+
+    def load_result(self, url, *args, **kwargs):
+        validator = kwargs["validator"] if "validator" in kwargs else None
+        def result_validator(response):
+            assert 'retcode' in response and response['retcode'] == 0 \
+                or 'errCode' in response and response['errCode'] == 0 \
+                or 'ec' in response and response['ec'] == 0, repr(response)
+            assert 'result' in response, repr(response)
+            if validator:
+                validator(response['result'])
+        kwargs["validator"] = result_validator
+        response = self.load(url, *args, **kwargs)
+        return response['result']
 
     def get_cookie(self, key):
         for c in self._cookies:

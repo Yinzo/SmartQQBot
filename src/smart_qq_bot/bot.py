@@ -120,6 +120,7 @@ class QQBot(object):
         self.qrcode_path = QR_CODE_PATH
         self.username = ''
         self.account = 0
+        self.uin = 0
         self._last_pool_success = None
 
     @property
@@ -385,6 +386,23 @@ class QQBot(object):
             )
             exit(1)
         logger.info("RUNTIMELOG QQ：{0} login successfully, Username：{1}".format(self.account, self.username))
+
+    def is_self_msg(self, msg):
+
+        if msg.get('poll_type', '') == "group_message":
+            msg_uin = msg["value"].get('send_uin')
+            if self.uin == 0:
+                info = self.get_friend_info(msg_uin)
+
+                if info and info.get('nick',"") == self.username:
+                    self.uin = msg_uin
+                    return True
+
+            if msg_uin == self.uin:
+                return True
+
+        return False
+
 
     def check_msg(self):
 

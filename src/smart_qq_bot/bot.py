@@ -389,8 +389,8 @@ class QQBot(object):
 
     def is_self_msg(self, msg):
 
-        if msg.get('poll_type', '') == "group_message":
-            msg_uin = msg["value"].get('send_uin')
+        if isinstance(msg, GroupMsg):
+            msg_uin = msg.send_uin
             if self.uin == 0:
                 info = self.get_friend_info(msg_uin)
 

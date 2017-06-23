@@ -32,11 +32,11 @@ MSG_TYPES = list(MSG_TYPE_MAP.keys())
 MSG_TYPES.append(RAW_TYPE)
 
 
-Handler = namedtuple("Handler", ("func", "name"))
+Handler = namedtuple("Handler", ("func", "name", "accept_self"))
 Task = namedtuple("Task", ("func", "name", "kwargs"))
 
 
-def register(func, msg_type=None, dispatcher_name=None, active_by_default=True):
+def register(func, msg_type=None, dispatcher_name=None, active_by_default=True, accept_self=False):
     """
     Register handler to RAW if msg_type not given.
     :type func: callable
@@ -47,7 +47,7 @@ def register(func, msg_type=None, dispatcher_name=None, active_by_default=True):
             "Invalid message type [%s]: type should be in %s"
             % (msg_type, str(MSG_TYPES))
         )
-    handler = Handler(func=func, name=dispatcher_name)
+    handler = Handler(func=func, name=dispatcher_name, accept_self=accept_self)
     if msg_type is None:
         _registry[RAW_TYPE].append(handler)
     else:
@@ -169,6 +169,9 @@ class MessageObserver(object):
 
         for handler in handlers + self._registry[RAW_TYPE]:
             if is_active(handler.name):
+                if self.bot.is_self_msg(msg) and not handler.accept_self:
+                    logger.debug("[{}] dropped group message from itself".format(handler.name))
+                    continue
                 self.handler_queue.put(
                     Task(
                         func=handler.func,

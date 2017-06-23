@@ -21,15 +21,15 @@ def _real_wrapper(func):
 
 
 def _mk_wrapper(msg_type):
-    def _register_func(func=None, name=None):
+    def _register_func(func=None, name=None, accept_self=False):
         if func is not None:
             wrapped = _real_wrapper(func)
-            register(wrapped, msg_type, func.__name__)
+            register(wrapped, msg_type, func.__name__, accept_self=accept_self)
             return wrapped
         else:
             def wrapper(new_func):
                 wrapped = _real_wrapper(new_func)
-                register(wrapped, msg_type, name or new_func.__name__)
+                register(wrapped, msg_type, name or new_func.__name__, accept_self=accept_self)
             return wrapper
     return _register_func
 

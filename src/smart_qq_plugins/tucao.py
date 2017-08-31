@@ -26,7 +26,7 @@ class TucaoCore(object):
         global TUCAO_PATH
         try:
             tucao_file_path = TUCAO_PATH + str(group_id) + ".tucao"
-            with open(tucao_file_path, "w+") as tucao_file:
+            with open(tucao_file_path, "wb") as tucao_file:
                 cPickle.dump(self.tucao_dict[str(group_id)], tucao_file)
             logger.info("RUNTIMELOG tucao saved. Now tucao list:  {0}".format(str(self.tucao_dict)))
         except Exception:
@@ -45,7 +45,7 @@ class TucaoCore(object):
         if not os.path.isdir(TUCAO_PATH):
             os.makedirs(TUCAO_PATH)
         if not os.path.exists(tucao_file_path):
-            with open(tucao_file_path, "w") as tmp:
+            with open(tucao_file_path, "wb") as tmp:
                 tmp.close()
         with open(tucao_file_path, "rb") as tucao_file:
             try:

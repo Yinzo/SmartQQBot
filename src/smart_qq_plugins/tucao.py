@@ -78,10 +78,10 @@ def tucao(msg, bot):
         if command == 'learn':
             if group_id not in core.tucao_dict:
                 core.load(group_id)
-            if key in core.tucao_dict[group_id] and value not in core.tucao_dict[group_id][key]:
-                core.tucao_dict[group_id][key].append(value)
-            else:
+            if key not in core.tucao_dict[group_id]:
                 core.tucao_dict[group_id][key] = [value]
+            elif value not in core.tucao_dict[group_id][key]:
+                core.tucao_dict[group_id][key].append(value)
             reply("学习成功！快对我说" + str(key) + "试试吧！")
             core.save(group_id)
             return True

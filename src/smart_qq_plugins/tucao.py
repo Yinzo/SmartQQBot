@@ -26,7 +26,7 @@ class TucaoCore(object):
         global TUCAO_PATH
         try:
             tucao_file_path = TUCAO_PATH + str(group_id) + ".tucao"
-            with open(tucao_file_path, "w+") as tucao_file:
+            with open(tucao_file_path, "wb") as tucao_file:
                 cPickle.dump(self.tucao_dict[str(group_id)], tucao_file)
             logger.info("RUNTIMELOG tucao saved. Now tucao list:  {0}".format(str(self.tucao_dict)))
         except Exception:
@@ -45,7 +45,7 @@ class TucaoCore(object):
         if not os.path.isdir(TUCAO_PATH):
             os.makedirs(TUCAO_PATH)
         if not os.path.exists(tucao_file_path):
-            with open(tucao_file_path, "w") as tmp:
+            with open(tucao_file_path, "wb") as tmp:
                 tmp.close()
         with open(tucao_file_path, "rb") as tucao_file:
             try:
@@ -78,10 +78,10 @@ def tucao(msg, bot):
         if command == 'learn':
             if group_id not in core.tucao_dict:
                 core.load(group_id)
-            if key in core.tucao_dict[group_id] and value not in core.tucao_dict[group_id][key]:
-                core.tucao_dict[group_id][key].append(value)
-            else:
+            if key not in core.tucao_dict[group_id]:
                 core.tucao_dict[group_id][key] = [value]
+            elif value not in core.tucao_dict[group_id][key]:
+                core.tucao_dict[group_id][key].append(value)
             reply("学习成功！快对我说" + str(key) + "试试吧！")
             core.save(group_id)
             return True

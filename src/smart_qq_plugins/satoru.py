@@ -50,7 +50,13 @@ class Satoru(object):
         logger.info("key [%s] removed" % key)
 
     def match(self, key):
-        if key in self.data:
+        keylist = []
+        for keyword in self.data:
+            match = re.compile(keyword).search(key)
+            if match:
+                keylist.append(keyword)
+        if len(keylist):
+            key = random.choice(keylist)
             result = self.data[key]
             return result[randint(0, len(result) - 1)]
         return None

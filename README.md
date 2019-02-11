@@ -1,6 +1,8 @@
 SmartQQBot
 =========
 
+> 因为SmartQQ服务本身已经停止，本项目已经失效：），感谢你之前的支持
+
 + 使用文档见[User Guide](resources/UserGuide.md)
 + 二次开发[Developers Guide](resources/DevelopersGuide.md)
 + 贡献文档[Contribution Guide](resources/ContributionGuide.md)
